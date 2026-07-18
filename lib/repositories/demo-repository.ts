@@ -76,7 +76,8 @@ const initialMessages: Record<string, ChatMessage[]> = {
     {
       id: "ai-1",
       senderId: "ai-assistant",
-      senderName: "ИИ-Ассистент Соседей",
+      senderName: "Женя",
+      senderAvatar: "/demo/people/zhenya.jpg",
       content:
         "Здравствуйте! Я ваш виртуальный помощник по совместной аренде.\n\nЯ могу помочь вам:\n• Составить свод правил проживания (тихий час, уборка, гости)\n• Проверить условия договора аренды\n• Рассчитать справедливый бюджет на каждого участника группы",
       timestamp: "10:00",
@@ -809,8 +810,8 @@ export class DemoRepository implements Repository {
       senderAvatar = extraData.senderAvatar;
     } else if (type === "ai_bot") {
       senderId = "ai-assistant";
-      senderName = "ИИ-Ассистент Соседей";
-      senderAvatar = "/demo/avatar-ai.jpg";
+      senderName = "Женя";
+      senderAvatar = "/demo/people/zhenya.jpg";
     }
 
     const userMessage: ChatMessage = {
