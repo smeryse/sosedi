@@ -2,6 +2,7 @@ import type { DemoProperty, DemoRoommate } from "@/data/demo";
 import { getSupabaseClient } from "./index";
 import { compatibilityScore, propertyGroupCompatibility } from "@/lib/compatibility/engine";
 import type { CompatibilityProfile } from "@/lib/compatibility/types";
+import type { PropertyFilters } from "./types";
 import type {
   ChatMessage,
   ChatMessageType,

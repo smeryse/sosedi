@@ -45,7 +45,7 @@ export function PropertyDirectory() {
       setLoading(true);
       try {
         const repo = getRepository();
-        const results = await repo.listProperties(query);
+        const results = await repo.listProperties({ query });
         if (active) {
           const filtered = results.filter((property) => {
             return (
