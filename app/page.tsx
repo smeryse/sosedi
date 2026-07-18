@@ -1,58 +1,10 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
+import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
+import { ArrowRight, Check, Heart, MapPin, ShieldCheck, Sparkles, UsersRound } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
-export default function Home() {
-  return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
-        </div>
+const highlights = ["Совместимость по образу жизни", "Группы до 4 человек", "Проверенные объявления", "Честные правила до переезда"];
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
-      </div>
-    </main>
-  );
+export default function HomePage() {
+  return <main className="min-h-screen overflow-hidden"><header className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between px-5 lg:px-8"><BrandLogo /><nav className="hidden items-center gap-7 text-xs font-bold text-muted-foreground md:flex"><a href="#how">Как это работает</a><a href="#safety">Безопасность</a><a href="#owners">Собственникам</a></nav><div className="flex items-center gap-2"><Link href="/auth/login" className="hidden rounded-full px-4 py-2.5 text-xs font-extrabold sm:inline-flex">Войти</Link><Link href="/auth/sign-up" className="lime-button inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold">Начать поиск <ArrowRight className="size-4" /></Link></div></header><section className="relative mx-auto grid max-w-[1240px] gap-10 px-5 pb-16 pt-12 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:px-8 lg:pb-24 lg:pt-20"><div className="pointer-events-none absolute -left-24 top-10 size-72 rounded-full bg-[hsl(var(--accent-soft))] blur-3xl" /><div className="relative"><div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--accent-soft))] px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.12em]"><Sparkles className="size-3.5" /> Жить вместе проще</div><h1 className="max-w-2xl text-[clamp(2.8rem,6vw,5.8rem)] font-extrabold leading-[0.95] tracking-[-0.075em]">Дом начинается<br /><span className="text-[hsl(var(--accent-hover))]">с подходящих людей.</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">Соседи помогают найти человека, жильё и правила, с которыми вам будет спокойно. Без случайных совпадений и сюрпризов после переезда.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/auth/sign-up" className="lime-button inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-extrabold">Найти соседа <ArrowRight className="size-4" /></Link><Link href="#how" className="inline-flex items-center gap-2 rounded-full border bg-surface px-6 py-3.5 text-sm font-extrabold">Как это работает</Link></div><div className="mt-8 grid gap-3 sm:grid-cols-2">{highlights.map((item) => <p key={item} className="flex items-center gap-2 text-xs font-bold"><span className="grid size-5 place-items-center rounded-full bg-[hsl(var(--accent))]"><Check className="size-3" /></span>{item}</p>)}</div></div><div className="relative min-h-[460px] overflow-hidden rounded-[32px] bg-foreground p-4 sm:min-h-[560px]"><Image src="/demo/people/maria.jpg" alt="Соседка Мария" fill sizes="(max-width: 1024px) 100vw, 560px" className="object-cover opacity-80" /><div className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/10 to-transparent" /><div className="absolute left-5 top-5 rounded-full bg-surface/90 px-3 py-2 text-[10px] font-extrabold"><span className="mr-1.5 inline-block size-2 rounded-full bg-emerald-500" /> 4 820 людей уже ищут соседей</div><div className="absolute inset-x-5 bottom-5 rounded-[22px] bg-surface/95 p-4 backdrop-blur"><div className="flex items-center gap-3"><Image src="/demo/people/maria.jpg" alt="Мария" width={48} height={48} className="size-12 rounded-full object-cover" /><div className="min-w-0 flex-1"><p className="text-sm font-extrabold">Мария, 24 · маркетолог</p><p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground"><MapPin className="size-3" /> Центр, Краснодар</p></div><span className="rounded-full bg-[hsl(var(--accent))] px-2.5 py-1.5 text-[10px] font-extrabold">96% match</span></div><div className="mt-4 flex items-center justify-between border-t pt-3 text-[10px] text-muted-foreground"><span>Не курит · любит порядок · тихие вечера</span><Heart className="size-4 text-rose-500" /></div></div></div></section><section id="how" className="border-y bg-surface-muted/60"><div className="mx-auto max-w-[1240px] px-5 py-16 lg:px-8"><div className="max-w-xl"><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--accent-hover))]">Три шага</p><h2 className="mt-3 text-3xl font-extrabold tracking-[-0.05em] sm:text-4xl">От анкеты до ключей без лишнего напряжения.</h2></div><div className="mt-10 grid gap-4 md:grid-cols-3">{[["01", "Заполните анкету", "Расскажите про бюджет, привычки, ритм жизни и то, что для вас важно дома.", Sparkles], ["02", "Соберите группу", "Сравните людей по совместимости, пригласите до трёх участников и договоритесь заранее.", UsersRound], ["03", "Выберите жильё", "Смотрите реальные условия, общайтесь с собственником и подавайте общую заявку.", ShieldCheck]].map(([number, title, description, Icon]) => <div key={number as string} className="rounded-[22px] border bg-surface p-5"><span className="text-xs font-extrabold text-muted-foreground">{number as string}</span><Icon className="mt-10 size-6 text-[hsl(var(--accent-hover))]" /><h3 className="mt-5 text-lg font-extrabold">{title as string}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{description as string}</p></div>)}</div></div></section><section id="safety" className="mx-auto grid max-w-[1240px] gap-10 px-5 py-16 lg:grid-cols-[.9fr_1.1fr] lg:px-8 lg:py-24"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--accent-hover))]">Спокойствие прежде всего</p><h2 className="mt-3 text-3xl font-extrabold tracking-[-0.05em] sm:text-4xl">Вы заранее знаете,<br />о чём договорились.</h2></div><div className="grid gap-3 sm:grid-cols-2">{[["Прозрачные совпадения", "Показываем сильные стороны и темы для разговора."], ["Скрытые контакты", "Личные данные открываются только после взаимного согласия."], ["Подтверждённые профили", "Email и телефон помогают сделать общение безопаснее."], ["Границы группы", "До 4 участников, понятные роли и история заявки."]].map(([title, description]) => <div key={title} className="rounded-[20px] border p-5"><ShieldCheck className="size-5 text-[hsl(var(--accent-hover))]" /><h3 className="mt-4 text-sm font-extrabold">{title}</h3><p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p></div>)}</div></section><section id="owners" className="mx-5 mb-16 overflow-hidden rounded-[28px] bg-foreground text-background lg:mx-auto lg:max-w-[1200px]"><div className="grid gap-8 p-7 sm:p-10 lg:grid-cols-[1fr_280px] lg:items-center"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--accent))]">Для собственников</p><h2 className="mt-3 max-w-xl text-3xl font-extrabold tracking-[-0.05em] sm:text-4xl">Покажите квартиру людям, которые действительно готовы жить вместе.</h2><p className="mt-4 max-w-lg text-sm leading-6 text-background/65">Получайте заявки групп, отвечайте в одном кабинете и экономьте время на повторяющихся вопросах.</p><Link href="/auth/sign-up" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--accent))] px-5 py-3 text-xs font-extrabold text-foreground">Разместить объект <ArrowRight className="size-4" /></Link></div><div className="rounded-[22px] bg-background/10 p-5"><p className="text-xs font-extrabold">Средний профиль заявки</p><p className="mt-4 text-4xl font-extrabold text-[hsl(var(--accent))]">89%</p><p className="mt-1 text-xs text-background/60">совпадение с правилами объекта</p></div></div></section><footer className="mx-auto flex max-w-[1240px] flex-col gap-5 border-t px-5 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8"><BrandLogo /><div className="flex flex-wrap gap-4"><Link href="/about">О проекте</Link><Link href="/safety">Безопасность</Link><Link href="/faq">FAQ</Link><Link href="/auth/login">Войти</Link></div><span>© 2026 Соседи</span></footer></main>;
 }

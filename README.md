@@ -1,109 +1,176 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# СОЖИТЕЛИ (Соседи) — Платформа Безопасной Совместной Аренды
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+> **«Безопасно собираем совместимых людей в одну квартиру и управляем всей совместной арендой в одном сервисе».**
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+**СОЖИТЕЛИ (Соседи)** — цифровая платформа для поиска совместимых соседей, формирования групп, выбора жилья и сопровождения совместного проживания. Проект объединяет функциональность маркетплейса недвижимости, сервиса подбора соседей по бытовой совместимости, системы проверки участников, прозрачного управления расходами (SplitPay) и бытовой операционной системы (Living OS).
 
-## Features
+Проект разработан в рамках хакатона на основе концепции промышленного продукта для совместной аренды (`01_concept.md`).
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+---
 
-## Demo
+## 📌 Ключевая концепция и решаемые проблемы
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+Современный рынок совместной аренды раздроблен и сопровождается многочисленными рисками: несовместимость по ритму жизни и уборке, сложность разделения залога и счетов, отсутствие прозрачности для собственника жилья.
 
-## Deploy to Vercel
+**СОЖИТЕЛИ** закрывает весь жизненный цикл совместного проживания:
+$$\text{Поиск} \rightarrow \text{Знакомство} \rightarrow \text{Формирование группы} \rightarrow \text{Проверка} \rightarrow \text{Выбор квартиры} \rightarrow \text{Договорённости} \rightarrow \text{Оплата} \rightarrow \text{Совместный быт} \rightarrow \text{Выезд}$$
 
-Vercel deployment will guide you through creating a Supabase account and project.
+---
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+## 🔥 Основные продуктовые модули
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### 1. 📋 Паспорт проживания (Resident Passport)
+* Детализированная анкета из 20+ вопросов, охватывающая:
+  * **Ритм жизни**: режим сна, графика работы/учёбы, удалёнка, тихие часы.
+  * **Быт и чистота**: график уборки, отношение к посуде, готовке, домашним животным и курению.
+  * **Социальная модель**: частота гостей, вечеринки, формат общения (дружба vs нейтральное соседство).
+  * **Финансы & Красные линии (Stop Factors)**: лимит бюджета, критические табу и недопустимые условия.
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+### 2. 🧮 Compatibility Engine (Движок совместимости)
+* Алгоритм расчёта совпадения с учётом весов параметров и строгой проверки красных линий (стоп-факторов).
+* **Explainable Compatibility Score**: наглядная расшифровка процента совместимости (почему люди подходят друг другу и где возможны трения).
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+### 3. 👥 Формирование групп и Командное лобби
+* Возможность искать не только отдельную комнату, но и формировать группы для совместной аренды больших квартир.
+* **Групповое лобби**: общий чат, согласование списка жилья, разделение бюджета и комнат.
+* **Подаче совместных заявок**: собственник получает единый профиль проверенной группы с распределением ответственности.
 
-## Clone and run locally
+### 4. 🏠 Жильё & Умное распределение комнат
+* Каталог квартир и комнат с детальными фильтрами и интерактивной картой.
+* Калькулятор стоимости: расчёт доли аренды для каждой комнаты в зависимости от площади, наличия балкона или личного санузла.
+* Оценка совместимости группы с выбранным объектом (Group-Property Fit).
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+### 5. 🏢 Кабинет Собственника (Owner Dashboard)
+* Публикация и управление объектами недвижимости.
+* Просмотр входящих заявок от сформированных групп и одиночных арендаторов.
+* Аналитика доходности, управление договорами и контроль платежей.
 
-2. Create a Next.js app using the Supabase Starter template npx command
+### 6. 🧹 Бытовая Операционная Система (Living OS) & SplitPay
+* **Управление расходами**: деление коммуналки, покупка бытовых мелочей, прозрачный баланс группы.
+* **График уборок и задач**: назначение бытовых обязанностей с трекингом статусов.
+* **Цифровой акт приёма-передачи**: фиксация состояния квартиры и имущества при въезде.
+* **Разрешение конфликтов**: встроенный алгоритм и медиация бытовых споров.
 
+### 7. 🤖 AI-Провайдер
+* Встроенный AI-помощник (поддержка Mock, Groq и OpenRouter):
+  * Персонализированный подбор соседей на основе текстовых предпочтений.
+  * Автоматическая генерация бытовых правил группы.
+  * AI-медиатор для предложения компромиссов при спорах.
+
+### 8. ⚡ Demo-Режим
+* Полнофункциональный автономный демо-режим. При отсутствии переменных Supabase приложение автоматически использует локальный `DemoRepository` (с поддержкой localStorage).
+
+---
+
+## 🛠 Технологический стек
+
+* **Фреймворк**: [Next.js 15](https://nextjs.org/) (App Router, React 19, Server & Client Components)
+* **Язык**: TypeScript (строгая типизация без `any`)
+* **Стилизация**: Tailwind CSS + Vanilla CSS tokens, Manrope font, Emerald/Teal дизайн-система
+* **База данных & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security, Triggers, Functions, Storage)
+* **Тестирование**: Vitest / Custom Validation Scripts, Playwright E2E test suite
+* **Линтинг & Сборка**: ESLint, PostCSS, TypeScript compiler
+
+---
+
+## 🚀 Быстрый запуск
+
+### Требования
+* Node.js 18+
+* npm или yarn
+
+### Установка и запуск
+
+1. **Клонирование репозитория:**
    ```bash
-   npx create-next-app --example with-supabase with-supabase-app
+   git clone <URL_РЕПОЗИТОРИЯ>
+   cd sosedi
    ```
 
+2. **Установка зависимостей:**
    ```bash
-   yarn create next-app --example with-supabase with-supabase-app
+   npm install
    ```
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
-
-3. Use `cd` to change into the app's directory
-
-   ```bash
-   cd with-supabase-app
-   ```
-
-4. Rename `.env.example` to `.env.local` and update the following:
-
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
-
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
-
-5. You can now run the Next.js local development server:
-
+3. **Запуск в режиме разработки:**
    ```bash
    npm run dev
    ```
+   Откройте [http://localhost:3000](http://localhost:3000) в браузере. Без настроенных ключей Supabase приложение автоматически запустится в **Demo-режиме**.
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+---
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+## 🗄 Настройка Supabase (Production / Real DB)
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+Для работы с реальной базой данных Supabase:
 
-## Feedback and issues
+1. Скопируйте `.env.example` в `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+2. Укажите ваши ключи в `.env.local`:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+3. Примените миграции и seed данные из директории `supabase/`:
+   * Схема базы данных, RLS-политики и структуры описаны в [docs/database.md](docs/database.md) и [docs/security.md](docs/security.md).
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+---
 
-## More Supabase examples
+## 🧪 Проверки и Тестирование
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+```bash
+# Проверка типов TypeScript
+npm run typecheck
+
+# Линтинг кода
+npm run lint
+
+# Запуск модульных тестов
+npm run test
+
+# Проверка сборки приложения
+npm run build
+```
+
+---
+
+## 📁 Структура проекта
+
+```
+sosedi/
+├── app/                  # Route handlers и страницы (Next.js App Router)
+│   ├── app/              # Кабинет арендатора (соседи, жилье, группы, задачи, чат)
+│   ├── owner/            # Кабинет собственника (объекты, заявки, аналитика)
+│   ├── auth/             # Авторизация и аутентификация
+│   └── (public)/         # Публичные страницы (Landing, About, Safety, FAQ)
+├── components/           # UI-компоненты и виджеты
+│   ├── app-shell/        # Сайдбар, хедер, мобильная навигация
+│   ├── map/              # Компоненты карт и локаций
+│   ├── tenant/           # Виджеты арендатора и compatibility-карточки
+│   └── ui/               # Базовые UI-примитивы
+├── lib/                  # Бизнес-логика
+│   ├── ai/               # AI-провайдер и адаптеры
+│   ├── compatibility/    # Движок расчета совместимости (Compatibility Engine)
+│   ├── repositories/     # Typed Repository Layer (Demo & Supabase Adapters)
+│   └── supabase/         # Клиент и утилиты Supabase
+├── supabase/             # Схемы DB, миграции, RLS политики, seed
+├── docs/                 # Документация проекта
+├── 01_concept.md         # Полная концепция хакатона
+├── DO_APP.md             # Продуктовое ТЗ
+└── IMPLEMENTATION_PLAN.md# План реализации
+```
+
+---
+
+## 📄 Документация
+
+- [Концепция хакатона](01_concept.md)
+- [Продуктовое ТЗ (DO_APP)](DO_APP.md)
+- [План реализации](IMPLEMENTATION_PLAN.md)
+- [Архитектура системы](docs/architecture.md)
+- [Движок совместимости](docs/compatibility-engine.md)
+- [AI-провайдер](docs/ai-provider.md)
+- [Схема БД & Безопасность](docs/database.md)
+- [Demo-режим](docs/demo-mode.md)
