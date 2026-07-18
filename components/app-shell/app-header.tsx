@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, ChevronDown, Heart, Menu, Plus, Search } from "lucide-react";
+import { Bell, ChevronDown, Menu, Plus, Search } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { AvatarImage } from "@/components/ui/avatar-image";
 

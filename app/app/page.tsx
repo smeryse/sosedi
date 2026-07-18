@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Bot,
-  ChevronRight,
   Heart,
   Home,
   Search,
