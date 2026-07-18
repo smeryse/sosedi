@@ -8,8 +8,10 @@ import type {
   ChatThread,
   DemoAnswer,
   DemoApplication,
+  DemoChore,
   DemoGroup,
   DemoState,
+  ExpenseShare,
   ExpenseSplit,
   GroupPoll,
   Repository,
@@ -25,18 +27,19 @@ function mapProfileToCompatibility(profile: any, pref: any): CompatibilityProfil
     leaseMonths: profile.lease_months ?? 12,
     smoking: pref?.smoking === "yes" ? "yes" : pref?.smoking === "sometimes" ? "sometimes" : "no",
     pets: pref?.pets === "cat" ? "cat" : pref?.pets === "dog" ? "dog" : pref?.pets === "other" ? "other" : "no",
+    petTolerance: pref?.pet_tolerance ?? "any",
     sleep: pref?.sleep_schedule === "early" ? "early" : pref?.sleep_schedule === "late" ? "late" : "flexible",
     noise: pref?.noise_tolerance ?? 3,
     guests: pref?.guests_frequency ?? "sometimes",
     remoteWork: pref?.remote_work ?? "sometimes",
     cleanliness: pref?.cleanliness ?? 3,
-    cooking: 3,
-    sharedProducts: true,
-    temperature: 3,
+    cooking: pref?.cooking ?? 3,
+    sharedProducts: pref?.shared_products ?? true,
+    temperature: pref?.temperature ?? 3,
     privateSpace: pref?.private_space ?? 3,
-    commonZones: 3,
+    commonZones: pref?.common_zones ?? 3,
     sociability: pref?.sociability ?? 3,
-    leisure: [],
+    leisure: pref?.leisure ?? [],
   };
 }
 
@@ -213,6 +216,8 @@ export class SupabaseRepository implements Repository {
         answers: [],
         threads: [],
         messages: {},
+        chores: [],
+        expenses: [],
       };
     }
 
@@ -224,7 +229,7 @@ export class SupabaseRepository implements Repository {
       .select("target_type, target_id")
       .eq("user_id", userId);
 
-    const favorites = (favs ?? []).map((f) => ({
+    const favorites = (favs ?? []).map((f: any) => ({
       type: f.target_type as "profile" | "property",
       id: f.target_id,
     }));
@@ -235,7 +240,7 @@ export class SupabaseRepository implements Repository {
       .select("question_key, answer, importance")
       .eq("profile_id", userId);
 
-    const answers = (ans ?? []).map((a) => ({
+    const answers = (ans ?? []).map((a: any) => ({
       questionKey: a.question_key,
       answer: String(a.answer),
       importance: a.importance,
@@ -270,7 +275,7 @@ export class SupabaseRepository implements Repository {
           id: g.id,
           name: g.name,
           status: g.status as any,
-          memberIds: (members ?? []).map((m) => m.profile_id),
+          memberIds: (members ?? []).map((m: any) => m.profile_id),
           targetBudget: g.target_budget ?? 90000,
           moveInDate: g.move_in_date ?? "",
           compatibility: 89,
@@ -282,7 +287,7 @@ export class SupabaseRepository implements Repository {
           .select("id, property_id, group_id, status, created_at")
           .eq("group_id", g.id);
 
-        applications = (apps ?? []).map((a) => ({
+        applications = (apps ?? []).map((a: any) => ({
           id: a.id,
           propertyId: a.property_id,
           groupId: a.group_id,
@@ -305,6 +310,8 @@ export class SupabaseRepository implements Repository {
       answers,
       threads,
       messages,
+      chores: [],
+      expenses: [],
     };
   }
 
@@ -545,7 +552,7 @@ export class SupabaseRepository implements Repository {
       .select("conversation_id")
       .eq("profile_id", userId);
 
-    const convIds = (memberships ?? []).map((m) => m.conversation_id);
+    const convIds = (memberships ?? []).map((m: any) => m.conversation_id);
     if (convIds.length === 0) return [];
 
     const { data: conversations, error } = await supabase
@@ -771,11 +778,47 @@ export class SupabaseRepository implements Repository {
   }
 
   async togglePinThread(threadId: string): Promise<ChatThread[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _t = threadId;
     return this.getChatThreads();
   }
 
   async toggleMessageReaction(threadId: string, messageId: string, emoji: string): Promise<ChatMessage> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _e = emoji;
     const messages = await this.getMessages(threadId);
     return messages.find((m) => m.id === messageId) ?? messages[0];
+  }
+
+  async listChores(): Promise<DemoChore[]> {
+    return [];
+  }
+
+  async createChore(title: string, assigneeId: string, dueDate: string): Promise<DemoChore[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _d = [title, assigneeId, dueDate];
+    return [];
+  }
+
+  async toggleChoreDone(id: string): Promise<DemoChore[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _i = id;
+    return [];
+  }
+
+  async listExpenses(): Promise<ExpenseSplit[]> {
+    return [];
+  }
+
+  async createExpense(title: string, totalAmount: number, shares: ExpenseShare[]): Promise<ExpenseSplit[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _d = [title, totalAmount, shares];
+    return [];
+  }
+
+  async toggleGlobalExpensePaid(expenseId: string, memberId: string): Promise<ExpenseSplit[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _d = [expenseId, memberId];
+    return [];
   }
 }

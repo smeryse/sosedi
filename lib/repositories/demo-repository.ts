@@ -1,12 +1,16 @@
 import { demoProperties, demoRoommates } from "../../data/demo";
+import { compatibilityScore } from "../compatibility/engine";
+import type { CompatibilityProfile } from "../compatibility/types";
 import type {
   ChatMessage,
   ChatMessageType,
   ChatThread,
   DemoAnswer,
   DemoApplication,
+  DemoChore,
   DemoGroup,
   DemoState,
+  ExpenseShare,
   ExpenseSplit,
   GroupPoll,
   Repository,
@@ -199,6 +203,272 @@ const initialMessages: Record<string, ChatMessage[]> = {
   ],
 };
 
+const demoChores = [
+  { id: "chore-1", title: "Кухня и плита", assigneeId: "maria", assigneeName: "Мария", isDone: true, dueDate: "до воскресенья" },
+  { id: "chore-2", title: "Ванная комната", assigneeId: "anna", assigneeName: "Анна", isDone: false, dueDate: "до воскресенья" },
+  { id: "chore-3", title: "Пылесос", assigneeId: "artem", assigneeName: "Артём", isDone: false, dueDate: "до воскресенья" },
+  { id: "chore-4", title: "Мусор и переработка", assigneeId: "ekaterina", assigneeName: "Екатерина", isDone: false, dueDate: "до воскресенья" }
+];
+
+const demoExpenses = [
+  {
+    id: "exp-1",
+    title: "Аренда квартиры",
+    totalAmount: 45000,
+    shares: [
+      { memberId: "maria", memberName: "Мария", amount: 15000, isPaid: true },
+      { memberId: "anna", memberName: "Анна", amount: 15000, isPaid: true },
+      { memberId: "artem", memberName: "Артём", amount: 15000, isPaid: true },
+    ]
+  },
+  {
+    id: "exp-2",
+    title: "Коммунальные услуги",
+    totalAmount: 5430,
+    shares: [
+      { memberId: "maria", memberName: "Мария", amount: 1810, isPaid: true },
+      { memberId: "anna", memberName: "Анна", amount: 1810, isPaid: false },
+      { memberId: "artem", memberName: "Артём", amount: 1810, isPaid: false },
+    ]
+  },
+  {
+    id: "exp-3",
+    title: "Интернет",
+    totalAmount: 890,
+    shares: [
+      { memberId: "maria", memberName: "Мария", amount: 296.6, isPaid: true },
+      { memberId: "anna", memberName: "Анна", amount: 296.6, isPaid: true },
+      { memberId: "artem", memberName: "Артём", amount: 296.8, isPaid: true },
+    ]
+  },
+  {
+    id: "exp-4",
+    title: "Хозяйственные товары",
+    totalAmount: 1260,
+    shares: [
+      { memberId: "maria", memberName: "Мария", amount: 420, isPaid: true },
+      { memberId: "anna", memberName: "Анна", amount: 420, isPaid: false },
+      { memberId: "artem", memberName: "Артём", amount: 420, isPaid: false },
+    ]
+  }
+];
+
+const roommateProfiles: Record<string, CompatibilityProfile> = {
+  maria: {
+    budgetMin: 20000,
+    budgetMax: 30000,
+    districts: ["Центр", "Фестивальный"],
+    moveInDate: new Date().toISOString().split("T")[0],
+    leaseMonths: 12,
+    smoking: "no",
+    pets: "no",
+    petTolerance: "any",
+    sleep: "flexible",
+    noise: 2,
+    guests: "rarely",
+    remoteWork: "sometimes",
+    cleanliness: 4,
+    cooking: 3,
+    sharedProducts: true,
+    temperature: 3,
+    privateSpace: 3,
+    commonZones: 3,
+    sociability: 4,
+    leisure: ["Кино и книги", "Спорт и прогулки"],
+  },
+  artem: {
+    budgetMin: 25000,
+    budgetMax: 35000,
+    districts: ["Прикубанский округ", "Панорама"],
+    moveInDate: new Date().toISOString().split("T")[0],
+    leaseMonths: 12,
+    smoking: "no",
+    pets: "no",
+    petTolerance: "no",
+    sleep: "late",
+    noise: 1,
+    guests: "never",
+    remoteWork: "often",
+    cleanliness: 3,
+    cooking: 2,
+    sharedProducts: false,
+    temperature: 3,
+    privateSpace: 5,
+    commonZones: 2,
+    sociability: 2,
+    leisure: ["Игры и встречи"],
+  },
+  ekaterina: {
+    budgetMin: 25000,
+    budgetMax: 35000,
+    districts: ["Западный округ", "Центр"],
+    moveInDate: new Date().toISOString().split("T")[0],
+    leaseMonths: 12,
+    smoking: "no",
+    pets: "cat",
+    petTolerance: "cat",
+    sleep: "early",
+    noise: 2,
+    guests: "sometimes",
+    remoteWork: "sometimes",
+    cleanliness: 5,
+    cooking: 4,
+    sharedProducts: true,
+    temperature: 4,
+    privateSpace: 3,
+    commonZones: 4,
+    sociability: 3,
+    leisure: ["Кино и книги", "Спорт и прогулки"],
+  },
+  ilya: {
+    budgetMin: 20000,
+    budgetMax: 30000,
+    districts: ["Карасунский округ", "Черёмушки"],
+    moveInDate: new Date().toISOString().split("T")[0],
+    leaseMonths: 6,
+    smoking: "sometimes",
+    pets: "no",
+    petTolerance: "any",
+    sleep: "late",
+    noise: 3,
+    guests: "never",
+    remoteWork: "often",
+    cleanliness: 3,
+    cooking: 2,
+    sharedProducts: false,
+    temperature: 3,
+    privateSpace: 4,
+    commonZones: 2,
+    sociability: 2,
+    leisure: ["Спорт и прогулки", "Игры и встречи"],
+  },
+};
+
+function mapAnswersToProfile(answers: DemoAnswer[]): CompatibilityProfile {
+  const getAnswer = (key: string) => answers.find(a => a.questionKey === key)?.answer || "";
+  
+  const budgetStr = getAnswer("budget");
+  let budgetMin = 0;
+  let budgetMax = 150000;
+  if (budgetStr.includes("До")) {
+    budgetMax = 20000;
+  } else if (budgetStr.includes("–")) {
+    const parts = budgetStr.replace(/[^\d–]/g, "").split("–");
+    budgetMin = parseInt(parts[0], 10) || 0;
+    budgetMax = parseInt(parts[1], 10) || 150000;
+  } else if (budgetStr.includes("От")) {
+    budgetMin = parseInt(budgetStr.replace(/[^\d]/g, ""), 10) || 0;
+  }
+
+  const districtStr = getAnswer("districts");
+  const districts = districtStr && districtStr !== "Готов рассмотреть любой" ? [districtStr] : [];
+
+  const moveInDateStr = getAnswer("moveInDate");
+  const moveInDate = moveInDateStr === "В течение месяца" 
+    ? new Date().toISOString().split("T")[0]
+    : new Date(Date.now() + 60 * 86400000).toISOString().split("T")[0];
+
+  const leaseStr = getAnswer("leaseMonths");
+  let leaseMonths = 12;
+  if (leaseStr.includes("3–6")) leaseMonths = 6;
+  else if (leaseStr.includes("6–12")) leaseMonths = 12;
+
+  const sleepStr = getAnswer("sleep");
+  let sleep: "early" | "late" | "flexible" = "flexible";
+  if (sleepStr.includes("Рано")) sleep = "early";
+  else if (sleepStr.includes("Поздно")) sleep = "late";
+
+  const noiseStr = getAnswer("noise");
+  let noise = 3;
+  if (noiseStr.includes("тишину")) noise = 1;
+  else if (noiseStr.includes("не мешает")) noise = 5;
+
+  const guestsStr = getAnswer("guests");
+  let guests: "never" | "rarely" | "sometimes" | "often" = "sometimes";
+  if (guestsStr.includes("никогда")) guests = "never";
+  else if (guestsStr.includes("Часто")) guests = "often";
+
+  const smokingStr = getAnswer("smoking");
+  let smoking: "no" | "sometimes" | "yes" = "no";
+  if (smokingStr.includes("Иногда")) smoking = "sometimes";
+  else if (smokingStr.includes("Курю")) smoking = "yes";
+
+  const petsStr = getAnswer("pets");
+  let pets: "no" | "cat" | "dog" | "other" = "no";
+  if (petsStr.includes("кошка")) pets = "cat";
+  else if (petsStr.includes("собака")) pets = "dog";
+
+  const petToleranceStr = getAnswer("petTolerance");
+  let petTolerance: "no" | "cat" | "dog" | "any" = "any";
+  if (petToleranceStr.includes("кошки")) petTolerance = "cat";
+  else if (petToleranceStr.includes("собаки")) petTolerance = "dog";
+  else if (petToleranceStr.includes("Против")) petTolerance = "no";
+
+  const cleanlinessStr = getAnswer("cleanliness");
+  let cleanliness = 3;
+  if (cleanlinessStr.includes("чисто")) cleanliness = 5;
+  else if (cleanlinessStr.includes("не важен")) cleanliness = 1;
+
+  const cookingStr = getAnswer("cooking");
+  let cooking = 3;
+  if (cookingStr.includes("не готовлю")) cooking = 1;
+  else if (cookingStr.includes("часто")) cooking = 5;
+
+  const sharedStr = getAnswer("sharedProducts");
+  const sharedProducts = sharedStr.includes("Да");
+
+  const remoteStr = getAnswer("remoteWork");
+  let remoteWork: "never" | "rarely" | "sometimes" | "often" = "sometimes";
+  if (remoteStr.includes("Не работаю")) remoteWork = "never";
+  else if (remoteStr.includes("всегда")) remoteWork = "often";
+
+  const tempStr = getAnswer("temperature");
+  let temperature = 3;
+  if (tempStr.includes("Прохладно")) temperature = 1;
+  else if (tempStr.includes("Тепло")) temperature = 5;
+
+  const privateStr = getAnswer("privateSpace");
+  let privateSpace = 3;
+  if (privateStr.includes("Очень")) privateSpace = 5;
+  else if (privateStr.includes("общение")) privateSpace = 1;
+
+  const commonStr = getAnswer("commonZones");
+  let commonZones = 3;
+  if (commonStr.includes("Тихие")) commonZones = 1;
+  else if (commonStr.includes("Много")) commonZones = 5;
+
+  const socStr = getAnswer("sociability");
+  let sociability = 3;
+  if (socStr.includes("уединение")) sociability = 1;
+  else if (socStr.includes("компанию")) sociability = 5;
+
+  const leisureStr = getAnswer("leisure");
+  const leisure = leisureStr ? [leisureStr] : [];
+
+  return {
+    budgetMin,
+    budgetMax,
+    districts,
+    moveInDate,
+    leaseMonths,
+    smoking,
+    pets,
+    petTolerance,
+    sleep,
+    noise,
+    guests,
+    remoteWork,
+    cleanliness,
+    cooking,
+    sharedProducts,
+    temperature,
+    privateSpace,
+    commonZones,
+    sociability,
+    leisure,
+  };
+}
+
 const initialState: DemoState = {
   favorites: [
     { type: "profile", id: "maria" },
@@ -225,6 +495,8 @@ const initialState: DemoState = {
   answers: [],
   threads: initialThreads,
   messages: initialMessages,
+  chores: demoChores,
+  expenses: demoExpenses,
 };
 
 let memoryState: DemoState | null = null;
@@ -338,27 +610,98 @@ function ensureThreadExists(state: DemoState, threadId: string): ChatThread {
 
 export class DemoRepository implements Repository {
   async listRoommates(query = "") {
+    const state = readState();
     const normalized = query.trim().toLocaleLowerCase("ru");
+    
+    const userAnswers = state.answers;
+    const hasAnswers = userAnswers.length > 0;
+    const userProfile = hasAnswers ? mapAnswersToProfile(userAnswers) : null;
+
+    const roommates = demoRoommates.map((person) => {
+      if (userProfile && roommateProfiles[person.id]) {
+        const scoreResult = compatibilityScore(userProfile, roommateProfiles[person.id]);
+        return {
+          ...person,
+          compatibility: scoreResult.score,
+        };
+      }
+      return person;
+    });
+
+    roommates.sort((a, b) => b.compatibility - a.compatibility);
+
     return normalized
-      ? demoRoommates.filter((person) =>
+      ? roommates.filter((person) =>
           [person.name, person.job, person.district, ...person.traits]
             .join(" ")
             .toLocaleLowerCase("ru")
             .includes(normalized),
         )
-      : demoRoommates;
+      : roommates;
   }
 
-  async listProperties(query = "") {
-    const normalized = query.trim().toLocaleLowerCase("ru");
-    return normalized
-      ? demoProperties.filter((property) =>
-          [property.title, property.district]
-            .join(" ")
-            .toLocaleLowerCase("ru")
-            .includes(normalized),
-        )
-      : demoProperties;
+  async listProperties(filters: PropertyFilters = {}) {
+    const { query, city, districts, minPrice, maxPrice, rooms, rentalTerm, petsAllowed, furnished, sortBy } = filters;
+    const normalized = query?.trim().toLocaleLowerCase("ru") || "";
+    const cityFilter = city?.trim().toLocaleLowerCase("ru") || "";
+    const districtFilters = districts?.map(d => d.trim().toLocaleLowerCase("ru")) || [];
+    const roomFilters = rooms || [];
+    
+    let filtered = demoProperties.filter((property) => {
+      // Text search
+      if (normalized) {
+        const searchable = [property.title, property.district, property.address].join(" ").toLocaleLowerCase("ru");
+        if (!searchable.includes(normalized)) return false;
+      }
+      
+      // City filter (for now all are Krasnodar, but we add the field)
+      if (cityFilter && property.address.toLocaleLowerCase("ru").indexOf(cityFilter) === -1) return false;
+      
+      // District filter
+      if (districtFilters.length > 0 && !districtFilters.some(d => property.district.toLocaleLowerCase("ru").includes(d))) return false;
+      
+      // Price filter
+      if (minPrice !== undefined && property.price < minPrice) return false;
+      if (maxPrice !== undefined && property.price > maxPrice) return false;
+      
+      // Rooms filter
+      if (roomFilters.length > 0 && !roomFilters.includes(property.rooms)) return false;
+      
+      // Pets filter (check tags)
+      if (petsAllowed !== undefined) {
+        const hasPets = property.tags.some(t => t.toLowerCase().includes("животн") || t.toLowerCase().includes("pet"));
+        if (petsAllowed && !hasPets) return false;
+        if (!petsAllowed && hasPets) return false;
+      }
+      
+      // Furnished filter (check tags)
+      if (furnished !== undefined) {
+        const hasFurnished = property.tags.some(t => t.toLowerCase().includes("мебел") || t.toLowerCase().includes("furnish"));
+        if (furnished && !hasFurnished) return false;
+        if (!furnished && hasFurnished) return false;
+      }
+      
+      return true;
+    });
+    
+    // Sorting
+    switch (sortBy) {
+      case "price_asc":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "price_desc":
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case "newest":
+        filtered.sort((a, b) => b.id.localeCompare(a.id));
+        break;
+      case "match":
+      default:
+        filtered.sort((a, b) => b.match - a.match);
+        break;
+    }
+    
+    return filtered;
   }
 
   async getState() {
@@ -446,15 +789,34 @@ export class DemoRepository implements Repository {
       pollData?: GroupPoll;
       expenseData?: ExpenseSplit;
       voiceDuration?: string;
+      senderId?: string;
+      senderName?: string;
+      senderAvatar?: string;
     }
   ): Promise<ChatMessage> {
     const state = readState();
     const nowStr = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
+    // Determine sender based on type and custom parameters
+    let senderId = "user";
+    let senderName = "Вы";
+    let senderAvatar = undefined;
+
+    if (extraData?.senderId) {
+      senderId = extraData.senderId;
+      senderName = extraData.senderName || "";
+      senderAvatar = extraData.senderAvatar;
+    } else if (type === "ai_bot") {
+      senderId = "ai-assistant";
+      senderName = "ИИ-Ассистент Соседей";
+      senderAvatar = "/demo/avatar-ai.jpg";
+    }
+
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
-      senderId: "user",
-      senderName: "Вы",
+      senderId,
+      senderName,
+      senderAvatar,
       content,
       timestamp: nowStr,
       type,
@@ -567,5 +929,72 @@ export class DemoRepository implements Repository {
       return msg;
     }
     return msgs[0];
+  }
+
+  async listChores(): Promise<DemoChore[]> {
+    const state = readState();
+    return state.chores;
+  }
+
+  async createChore(title: string, assigneeId: string, dueDate: string): Promise<DemoChore[]> {
+    const state = readState();
+    const names: Record<string, string> = {
+      maria: "Мария",
+      artem: "Артём",
+      ekaterina: "Екатерина",
+      anna: "Анна"
+    };
+    const newChore: DemoChore = {
+      id: `chore-${Date.now()}`,
+      title,
+      assigneeId,
+      assigneeName: names[assigneeId] || "Сожитель",
+      isDone: false,
+      dueDate: dueDate || "до воскресенья",
+    };
+    state.chores.push(newChore);
+    writeState(state);
+    return state.chores;
+  }
+
+  async toggleChoreDone(id: string): Promise<DemoChore[]> {
+    const state = readState();
+    const chore = state.chores.find((c) => c.id === id);
+    if (chore) {
+      chore.isDone = !chore.isDone;
+      writeState(state);
+    }
+    return state.chores;
+  }
+
+  async listExpenses(): Promise<ExpenseSplit[]> {
+    const state = readState();
+    return state.expenses;
+  }
+
+  async createExpense(title: string, totalAmount: number, shares: ExpenseShare[]): Promise<ExpenseSplit[]> {
+    const state = readState();
+    const newExpense: ExpenseSplit = {
+      id: `exp-${Date.now()}`,
+      title,
+      totalAmount,
+      shares,
+    };
+    state.expenses.push(newExpense);
+    writeState(state);
+    return state.expenses;
+  }
+
+  async toggleGlobalExpensePaid(expenseId: string, memberId: string): Promise<ExpenseSplit[]> {
+    const state = readState();
+    const expense = state.expenses.find((e) => e.id === expenseId);
+    if (expense) {
+      const share = expense.shares.find((s) => s.memberId === memberId);
+      if (share) {
+        share.isPaid = !share.isPaid;
+        writeState(state);
+      }
+    }
+    return state.expenses;
   }
 }
