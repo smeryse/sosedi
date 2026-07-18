@@ -1,6 +1,350 @@
-import Image from "next/image";
-import Link from "next/link";
-import { ArrowRight, Camera, Check, ShieldCheck } from "lucide-react";
-import { PageFrame } from "@/components/tenant/page-frame";
+"use client";
 
-export default function ProfilePage() { return <PageFrame eyebrow="Ваш профиль" title="Анна Смирнова" description="Так вас видят потенциальные соседи. Личные контакты остаются скрытыми до взаимного согласия."><div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]"><aside className="surface-card flex flex-col items-center p-6 text-center"><div className="relative"><Image src="/demo/people/maria.jpg" alt="Анна Смирнова" width={128} height={128} className="size-32 rounded-full object-cover" /><button type="button" aria-label="Изменить фото" className="absolute bottom-0 right-0 grid size-10 place-items-center rounded-full bg-[hsl(var(--accent))]"><Camera className="size-4" /></button></div><h2 className="mt-4 text-lg font-extrabold">Анна, 25</h2><p className="mt-1 text-xs text-muted-foreground">Маркетинг · Краснодар</p><div className="mt-5 flex items-center gap-2 rounded-full bg-[hsl(var(--accent-soft))] px-3 py-2 text-[10px] font-extrabold"><ShieldCheck className="size-3.5" /> Профиль подтверждён</div></aside><div className="space-y-4"><section className="surface-card p-5"><div className="flex items-center justify-between"><h2 className="font-extrabold">О вас</h2><Link href="/app/settings" className="text-xs font-bold text-muted-foreground">Изменить</Link></div><div className="mt-5 grid gap-4 sm:grid-cols-2">{[["Бюджет", "до 30 000 ₽ / месяц"], ["Районы", "Центр, Фестивальный"], ["Переезд", "август 2026"], ["Срок", "от 12 месяцев"]].map(([label, value]) => <div key={label}><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-sm font-bold">{value}</p></div>)}</div></section><section className="surface-card p-5"><h2 className="font-extrabold">Открытые ответы</h2><div className="mt-4 flex flex-wrap gap-2">{["Не курю", "Люблю порядок", "Работаю из дома", "Тихие вечера", "Йога и кино"].map((item) => <span key={item} className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-2 text-xs font-bold"><Check className="size-3.5 text-[hsl(var(--accent-hover))]" />{item}</span>)}</div><Link href="/app/compatibility" className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold">Дополнить анкету <ArrowRight className="size-4" /></Link></section></div></div></PageFrame>; }
+import Image from "next/image";
+import { useState, useEffect, FormEvent } from "react";
+import Link from "next/link";
+import { ArrowRight, Camera, Check, ShieldCheck, Loader2, Save, AlertCircle } from "lucide-react";
+import { PageFrame } from "@/components/tenant/page-frame";
+import { createClient } from "@/lib/supabase/client";
+import { updateProfile, uploadAvatar, getProfile, getCurrentUser, updateProfilePreferences } from "@/app/actions/settings";
+
+interface Profile {
+  id: string;
+  display_name: string;
+  age: number | null;
+  job_title: string | null;
+  bio: string | null;
+  city: string;
+  budget_min: number | null;
+  budget_max: number | null;
+  move_in_date: string | null;
+  lease_months: number | null;
+  is_public: boolean;
+  avatar_path: string | null;
+  districts?: string[];
+  smoking?: "no" | "sometimes" | "yes" | "indifferent";
+  pets?: "no" | "cat" | "dog" | "other" | "indifferent";
+  sleep_schedule?: "early" | "late" | "flexible";
+  noise_tolerance?: number;
+  guests_frequency?: "never" | "rarely" | "sometimes" | "often";
+  remote_work?: "never" | "sometimes" | "often";
+  cleanliness?: number;
+  sociability?: number;
+  private_space?: number;
+  updated_at?: string;
+}
+
+export default function TenantProfilePage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    try {
+      const user = await getCurrentUser();
+      if (user) {
+        const data = await getProfile(user.id);
+        if (data) {
+          setProfile(data);
+          setAvatarPreview(data.avatar_path);
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Ошибка загрузки профиля");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+
+    try {
+      if (!profile) throw new Error("Профиль не загружен");
+      
+      // Update main profile fields
+      await updateProfile(profile.id, {
+        display_name: profile.display_name,
+        age: profile.age ?? undefined,
+        job_title: profile.job_title ?? undefined,
+        bio: profile.bio ?? undefined,
+        city: profile.city ?? undefined,
+        budget_min: profile.budget_min ?? undefined,
+        budget_max: profile.budget_max ?? undefined,
+        move_in_date: profile.move_in_date ?? undefined,
+        lease_months: profile.lease_months ?? undefined,
+        is_public: profile.is_public ?? undefined,
+        avatar_path: profile.avatar_path ?? undefined,
+      });
+      
+      // Update preferences
+      await updateProfilePreferences(profile.id, {
+        districts: profile.districts,
+        smoking: profile.smoking,
+        pets: profile.pets,
+        sleep_schedule: profile.sleep_schedule,
+        noise_tolerance: profile.noise_tolerance ?? undefined,
+        guests_frequency: profile.guests_frequency,
+        remote_work: profile.remote_work,
+        cleanliness: profile.cleanliness ?? undefined,
+        sociability: profile.sociability ?? undefined,
+        private_space: profile.private_space ?? undefined,
+      });
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Ошибка сохранения");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Файл слишком большой (макс. 2 МБ)");
+      return;
+    }
+
+    try {
+      const url = await uploadAvatar(profile.id, file);
+      setAvatarPreview(url);
+      setProfile({ ...profile, avatar_path: url });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Ошибка загрузки аватара");
+      }
+    }
+  }
+
+  if (loading) {
+    return (
+      <PageFrame eyebrow="Ваш профиль" title="Загрузка..." description="Пожалуйста, подождите.">
+        <div className="flex justify-center py-12">
+          <Loader2 className="size-8 animate-spin text-accent" />
+        </div>
+      </PageFrame>
+    );
+  }
+
+  return (
+    <PageFrame
+      eyebrow="Ваш профиль"
+      title={profile?.display_name || "Профиль"}
+      description="Так вас видят потенциальные соседи. Личные контакты остаются скрытыми до взаимного согласия."
+    >
+      {error && (
+        <div className="mb-5 flex items-center gap-3 rounded-[14px] bg-red-50 p-4 text-red-700 text-sm" role="alert">
+          <AlertCircle className="size-5 shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-5 flex items-center gap-3 rounded-[14px] bg-green-50 p-4 text-green-700 text-sm" role="status">
+          <Check className="size-5 shrink-0" />
+          Изменения сохранены
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="surface-card flex flex-col items-center p-6 text-center">
+          <div className="relative">
+            {avatarPreview ? (
+              <Image
+                src={avatarPreview}
+                alt="Аватар"
+                width={128}
+                height={128}
+                className="size-32 rounded-full object-cover"
+              />
+            ) : (
+              <div className="size-32 rounded-full bg-surface-muted flex items-center justify-center">
+                <span className="text-4xl font-bold text-muted-foreground">
+                  {profile?.display_name?.charAt(0).toUpperCase() || "?"}
+                </span>
+              </div>
+            )}
+            <label className="absolute bottom-0 right-0 grid size-10 place-items-center rounded-full bg-accent cursor-pointer">
+              <Camera className="size-4" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="sr-only"
+              />
+            </label>
+          </div>
+          <h2 className="mt-4 text-lg font-extrabold">
+            {profile?.display_name || "Имя"}, {profile?.age ? `${profile.age}` : ""}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {profile?.job_title || "Работа"} · {profile?.city || "Город"}
+          </p>
+          <div className="mt-5 flex items-center gap-2 rounded-full bg-[hsl(var(--accent-soft))] px-3 py-2 text-[10px] font-extrabold">
+            <ShieldCheck className="size-3.5" />
+            Профиль {profile?.is_public ? "публичный" : "скрыт"}
+          </div>
+        </aside>
+
+        <div className="space-y-4">
+          <section className="surface-card p-5">
+            <h2 className="font-extrabold">Основная информация</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="text-xs font-extrabold">
+                Имя
+                <input
+                  type="text"
+                  required
+                  defaultValue={profile?.display_name || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, display_name: e.target.value } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+              <label className="text-xs font-extrabold">
+                Возраст
+                <input
+                  type="number"
+                  min={18}
+                  max={100}
+                  defaultValue={profile?.age || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, age: parseInt(e.target.value) || 0 } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+              <label className="text-xs font-extrabold sm:col-span-2">
+                Работа
+                <input
+                  type="text"
+                  defaultValue={profile?.job_title || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, job_title: e.target.value } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+              <label className="text-xs font-extrabold sm:col-span-2">
+                О себе
+                <textarea
+                  defaultValue={profile?.bio || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, bio: e.target.value } : null)}
+                  rows={4}
+                  className="mt-2 w-full rounded-[14px] border bg-background p-3 text-sm font-normal outline-none"
+                />
+              </label>
+              <label className="text-xs font-extrabold sm:col-span-2">
+                Город
+                <input
+                  type="text"
+                  defaultValue={profile?.city || "Краснодар"}
+                  onChange={(e) => setProfile(p => p ? { ...p, city: e.target.value } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="surface-card p-5">
+            <h2 className="font-extrabold">Бюджет и условия</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="text-xs font-extrabold">
+                Мин. бюджет
+                <input
+                  type="number"
+                  min={0}
+                  defaultValue={profile?.budget_min || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, budget_min: parseInt(e.target.value) || 0 } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+              <label className="text-xs font-extrabold">
+                Макс. бюджет
+                <input
+                  type="number"
+                  min={0}
+                  defaultValue={profile?.budget_max || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, budget_max: parseInt(e.target.value) || 0 } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+              <label className="text-xs font-extrabold">
+                Дата заезда
+                <input
+                  type="date"
+                  defaultValue={profile?.move_in_date || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, move_in_date: e.target.value } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+              <label className="text-xs font-extrabold">
+                Срок (мес.)
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  defaultValue={profile?.lease_months || ""}
+                  onChange={(e) => setProfile(p => p ? { ...p, lease_months: parseInt(e.target.value) || 0 } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="surface-card p-5">
+            <h2 className="font-extrabold">Настройки видимости</h2>
+            <div className="mt-5 flex items-end">
+              <label className="text-xs font-extrabold flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  defaultChecked={profile?.is_public ?? true}
+                  onChange={(e) => setProfile(p => p ? { ...p, is_public: e.target.checked } : null)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                Профиль виден потенциальным соседям
+              </label>
+            </div>
+          </section>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full sm:w-auto inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-xs font-extrabold text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Сохранение...
+              </>
+            ) : (
+              <>
+                <Save className="size-4" />
+                Сохранить изменения
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </PageFrame>
+  );
+}

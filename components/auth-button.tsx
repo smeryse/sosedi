@@ -1,29 +1,44 @@
-import Link from "next/link";
+"use client";
+
+import { useSession } from "@/lib/auth/session-context";
+import { LoginForm } from "./login-form";
+import { SignUpForm } from "./sign-up-form";
 import { Button } from "./ui/button";
-import { createClient } from "@/lib/supabase/server";
-import { LogoutButton } from "./logout-button";
 
-export async function AuthButton() {
-  const supabase = await createClient();
+export function AuthButton() {
+  const { session, loading } = useSession();
 
-  // You can also use getUser() which will be slower.
-  const { data } = await supabase.auth.getClaims();
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-24 animate-pulse bg-gray-200 rounded" />
+        <div className="h-8 w-24 animate-pulse bg-gray-200 rounded" />
+      </div>
+    );
+  }
 
-  const user = data?.claims;
+  if (!session) {
+    return (
+      <div className="flex gap-2">
+        <LoginForm />
+        <SignUpForm />
+      </div>
+    );
+  }
 
-  return user ? (
+  return (
     <div className="flex items-center gap-4">
-      Hey, {user.email}!
-      <LogoutButton />
-    </div>
-  ) : (
-    <div className="flex gap-2">
-      <Button asChild size="sm" variant={"outline"}>
-        <Link href="/auth/login">Sign in</Link>
-      </Button>
-      <Button asChild size="sm" variant={"default"}>
-        <Link href="/auth/sign-up">Sign up</Link>
+      <span className="text-sm font-medium">Hey, {session.user.email}</span>
+      <Button variant="outline" size="sm" onClick={() => signOut()}>
+        Sign out
       </Button>
     </div>
   );
+}
+
+async function signOut() {
+  const res = await fetch("/api/auth/signout", { method: "POST" });
+  if (res.ok) {
+    window.location.href = "/";
+  }
 }

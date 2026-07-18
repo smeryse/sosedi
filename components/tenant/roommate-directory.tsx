@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { demoRoommates } from "@/data/demo";
+import { getRepository } from "@/lib/repositories";
+import type { DemoRoommate } from "@/data/demo";
 import { PersonCard } from "./person-card";
 
 export function RoommateDirectory() {
@@ -13,6 +14,9 @@ export function RoommateDirectory() {
 
   const [query, setQuery] = useState(initialQuery);
   const [district, setDistrict] = useState(initialDistrict);
+  const [people, setPeople] = useState<DemoRoommate[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const q = searchParams.get("search") || searchParams.get("q");
@@ -21,21 +25,31 @@ export function RoommateDirectory() {
     if (d) setDistrict(d);
   }, [searchParams]);
 
-  const people = useMemo(() => {
-    return demoRoommates.filter((person) => {
-      const needle = query.trim().toLocaleLowerCase("ru");
-      const matchesQuery =
-        !needle ||
-        [person.name, person.job, person.district, ...person.traits]
-          .join(" ")
-          .toLocaleLowerCase("ru")
-          .includes(needle);
-      return (
-        matchesQuery &&
-        (district === "Все районы" || person.district.includes(district) || district.includes(person.district))
-      );
-    });
-  }, [district, query]);
+  useEffect(() => {
+    let active = true;
+    const fetchRoommates = async () => {
+      setLoading(true);
+      try {
+        const repo = getRepository();
+        const results = await repo.listRoommates(query);
+        if (active) {
+          const filtered = results.filter((person) =>
+            district === "Все районы" ||
+            person.district.includes(district) ||
+            district.includes(person.district)
+          );
+          setPeople(filtered);
+          setTotalCount(results.length);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetchRoommates();
+    return () => { active = false; };
+  }, [query, district]);
 
   return (
     <div className="space-y-5">
@@ -71,10 +85,28 @@ export function RoommateDirectory() {
       </div>
 
       <p className="text-xs font-medium text-[#6B6F66]">
-        Показано {people.length} из {demoRoommates.length} профилей · сортировка по совместимости
+        Показано {people.length} из {totalCount} профилей · сортировка по совместимости
       </p>
 
-      {people.length ? (
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="animate-pulse rounded-[24px] border bg-white p-5 h-[220px]">
+              <div className="flex gap-4">
+                <div className="size-14 rounded-full bg-[#ECEFE8]" />
+                <div className="flex-1 space-y-2 py-1">
+                  <div className="h-4 bg-[#ECEFE8] rounded w-3/4" />
+                  <div className="h-3 bg-[#ECEFE8] rounded w-1/2" />
+                </div>
+              </div>
+              <div className="space-y-2 mt-6">
+                <div className="h-3 bg-[#ECEFE8] rounded" />
+                <div className="h-3 bg-[#ECEFE8] rounded w-5/6" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : people.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {people.map((person) => (
             <PersonCard key={person.id} person={person} />

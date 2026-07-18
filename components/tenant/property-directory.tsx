@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { CityMap } from "@/components/map/city-map";
 import { MediaImage } from "@/components/ui/media-image";
-import { demoProperties, formatRubles } from "@/data/demo";
+import { getRepository } from "@/lib/repositories";
+import { formatRubles, type DemoProperty } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
 
 export function PropertyDirectory() {
@@ -28,6 +29,8 @@ export function PropertyDirectory() {
   const [query, setQuery] = useState(initialSearch);
   const [district, setDistrict] = useState(initialDistrict);
   const [viewMode, setViewMode] = useState<"split" | "list" | "map">("split");
+  const [properties, setProperties] = useState<DemoProperty[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const s = searchParams.get("search") || searchParams.get("q");
@@ -36,22 +39,32 @@ export function PropertyDirectory() {
     if (d !== null) setDistrict(d);
   }, [searchParams]);
 
-  const properties = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return demoProperties.filter((property) => {
-      const matchQuery =
-        !needle ||
-        property.title.toLowerCase().includes(needle) ||
-        property.district.toLowerCase().includes(needle) ||
-        property.address.toLowerCase().includes(needle);
+  useEffect(() => {
+    let active = true;
+    const fetchProperties = async () => {
+      setLoading(true);
+      try {
+        const repo = getRepository();
+        const results = await repo.listProperties(query);
+        if (active) {
+          const filtered = results.filter((property) => {
+            return (
+              district === "Любой район" ||
+              property.district.toLowerCase().includes(district.toLowerCase())
+            );
+          });
+          setProperties(filtered);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetchProperties();
+    return () => { active = false; };
+  }, [query, district]);
 
-      const matchDistrict =
-        district === "Любой район" ||
-        property.district.toLowerCase().includes(district.toLowerCase());
-
-      return matchQuery && matchDistrict;
-    });
-  }, [district, query]);
 
   return (
     <div className="space-y-4">
@@ -171,10 +184,23 @@ export function PropertyDirectory() {
         {viewMode !== "map" && (
           <section className="min-w-0 space-y-4 max-h-[calc(100vh-190px)] overflow-y-auto pr-1 soft-scrollbar">
             <p className="text-[11.5px] font-bold text-[#6B6F66]">
-              Найдено {properties.length} вариантов в Краснодаре
+              {loading ? "Загрузка вариантов..." : `Найдено ${properties.length} вариантов в Краснодаре`}
             </p>
 
-            {properties.map((property) => (
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2].map((n) => (
+                  <div key={n} className="animate-pulse rounded-[24px] border bg-white p-3.5 h-[200px] flex flex-col gap-4 sm:flex-row">
+                    <div className="h-[170px] w-full shrink-0 overflow-hidden rounded-[18px] sm:w-[220px] bg-[#ECEFE8]" />
+                    <div className="flex-1 space-y-3 py-2">
+                      <div className="h-5 bg-[#ECEFE8] rounded w-1/3" />
+                      <div className="h-4 bg-[#ECEFE8] rounded w-2/3" />
+                      <div className="h-4 bg-[#ECEFE8] rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : properties.map((property) => (
               <article
                 key={property.id}
                 className="group flex flex-col gap-4 overflow-hidden rounded-[24px] border border-[#E5E5E0] bg-white p-3.5 shadow-sm transition-all hover:shadow-md sm:flex-row"

@@ -11,7 +11,8 @@ import {
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { MediaImage } from "@/components/ui/media-image";
 import { CityMap } from "@/components/map/city-map";
-import { demoProperties, demoRoommates, formatRubles } from "@/data/demo";
+import { getRepository } from "@/lib/repositories";
+import { formatRubles, type DemoProperty } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
 
 const quickActions = [
@@ -67,7 +68,7 @@ function DashboardMap() {
   );
 }
 
-function DashboardPropertyCard({ property }: { property: (typeof demoProperties)[number] }) {
+function DashboardPropertyCard({ property }: { property: DemoProperty }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-[22px] border border-[#E5E5E0] bg-white p-3 shadow-sm transition-transform hover:-translate-y-0.5">
       <div className="relative h-[138px] overflow-hidden rounded-[16px]">
@@ -79,13 +80,23 @@ function DashboardPropertyCard({ property }: { property: (typeof demoProperties)
       <div className="flex flex-1 flex-col pt-3">
         <p className="text-[14.5px] font-black text-[#111111]">{formatRubles(property.price)} <span className="text-[11px] font-normal text-[#6B6F66]">/ мес</span></p>
         <h3 className="mt-1 line-clamp-1 text-[12px] font-extrabold text-[#111111]">{property.title}</h3>
-        <p className="mt-1 text-[10px] text-[#6B6F66] font-medium">{property.district} · {property.rooms} сожителя · {property.area} м²</p>
+        <p className="mt-1 text-[10px] text-[#6B6F66] font-medium">{property.district} · {property.rooms} комн. · {property.area} м²</p>
       </div>
     </article>
   );
 }
 
-export default function TenantDashboardPage() {
+export default async function TenantDashboardPage() {
+  const repo = getRepository();
+  const properties = await repo.listProperties();
+  const roommates = await repo.listRoommates();
+  const state = await repo.getState();
+  const group = state.group;
+
+  const topRoommate = roommates[0];
+  const roommateName = topRoommate ? topRoommate.name : "Марией";
+  const roommateComp = topRoommate ? topRoommate.compatibility : 93;
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-6">
@@ -132,7 +143,7 @@ export default function TenantDashboardPage() {
         <section>
           <SectionHeading title="Рекомендуем для вас" href="/app/housing" />
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-            {demoProperties.slice(0, 4).map((property) => (
+            {properties.slice(0, 4).map((property) => (
               <DashboardPropertyCard key={property.id} property={property} />
             ))}
           </div>
@@ -147,12 +158,12 @@ export default function TenantDashboardPage() {
             <h2 className="text-[14px] font-black text-[#111111]">Ваша совместимость</h2>
             <Link href="/app/compatibility" className="text-[10.5px] font-extrabold text-[#6B6F66] hover:text-[#111111]">Смотреть все</Link>
           </div>
-          <p className="mt-4 text-[11px] font-bold text-[#6B6F66]">Вы совместимы с Марко на</p>
-          <p className="mt-1 text-[40px] font-black leading-none tracking-tight text-[#7B9E00]">93%</p>
+          <p className="mt-4 text-[11px] font-bold text-[#6B6F66]">Вы совместимы с {roommateName} на</p>
+          <p className="mt-1 text-[40px] font-black leading-none tracking-tight text-[#7B9E00]">{roommateComp}%</p>
           <p className="mt-1.5 text-[10.5px] font-extrabold text-[#6B6F66]">Это отличный результат!</p>
 
           <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-[#EBF7B6]">
-            <div className="h-full w-[93%] rounded-full bg-[#B3DB00]" />
+            <div className="h-full rounded-full bg-[#B3DB00]" style={{ width: `${roommateComp}%` }} />
           </div>
 
           <div className="mt-4.5 space-y-2.5">
@@ -173,7 +184,7 @@ export default function TenantDashboardPage() {
             ))}
           </div>
 
-          <Link href="/app/compatibility" className="mt-5 flex h-9.5 w-full items-center justify-center rounded-full bg-[#F4F4F0] text-[11.5px] font-black text-[#111111] transition-colors hover:bg-[#EBF7B6]">
+          <Link href={topRoommate ? `/app/roommates/${topRoommate.id}` : "/app/roommates"} className="mt-5 flex h-9.5 w-full items-center justify-center rounded-full bg-[#F4F4F0] text-[11.5px] font-black text-[#111111] transition-colors hover:bg-[#EBF7B6]">
             Смотреть профиль
           </Link>
         </section>
@@ -208,35 +219,24 @@ export default function TenantDashboardPage() {
             <Link href="/app/group" className="text-[10.5px] font-extrabold text-[#6B6F66] hover:text-[#111111]">Смотреть все</Link>
           </div>
           <div className="mt-3.5 space-y-3">
-            <Link href="/app/group" className="flex items-center gap-3 rounded-[18px] border border-[#E5E5E0] p-3 transition-colors hover:bg-[#F4F4F0]">
-              <div className="flex -space-x-2">
-                {demoRoommates.slice(0, 2).map((person) => (
-                  <AvatarImage key={person.id} src={person.image} name={person.name} size={32} className="ring-2 ring-white" />
-                ))}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[11.5px] font-black text-[#111111]">Ищем третьего в двушку</p>
-                <p className="text-[9.5px] font-medium text-[#6B6F66]">2 участника · Центр</p>
-              </div>
-              <span className="rounded-full bg-[#EBF7B6] px-2 py-0.5 text-[9.5px] font-black text-[#7B9E00]">
-                89%
-              </span>
-            </Link>
-
-            <Link href="/app/group" className="flex items-center gap-3 rounded-[18px] border border-[#E5E5E0] p-3 transition-colors hover:bg-[#F4F4F0]">
-              <div className="flex -space-x-2">
-                {demoRoommates.slice(2, 4).map((person) => (
-                  <AvatarImage key={person.id} src={person.image} name={person.name} size={32} className="ring-2 ring-white" />
-                ))}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[11.5px] font-black text-[#111111]">Квартира у парка</p>
-                <p className="text-[9.5px] font-medium text-[#6B6F66]">3 участника · Фестивальный</p>
-              </div>
-              <span className="rounded-full bg-[#EBF7B6] px-2 py-0.5 text-[9.5px] font-black text-[#7B9E00]">
-                91%
-              </span>
-            </Link>
+            {group ? (
+              <Link href="/app/group" className="flex items-center gap-3 rounded-[18px] border border-[#E5E5E0] p-3 transition-colors hover:bg-[#F4F4F0]">
+                <div className="flex -space-x-2">
+                  {roommates.slice(0, 2).map((person) => (
+                    <AvatarImage key={person.id} src={person.image} name={person.name} size={32} className="ring-2 ring-white" />
+                  ))}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11.5px] font-black text-[#111111]">{group.name}</p>
+                  <p className="text-[9.5px] font-medium text-[#6B6F66]">{group.memberIds.length} участника · Краснодар</p>
+                </div>
+                <span className="rounded-full bg-[#EBF7B6] px-2 py-0.5 text-[9.5px] font-black text-[#7B9E00]">
+                  {group.compatibility}%
+                </span>
+              </Link>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">У вас пока нет активных групп.</p>
+            )}
           </div>
 
           <Link href="/app/group/create" className="mt-4 flex h-9.5 w-full items-center justify-center rounded-full bg-[#F4F4F0] text-[11.5px] font-black text-[#111111] transition-colors hover:bg-[#EBF7B6]">
