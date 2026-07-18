@@ -24,43 +24,66 @@ class OpenAICompatibleProvider implements AIProvider {
     public readonly name: "groq" | "openrouter",
     private readonly endpoint: string,
     private readonly apiKey: string,
-    private readonly model: string,
+    private readonly primaryModel: string,
   ) {}
 
-  async complete(messages: AIMessage[]) {
-    const response = await fetch(this.endpoint, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.apiKey}`,
-        "HTTP-Referer": "https://sosedi.local",
-        "X-Title": "Sosedi Platform",
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages,
-        temperature: 0.2,
-      }),
-    });
+  async complete(messages: AIMessage[]): Promise<string> {
+    const modelsToTry = [
+      this.primaryModel,
+      "nvidia/llama-3.1-nemotron-70b-instruct",
+      "openai/gpt-4o-mini",
+      "deepseek/deepseek-chat",
+      "meta-llama/llama-3.3-70b-instruct",
+    ].filter((m, i, arr) => m && arr.indexOf(m) === i);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`AI provider ${this.name} returned ${response.status}: ${errorText}`);
+    let lastError: Error | null = null;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(this.endpoint, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${this.apiKey}`,
+            "HTTP-Referer": "https://sosedi.local",
+            "X-Title": "Sosedi Platform",
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature: 0.2,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.warn(`Model ${model} failed (${response.status}): ${errorText}`);
+          lastError = new Error(`Model ${model} returned ${response.status}: ${errorText}`);
+          continue;
+        }
+
+        const payload: unknown = await response.json();
+        if (!payload || typeof payload !== "object" || !("choices" in payload)) {
+          console.warn(`Model ${model} returned invalid payload structure`);
+          continue;
+        }
+
+        const choices = (payload as { choices?: { message?: { content?: unknown } }[] }).choices;
+        const content = choices?.[0]?.message?.content;
+
+        if (typeof content !== "string" || !content.trim()) {
+          console.warn(`Model ${model} returned empty content`);
+          continue;
+        }
+
+        return content;
+      } catch (err) {
+        console.warn(`Error connecting to model ${model}:`, err);
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
     }
 
-    const payload: unknown = await response.json();
-    if (!payload || typeof payload !== "object" || !("choices" in payload)) {
-      throw new Error("AI provider returned an invalid response");
-    }
-
-    const choices = (payload as { choices?: { message?: { content?: unknown } }[] }).choices;
-    const content = choices?.[0]?.message?.content;
-
-    if (typeof content !== "string" || !content.trim()) {
-      throw new Error("AI provider returned an empty response");
-    }
-
-    return content;
+    throw lastError || new Error("All AI models failed to return a response.");
   }
 }
 
@@ -74,7 +97,7 @@ export function getAIProvider(): AIProvider {
       "openrouter",
       "https://openrouter.ai/api/v1/chat/completions",
       openrouterKey,
-      process.env.OPENROUTER_MODEL ?? "oss-120b",
+      process.env.OPENROUTER_MODEL ?? "nvidia/llama-3.1-nemotron-70b-instruct",
     );
   }
 

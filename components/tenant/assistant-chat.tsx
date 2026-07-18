@@ -42,16 +42,14 @@ export function AssistantChat() {
         body: JSON.stringify({ messages: apiMessages }),
       });
 
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      if (!res.ok || !data.reply) {
+        throw new Error(data.details || data.error || `Error ${res.status}`);
       }
 
-      const data = await res.json();
-      const replyText = data.reply || "К сожалению, не удалось сформировать ответ.";
-
-      setMessages((prev) => [...prev, { role: "assistant", text: replyText }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: data.reply }]);
     } catch (err) {
-      console.error("Failed to send AI message:", err);
+      console.warn("AI endpoint notification:", err);
       // Fallback local response
       let fallbackText = "Я помогу сравнить соседей, жильё и правила группы. Спросите про бюджет, заявку или совместимость.";
       const lower = textToSend.toLowerCase();
@@ -76,7 +74,7 @@ export function AssistantChat() {
           </div>
           <div>
             <p className="text-sm font-extrabold text-[#111111]">Соседи AI Assistant</p>
-            <p className="text-[10px] font-bold text-[#7B9E00]">OpenRouter (oss-120b)</p>
+            <p className="text-[10px] font-bold text-[#7B9E00]">OpenRouter (Nemotron 70B / Fallback)</p>
           </div>
         </div>
 
