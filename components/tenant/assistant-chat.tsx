@@ -12,7 +12,7 @@ export function AssistantChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      text: "Привет! Я — AI-ассистент платформы «Соседи» на базе модели OpenRouter oss-120b. Помогу расчитать бюджет, составить правила проживания или подготовить заявку.",
+      text: "Привет! Я — AI-ассистент платформы «Соседи». Помогу рассчитать бюджет, составить правила проживания, оценить совместимость или подготовить заявку на жильё.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -50,7 +50,6 @@ export function AssistantChat() {
       setMessages((prev) => [...prev, { role: "assistant", text: data.reply }]);
     } catch (err) {
       console.warn("AI endpoint notification:", err);
-      // Fallback local response
       let fallbackText = "Я помогу сравнить соседей, жильё и правила группы. Спросите про бюджет, заявку или совместимость.";
       const lower = textToSend.toLowerCase();
       if (lower.includes("бюджет")) {
@@ -74,7 +73,7 @@ export function AssistantChat() {
           </div>
           <div>
             <p className="text-sm font-extrabold text-[#111111]">Соседи AI Assistant</p>
-            <p className="text-[10px] font-bold text-[#7B9E00]">OpenRouter AI (Онлайн)</p>
+            <p className="text-[10px] font-bold text-[#7B9E00]">Онлайн</p>
           </div>
         </div>
 
@@ -99,7 +98,7 @@ export function AssistantChat() {
           {loading && (
             <div className="flex justify-start">
               <div className="max-w-[85%] rounded-[18px] bg-[#F4F4F0] px-4 py-3 text-xs font-bold text-[#6B6F66] border border-[#E5E5E0] animate-pulse">
-                AI генерирует ответ с помощью OpenRouter oss-120b...
+                AI готовит ответ...
               </div>
             </div>
           )}
@@ -156,7 +155,7 @@ export function AssistantChat() {
         </div>
 
         <div className="surface-card p-5 text-xs leading-5 text-[#6B6F66]">
-          Подключена модель <strong className="text-[#111111]">oss-120b</strong> через OpenRouter API. Используются контекстные алгоритмы совместной аренды.
+          Умный ассистент использует контекстные алгоритмы платформы «Соседи» для безопасной совместной аренды.
         </div>
       </aside>
     </div>

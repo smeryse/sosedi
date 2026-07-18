@@ -3,22 +3,33 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Building2, MessageCircle, Search, Users, User } from "lucide-react";
+import {
+  Bot,
+  Building2,
+  MessageCircle,
+  Pin,
+  Search,
+  User,
+  Users,
+} from "lucide-react";
+import { DemoRepository } from "@/lib/repositories/demo-repository";
 import type { ChatThread } from "@/lib/repositories/types";
 
 interface ChatSidebarProps {
   threads: ChatThread[];
   activeThreadId?: string;
   onSelectThread?: (threadId: string) => void;
+  onThreadsUpdate?: (threads: ChatThread[]) => void;
 }
 
 export function ChatSidebar({
   threads,
   activeThreadId,
   onSelectThread,
+  onThreadsUpdate,
 }: ChatSidebarProps) {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "roommate" | "group" | "owner">("all");
+  const [filter, setFilter] = useState<"all" | "roommate" | "group" | "owner" | "ai_assistant">("all");
 
   const filteredThreads = useMemo(() => {
     return threads.filter((t) => {
@@ -32,6 +43,14 @@ export function ChatSidebar({
       return matchesFilter && matchesSearch;
     });
   }, [threads, filter, search]);
+
+  const handleTogglePin = async (e: React.MouseEvent, threadId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const repo = new DemoRepository();
+    const updated = await repo.togglePinThread(threadId);
+    onThreadsUpdate?.(updated);
+  };
 
   return (
     <div className="flex h-full flex-col border-r border-[#E5E5E0] bg-white">
@@ -65,6 +84,7 @@ export function ChatSidebar({
             { id: "roommate", label: "Соседи", icon: User },
             { id: "group", label: "Группы", icon: Users },
             { id: "owner", label: "Собственники", icon: Building2 },
+            { id: "ai_assistant", label: "ИИ", icon: Bot },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = filter === tab.id;
@@ -72,7 +92,7 @@ export function ChatSidebar({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setFilter(tab.id as "all" | "roommate" | "group" | "owner")}
+                onClick={() => setFilter(tab.id as "all" | "roommate" | "group" | "owner" | "ai_assistant")}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
                   isActive
                     ? "bg-[#111111] text-white"
@@ -97,13 +117,13 @@ export function ChatSidebar({
               key={thread.id}
               href={`/app/messages/${thread.id}`}
               onClick={() => onSelectThread?.(thread.id)}
-              className={`flex items-center gap-3 p-3.5 transition-all ${
+              className={`group flex items-center gap-3 p-3.5 transition-all ${
                 isActive
                   ? "bg-[#EBF7B6]/40 border-l-4 border-l-[#7B9E00]"
                   : "hover:bg-[#F9F9F6]"
               }`}
             >
-              {/* Avatar rendering */}
+              {/* Avatar */}
               <div className="relative shrink-0">
                 {thread.avatars && thread.avatars.length > 0 ? (
                   <div className="flex -space-x-2 overflow-hidden">
@@ -131,17 +151,19 @@ export function ChatSidebar({
                   </div>
                 )}
 
-                {/* Online Indicator */}
                 {thread.isOnline ? (
                   <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-[#7B9E00]" />
                 ) : null}
               </div>
 
-              {/* Thread Info */}
+              {/* Info */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
-                  <h4 className="truncate text-xs font-extrabold text-[#111111]">
+                  <h4 className="truncate text-xs font-extrabold text-[#111111] flex items-center gap-1">
                     {thread.name}
+                    {thread.isPinned && (
+                      <Pin className="size-3 text-[#7B9E00] fill-[#7B9E00]" />
+                    )}
                   </h4>
                   <span className="shrink-0 text-[10px] text-[#878881]">
                     {thread.lastMessageTime}
@@ -159,14 +181,25 @@ export function ChatSidebar({
                 </p>
               </div>
 
-              {/* Unread badge */}
-              {thread.unreadCount ? (
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#7B9E00] text-[10px] font-black text-white">
-                  {thread.unreadCount}
-                </span>
-              ) : (
-                <MessageCircle className="size-3.5 text-[#878881] opacity-0 group-hover:opacity-100" />
-              )}
+              {/* Unread badge & Pin Action */}
+              <div className="flex flex-col items-end gap-1">
+                {thread.unreadCount ? (
+                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#7B9E00] text-[10px] font-black text-white">
+                    {thread.unreadCount}
+                  </span>
+                ) : (
+                  <MessageCircle className="size-3.5 text-[#878881] opacity-0 group-hover:opacity-100" />
+                )}
+
+                <button
+                  type="button"
+                  onClick={(e) => handleTogglePin(e, thread.id)}
+                  title={thread.isPinned ? "Открепить чат" : "Закрепить чат"}
+                  className="opacity-0 group-hover:opacity-100 text-[#878881] hover:text-[#7B9E00] transition-opacity"
+                >
+                  <Pin className="size-3" />
+                </button>
+              </div>
             </Link>
           );
         })}

@@ -8,7 +8,10 @@ import type {
   DemoApplication,
   DemoGroup,
   DemoState,
+  ExpenseSplit,
+  GroupPoll,
   Repository,
+  ViewingBooking,
 } from "./types";
 
 /** Server-side repository. Browser code must use the demo repository or server actions. */
@@ -104,16 +107,47 @@ export class SupabaseRepository implements Repository {
     threadId: string,
     content: string,
     type?: ChatMessageType,
-    propertyId?: string,
+    extraData?: {
+      propertyId?: string;
+      viewingData?: ViewingBooking;
+      pollData?: GroupPoll;
+      expenseData?: ExpenseSplit;
+      voiceDuration?: string;
+    }
   ): Promise<ChatMessage> {
     void threadId;
     void content;
     void type;
-    void propertyId;
+    void extraData;
     throw new Error("Сообщение отправляется через серверный action после авторизации.");
   }
 
   async markThreadAsRead(threadId: string): Promise<void> {
     void threadId;
+  }
+
+  async voteInPoll(threadId: string, messageId: string, optionId: string): Promise<ChatMessage> {
+    void threadId; void messageId; void optionId;
+    throw new Error("Голосование работает через Supabase Realtime.");
+  }
+
+  async updateViewingStatus(threadId: string, messageId: string, status: ViewingBooking["status"]): Promise<ChatMessage> {
+    void threadId; void messageId; void status;
+    throw new Error("Статус просмотра обновляется через Supabase Realtime.");
+  }
+
+  async toggleExpensePaid(threadId: string, messageId: string, memberId: string): Promise<ChatMessage> {
+    void threadId; void messageId; void memberId;
+    throw new Error("Оплата обновляется через Supabase Realtime.");
+  }
+
+  async togglePinThread(threadId: string): Promise<ChatThread[]> {
+    void threadId;
+    return [];
+  }
+
+  async toggleMessageReaction(threadId: string, messageId: string, emoji: string): Promise<ChatMessage> {
+    void threadId; void messageId; void emoji;
+    throw new Error("Реакция обновляется через Supabase Realtime.");
   }
 }

@@ -7,12 +7,27 @@ import type {
   DemoApplication,
   DemoGroup,
   DemoState,
+  ExpenseSplit,
+  GroupPoll,
   Repository,
+  ViewingBooking,
 } from "./types";
 
-const storageKey = "sosedi-demo-state-v2";
+const storageKey = "sosedi-demo-state-v3";
 
 const initialThreads: ChatThread[] = [
+  {
+    id: "ai-assistant",
+    name: "ИИ-Ассистент Соседей 🤖",
+    type: "ai_assistant",
+    avatar: "/demo/people/artem.jpg",
+    sublabel: "Помощник по правилам и договору",
+    lastMessage: "Здравствуйте! Чем я могу помочь вашей группе сегодня?",
+    lastMessageTime: "Только что",
+    unreadCount: 0,
+    isOnline: true,
+    isPinned: true,
+  },
   {
     id: "maria",
     name: "Мария",
@@ -24,6 +39,7 @@ const initialThreads: ChatThread[] = [
     lastMessageTime: "12:40",
     unreadCount: 1,
     isOnline: true,
+    isPinned: true,
   },
   {
     id: "group",
@@ -32,9 +48,9 @@ const initialThreads: ChatThread[] = [
     avatars: ["/demo/people/maria.jpg", "/demo/people/artem.jpg", "/demo/people/ekaterina.jpg"],
     sublabel: "Группа сожителей · 3 участника",
     propertyId: "center-loft",
-    lastMessage: "Артём: Я обновил бюджет группы на 90 000 ₽",
-    lastMessageTime: "Вчера",
-    unreadCount: 1,
+    lastMessage: "Опрос: Голосуем за 1-к квартиру на Северной?",
+    lastMessageTime: "13:15",
+    unreadCount: 2,
     isOnline: true,
   },
   {
@@ -51,18 +67,42 @@ const initialThreads: ChatThread[] = [
 ];
 
 const initialMessages: Record<string, ChatMessage[]> = {
+  "ai-assistant": [
+    {
+      id: "ai-1",
+      senderId: "ai-assistant",
+      senderName: "ИИ-Ассистент Соседей",
+      content:
+        "Здравствуйте! Я ваш виртуальный помощник по совместной аренде.\n\nЯ могу помочь вам:\n• Составить свод правил проживания (тихий час, уборка, гости)\n• Проверить условия договора аренды\n• Рассчитать справедливый бюджет на каждого участника группы",
+      timestamp: "10:00",
+      type: "ai_bot",
+      isRead: true,
+    },
+  ],
   maria: [
     {
       id: "m1",
       senderId: "maria",
       senderName: "Мария",
       senderAvatar: "/demo/people/maria.jpg",
-      content: "Привет! Я посмотрела квартиру на Северной. Район и бюджет нам идеально подходят, давай обсудим просмотр?",
+      content:
+        "Привет! Я посмотрела квартиру на Северной. Район и бюджет нам идеально подходят, давай обсудим просмотр?",
       timestamp: "12:30",
       isRead: true,
     },
     {
       id: "m2",
+      senderId: "maria",
+      senderName: "Мария",
+      senderAvatar: "/demo/people/maria.jpg",
+      content: "Аудиосообщение (0:14)",
+      timestamp: "12:32",
+      type: "voice",
+      voiceDuration: "0:14",
+      isRead: true,
+    },
+    {
+      id: "m3",
       senderId: "user",
       senderName: "Вы",
       content: "Да, четверг после 18:00 подходит! Напишу группе и подтвержу.",
@@ -70,13 +110,15 @@ const initialMessages: Record<string, ChatMessage[]> = {
       isRead: true,
     },
     {
-      id: "m3",
+      id: "m4",
       senderId: "maria",
       senderName: "Мария",
       senderAvatar: "/demo/people/maria.jpg",
-      content: "Давайте обсудим просмотр в четверг. И ещё вопрос про тихий час — лучше договориться заранее.",
+      content:
+        "Давайте обсудим просмотр в четверг. И ещё вопрос про тихий час — лучше договориться заранее.",
       timestamp: "12:40",
       isRead: false,
+      reactions: { "👍": 1 },
     },
   ],
   group: [
@@ -84,7 +126,8 @@ const initialMessages: Record<string, ChatMessage[]> = {
       id: "g1",
       senderId: "system",
       senderName: "Система",
-      content: "Группа «Квартира в центре» сформирована! Совместимость участников 89%.",
+      content:
+        "Группа «Квартира в центре» сформирована! Совместимость участников 89%.",
       timestamp: "Вчера, 10:00",
       type: "system_notice",
     },
@@ -93,9 +136,37 @@ const initialMessages: Record<string, ChatMessage[]> = {
       senderId: "artem",
       senderName: "Артём",
       senderAvatar: "/demo/people/artem.jpg",
-      content: "Я обновил бюджет группы на 90 000 ₽. Подали заявку на 1-комн. квартиру на Северной!",
-      timestamp: "Вчера, 14:20",
-      isRead: false,
+      content: "Создан опрос по выбору объекта:",
+      timestamp: "13:00",
+      type: "poll",
+      pollData: {
+        id: "poll-1",
+        question: "Голосуем за 1-к квартиру на Северной (25 000 ₽)?",
+        options: [
+          { id: "opt-1", text: "Да, отличный вариант!", voterIds: ["maria", "artem"] },
+          { id: "opt-2", text: "Хочу посмотреть еще на Красной", voterIds: ["ekaterina"] },
+        ],
+        totalVotes: 3,
+      },
+    },
+    {
+      id: "g3",
+      senderId: "ekaterina",
+      senderName: "Екатерина",
+      senderAvatar: "/demo/people/ekaterina.jpg",
+      content: "Расчёт общего залога и коммуны на 3 человек:",
+      timestamp: "13:15",
+      type: "expense_split",
+      expenseData: {
+        id: "exp-1",
+        title: "Залог 25 000 ₽ + Аренда 1 мес.",
+        totalAmount: 50000,
+        shares: [
+          { memberId: "maria", memberName: "Мария", amount: 16666, isPaid: true },
+          { memberId: "artem", memberName: "Артём", amount: 16667, isPaid: false },
+          { memberId: "ekaterina", memberName: "Екатерина", amount: 16667, isPaid: true },
+        ],
+      },
     },
   ],
   owner: [
@@ -103,7 +174,8 @@ const initialMessages: Record<string, ChatMessage[]> = {
       id: "o1",
       senderId: "user",
       senderName: "Вы",
-      content: "Здравствуйте! Наша группа готова посмотреть вашу квартиру на ул. Северная.",
+      content:
+        "Здравствуйте! Наша группа готова посмотреть вашу квартиру на ул. Северная.",
       timestamp: "12 мая, 11:00",
       isRead: true,
     },
@@ -111,8 +183,17 @@ const initialMessages: Record<string, ChatMessage[]> = {
       id: "o2",
       senderId: "owner",
       senderName: "Собственник",
-      content: "Здравствуйте! Заявка вашей группы принята. Готовы показать объект сегодня после 18:00.",
+      content: "Приглашение на просмотр:",
       timestamp: "12 мая, 11:45",
+      type: "viewing_request",
+      viewingData: {
+        id: "view-1",
+        propertyId: "center-loft",
+        date: "Четверг, 24 Июля",
+        timeSlot: "18:30",
+        status: "pending",
+        requestedBy: "owner",
+      },
       isRead: true,
     },
   ],
@@ -256,7 +337,7 @@ export class DemoRepository implements Repository {
 
   async getChatThreads() {
     const state = readState();
-    return state.threads;
+    return state.threads.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
   }
 
   async getMessages(threadId: string) {
@@ -283,7 +364,13 @@ export class DemoRepository implements Repository {
     threadId: string,
     content: string,
     type: ChatMessageType = "text",
-    propertyId?: string
+    extraData?: {
+      propertyId?: string;
+      viewingData?: ViewingBooking;
+      pollData?: GroupPoll;
+      expenseData?: ExpenseSplit;
+      voiceDuration?: string;
+    }
   ): Promise<ChatMessage> {
     const state = readState();
     const nowStr = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -295,7 +382,11 @@ export class DemoRepository implements Repository {
       content,
       timestamp: nowStr,
       type,
-      propertyId,
+      propertyId: extraData?.propertyId,
+      viewingData: extraData?.viewingData,
+      pollData: extraData?.pollData,
+      expenseData: extraData?.expenseData,
+      voiceDuration: extraData?.voiceDuration,
       isRead: true,
     };
 
@@ -308,11 +399,97 @@ export class DemoRepository implements Repository {
     const threadIndex = state.threads.findIndex((t) => t.id === threadId);
     if (threadIndex >= 0) {
       const thread = state.threads[threadIndex];
-      thread.lastMessage = type === "property_card" ? "Карточка объекта" : content;
+      if (type === "property_card") thread.lastMessage = "Карточка объекта";
+      else if (type === "viewing_request") thread.lastMessage = "Запрос на просмотр";
+      else if (type === "poll") thread.lastMessage = `Опрос: ${extraData?.pollData?.question || content}`;
+      else if (type === "expense_split") thread.lastMessage = "Расчёт расходов";
+      else thread.lastMessage = content;
       thread.lastMessageTime = nowStr;
     }
 
     writeState(state);
     return userMessage;
+  }
+
+  async voteInPoll(threadId: string, messageId: string, optionId: string): Promise<ChatMessage> {
+    const state = readState();
+    const msgs = state.messages[threadId] || [];
+    const msg = msgs.find((m) => m.id === messageId);
+    if (msg && msg.pollData) {
+      msg.pollData.options.forEach((opt) => {
+        const userIdx = opt.voterIds.indexOf("user");
+        if (opt.id === optionId) {
+          if (userIdx < 0) opt.voterIds.push("user");
+        } else {
+          if (userIdx >= 0) opt.voterIds.splice(userIdx, 1);
+        }
+      });
+      msg.pollData.totalVotes = msg.pollData.options.reduce((acc, o) => acc + o.voterIds.length, 0);
+      writeState(state);
+      return msg;
+    }
+    return msgs[0];
+  }
+
+  async updateViewingStatus(
+    threadId: string,
+    messageId: string,
+    status: ViewingBooking["status"]
+  ): Promise<ChatMessage> {
+    const state = readState();
+    const msgs = state.messages[threadId] || [];
+    const msg = msgs.find((m) => m.id === messageId);
+    if (msg && msg.viewingData) {
+      msg.viewingData.status = status;
+      writeState(state);
+      return msg;
+    }
+    return msgs[0];
+  }
+
+  async toggleExpensePaid(threadId: string, messageId: string, memberId: string): Promise<ChatMessage> {
+    const state = readState();
+    const msgs = state.messages[threadId] || [];
+    const msg = msgs.find((m) => m.id === messageId);
+    if (msg && msg.expenseData) {
+      const share = msg.expenseData.shares.find((s) => s.memberId === memberId);
+      if (share) share.isPaid = !share.isPaid;
+      writeState(state);
+      return msg;
+    }
+    return msgs[0];
+  }
+
+  async togglePinThread(threadId: string) {
+    const state = readState();
+    const thread = state.threads.find((t) => t.id === threadId);
+    if (thread) {
+      thread.isPinned = !thread.isPinned;
+      writeState(state);
+    }
+    return state.threads;
+  }
+
+  async toggleMessageReaction(threadId: string, messageId: string, emoji: string): Promise<ChatMessage> {
+    const state = readState();
+    const msgs = state.messages[threadId] || [];
+    const msg = msgs.find((m) => m.id === messageId);
+    if (msg) {
+      if (!msg.reactions) msg.reactions = {};
+      if (!msg.userReactions) msg.userReactions = [];
+
+      const hasReacted = msg.userReactions.includes(emoji);
+      if (hasReacted) {
+        msg.userReactions = msg.userReactions.filter((e) => e !== emoji);
+        msg.reactions[emoji] = (msg.reactions[emoji] || 1) - 1;
+        if (msg.reactions[emoji] <= 0) delete msg.reactions[emoji];
+      } else {
+        msg.userReactions.push(emoji);
+        msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1;
+      }
+      writeState(state);
+      return msg;
+    }
+    return msgs[0];
   }
 }

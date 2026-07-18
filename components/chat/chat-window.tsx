@@ -4,27 +4,42 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowLeft,
+  BarChart3,
   Building2,
   Calendar,
+  Check,
   CheckCheck,
   ChevronRight,
   ExternalLink,
+  Play,
   Plus,
   Send,
   Sparkles,
-  UserCheck,
+  Wallet,
 } from "lucide-react";
 import { PropertyAttachmentModal } from "./property-attachment-modal";
+import { ViewingModal } from "./viewing-modal";
+import { PollCreateModal } from "./poll-create-modal";
+import { ExpenseModal } from "./expense-modal";
 import { demoProperties, formatRubles } from "@/data/demo";
 import { DemoRepository } from "@/lib/repositories/demo-repository";
-import type { ChatMessage, ChatThread } from "@/lib/repositories/types";
+import type {
+  ChatMessage,
+  ChatThread,
+  ExpenseSplit,
+  GroupPoll,
+  ViewingBooking,
+} from "@/lib/repositories/types";
 
 interface ChatWindowProps {
   thread: ChatThread;
   initialMessages: ChatMessage[];
   onBackToList?: () => void;
 }
+
+const EMOJIS = ["👍", "❤️", "🔥", "🏠", "😮"];
 
 export function ChatWindow({
   thread,
@@ -34,28 +49,35 @@ export function ChatWindow({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+  const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
+  const [isViewingModalOpen, setIsViewingModalOpen] = useState(false);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Property associated with thread
   const contextProperty = demoProperties.find(
     (p) => p.id === (thread.propertyId || "center-loft")
   );
 
-  // Scroll to bottom on new message
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Mark as read when thread opens
   useEffect(() => {
     new DemoRepository().markThreadAsRead(thread.id);
   }, [thread.id]);
 
   const handleSend = async (
     textToSend?: string,
-    type: "text" | "property_card" | "attachment" = "text",
-    propertyId?: string
+    type: ChatMessage["type"] = "text",
+    extraData?: {
+      propertyId?: string;
+      viewingData?: ViewingBooking;
+      pollData?: GroupPoll;
+      expenseData?: ExpenseSplit;
+      voiceDuration?: string;
+    }
   ) => {
     const text = (textToSend || input).trim();
     if (!text && type === "text") return;
@@ -63,46 +85,111 @@ export function ChatWindow({
     if (!textToSend) setInput("");
 
     const repo = new DemoRepository();
-    const sentMsg = await repo.sendMessage(thread.id, text || "Прикреплённый объект", type, propertyId);
+    const sentMsg = await repo.sendMessage(thread.id, text || "Смарт-карточка", type, extraData);
     setMessages((prev) => [...prev, sentMsg]);
 
-    // Simulated Auto-Reply from roommate or owner after 1.8 seconds
-    if (thread.id !== "system") {
-      setTimeout(() => {
-        setIsTyping(true);
-      }, 600);
+    // Real AI Assistant Bot Call via /api/ai/chat
+    if (thread.id === "ai-assistant") {
+      setIsTyping(true);
+      try {
+        const history = [...messages, sentMsg].map((m) => ({
+          role: m.senderId === "user" ? ("user" as const) : ("assistant" as const),
+          content: m.content,
+        }));
 
-      setTimeout(async () => {
-        let replyContent = "";
-        if (thread.id === "maria") {
-          const replies = [
-            "Отлично! Договорились, спасибо! Напишу перед выездом 👍",
-            "Супер! Готова сходить на просмотр в четверг.",
-            "Хорошо, записала! Если возникнут вопросы — я на связи.",
-          ];
-          replyContent = replies[Math.floor(Math.random() * replies.length)];
-        } else if (thread.id === "owner") {
-          const replies = [
-            "Здравствуйте! Сообщение принято. Подтверждаю просмотр на это время.",
-            "Понял вас. Наш риелтор свяжется с вашей группой за час до встречи.",
-          ];
-          replyContent = replies[Math.floor(Math.random() * replies.length)];
-        } else if (thread.id === "group") {
-          const replies = [
-            "Артём: Отлично, я тоже смогу подойти!",
-            "Екатерина: Добавила в наш общий календарь 👍",
-          ];
-          replyContent = replies[Math.floor(Math.random() * replies.length)];
+        const res = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history }),
+        });
+
+        let aiResponse = "Я с радостью отвечу на любой вопрос по поиску жилья, соседей и составлению договора!";
+        if (res.ok) {
+          const data = await res.json();
+          if (data.reply) {
+            aiResponse = data.reply;
+          }
         }
 
-        if (replyContent) {
-          const replyMsg = await repo.sendMessage(thread.id, replyContent);
-          setMessages((prev) => [...prev, replyMsg]);
-        }
+        const botMsg = await repo.sendMessage("ai-assistant", aiResponse, "ai_bot");
+        setMessages((prev) => [...prev, botMsg]);
+      } catch (err) {
+        console.warn("AI endpoint notification:", err);
+        const fallbackMsg = await repo.sendMessage(
+          "ai-assistant",
+          "Я с удовольствием отвечу на любые вопросы по быту, договорным условиям и совместимости сожителей!",
+          "ai_bot",
+        );
+        setMessages((prev) => [...prev, fallbackMsg]);
+      } finally {
         setIsTyping(false);
-      }, 2200);
+      }
+      return;
     }
+
+    // Simulated Auto-Reply for Roommate / Group / Owner
+    setTimeout(() => setIsTyping(true), 800);
+    setTimeout(async () => {
+      let replyContent = "";
+      if (thread.id === "maria") {
+        const replies = [
+          "Отлично! Договорились, спасибо! Напишу перед выездом 👍",
+          "Супер! Готова сходить на просмотр в четверг.",
+          "Хорошо, записала! Если возникнут вопросы — я на связи.",
+        ];
+        replyContent = replies[Math.floor(Math.random() * replies.length)];
+      } else if (thread.id === "owner") {
+        const replies = [
+          "Здравствуйте! Подтверждаю просмотр на указанное время.",
+          "Понял вас. Наш риелтор свяжется с вашей группой за час до встречи.",
+        ];
+        replyContent = replies[Math.floor(Math.random() * replies.length)];
+      } else if (thread.id === "group") {
+        const replies = [
+          "Артём: Отлично, я тоже смогу подойти!",
+          "Екатерина: Добавила в наш общий календарь 👍",
+        ];
+        replyContent = replies[Math.floor(Math.random() * replies.length)];
+      }
+
+      if (replyContent) {
+        const replyMsg = await repo.sendMessage(thread.id, replyContent);
+        setMessages((prev) => [...prev, replyMsg]);
+      }
+      setIsTyping(false);
+    }, 2200);
   };
+
+  const handleVote = async (msgId: string, optId: string) => {
+    const repo = new DemoRepository();
+    const updated = await repo.voteInPoll(thread.id, msgId, optId);
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
+  };
+
+  const handleViewingStatus = async (msgId: string, status: ViewingBooking["status"]) => {
+    const repo = new DemoRepository();
+    const updated = await repo.updateViewingStatus(thread.id, msgId, status);
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
+  };
+
+  const handleTogglePaid = async (msgId: string, memberId: string) => {
+    const repo = new DemoRepository();
+    const updated = await repo.toggleExpensePaid(thread.id, msgId, memberId);
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
+  };
+
+  const handleReaction = async (msgId: string, emoji: string) => {
+    const repo = new DemoRepository();
+    const updated = await repo.toggleMessageReaction(thread.id, msgId, emoji);
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
+  };
+
+  // Anti-scam check
+  const isScamRisk = messages.some((m) =>
+    ["предоплата", "карту", "whatsapp", "телеграм"].some((word) =>
+      m.content.toLowerCase().includes(word)
+    )
+  );
 
   return (
     <div className="flex h-full flex-col bg-[#F9F9F6]">
@@ -156,23 +243,36 @@ export function ChatWindow({
           </div>
         </div>
 
-        {/* Header Action Shortcuts */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => handleSend("Здравствуйте! Подскажите, свободна ли квартира для просмотра на этой неделе?", "text")}
-            className="hidden sm:inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E5E5E0] bg-white px-3 text-[11px] font-bold text-[#111111] hover:border-[#111111] hover:bg-[#F4F4F0]"
+            onClick={() => setIsViewingModalOpen(true)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E5E5E0] bg-white px-3 text-[11px] font-bold text-[#111111] hover:border-[#111111] hover:bg-[#F4F4F0]"
           >
-            <Calendar className="size-3.5 text-[#7B9E00]" /> Просмотр
+            <Calendar className="size-3.5 text-[#7B9E00]" /> Запросить просмотр
           </button>
-          <Link
-            href="/app/group"
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#EBF7B6] px-3 text-[11px] font-extrabold text-[#111111] hover:bg-[#d9ea98]"
-          >
-            <UserCheck className="size-3.5" /> Анкета группы
-          </Link>
+          {thread.type === "group" && (
+            <button
+              type="button"
+              onClick={() => setIsPollModalOpen(true)}
+              className="hidden sm:inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E5E5E0] bg-white px-3 text-[11px] font-bold text-[#111111] hover:border-[#111111] hover:bg-[#F4F4F0]"
+            >
+              <BarChart3 className="size-3.5 text-[#7B9E00]" /> Опрос
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Anti-Scam Security Banner */}
+      {isScamRisk && (
+        <div className="flex items-center gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2 text-[11px] text-amber-900">
+          <AlertTriangle className="size-4 text-amber-600 shrink-0" />
+          <p className="font-semibold">
+            Безопасность: Никогда не переводите предоплату до личного просмотра объекта и проверки документов.
+          </p>
+        </div>
+      )}
 
       {/* Property Context Banner */}
       {contextProperty && (
@@ -223,7 +323,9 @@ export function ChatWindow({
           return (
             <div
               key={msg.id}
-              className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}
+              className={`group relative flex items-end gap-2 ${
+                isUser ? "justify-end" : "justify-start"
+              }`}
             >
               {!isUser && (
                 <div className="relative size-7 shrink-0 overflow-hidden rounded-full border border-[#E5E5E0] bg-gray-200">
@@ -238,19 +340,26 @@ export function ChatWindow({
               )}
 
               <div
-                className={`max-w-[80%] sm:max-w-[70%] rounded-[20px] p-3.5 text-xs leading-5 shadow-sm ${
+                className={`relative max-w-[85%] sm:max-w-[75%] rounded-[20px] p-3.5 text-xs leading-5 shadow-sm ${
                   isUser
                     ? "rounded-br-none bg-[#111111] text-white"
+                    : msg.type === "ai_bot"
+                    ? "rounded-bl-none border border-[#7B9E00]/40 bg-[#FFF] text-[#111111]"
                     : "rounded-bl-none border border-[#E5E5E0] bg-white text-[#111111]"
                 }`}
               >
                 {!isUser && (
-                  <p className="mb-1 text-[10px] font-extrabold text-[#7B9E00]">
+                  <p className="mb-1 text-[10px] font-extrabold text-[#7B9E00] flex items-center gap-1">
                     {msg.senderName}
+                    {msg.type === "ai_bot" && (
+                      <span className="rounded bg-[#7B9E00] px-1 text-[8px] text-white font-bold">
+                        ИИ
+                      </span>
+                    )}
                   </p>
                 )}
 
-                {/* Property Card Attachment */}
+                {/* Property Card Bubble */}
                 {attachedProp && (
                   <div className="mb-2 overflow-hidden rounded-[14px] border border-[#E5E5E0] bg-[#F9F9F6] p-2 text-[#111111]">
                     <div className="relative h-28 w-full overflow-hidden rounded-[10px]">
@@ -279,8 +388,157 @@ export function ChatWindow({
                   </div>
                 )}
 
+                {/* Viewing Booking Card */}
+                {msg.type === "viewing_request" && msg.viewingData && (
+                  <div className="mb-2 rounded-[14px] border border-[#7B9E00]/30 bg-[#EBF7B6]/40 p-3 text-[#111111]">
+                    <p className="font-extrabold text-xs flex items-center gap-1.5">
+                      <Calendar className="size-4 text-[#7B9E00]" /> Запрос на просмотр объекта
+                    </p>
+                    <p className="mt-1 text-[11px] text-[#6B6F66]">
+                      Дата: <span className="font-bold text-[#111111]">{msg.viewingData.date}</span> в{" "}
+                      <span className="font-bold text-[#111111]">{msg.viewingData.timeSlot}</span>
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {msg.viewingData.status === "pending" ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleViewingStatus(msg.id, "confirmed")}
+                            className="rounded-full bg-[#7B9E00] px-3 py-1 text-[10px] font-extrabold text-white"
+                          >
+                            Подтвердить
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleViewingStatus(msg.id, "declined")}
+                            className="rounded-full border border-[#E5E5E0] bg-white px-3 py-1 text-[10px] font-bold text-[#6B6F66]"
+                          >
+                            Отклонить
+                          </button>
+                        </>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#7B9E00] px-2.5 py-0.5 text-[10px] font-extrabold text-white">
+                          <Check className="size-3" /> Статус: {msg.viewingData.status === "confirmed" ? "Подтверждено" : "Отклонено"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Group Poll Card */}
+                {msg.type === "poll" && msg.pollData && (
+                  <div className="mb-2 rounded-[14px] border border-[#E5E5E0] bg-[#FFF] p-3 text-[#111111]">
+                    <p className="font-extrabold text-xs flex items-center gap-1.5">
+                      <BarChart3 className="size-4 text-[#7B9E00]" /> {msg.pollData.question}
+                    </p>
+                    <div className="mt-2.5 space-y-2">
+                      {msg.pollData.options.map((opt) => {
+                        const count = opt.voterIds.length;
+                        const pct = msg.pollData!.totalVotes
+                          ? Math.round((count / msg.pollData!.totalVotes) * 100)
+                          : 0;
+                        const hasVoted = opt.voterIds.includes("user");
+
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleVote(msg.id, opt.id)}
+                            className={`w-full rounded-[12px] border p-2 text-left transition-all relative overflow-hidden ${
+                              hasVoted
+                                ? "border-[#7B9E00] bg-[#EBF7B6]/30 font-bold"
+                                : "border-[#E5E5E0] hover:border-[#111111]"
+                            }`}
+                          >
+                            <div
+                              className="absolute inset-y-0 left-0 bg-[#EBF7B6]/50 transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                            <div className="relative z-10 flex items-center justify-between text-[11px]">
+                              <span>{opt.text}</span>
+                              <span className="font-extrabold text-[#7B9E00]">{pct}% ({count})</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Expense Split Card */}
+                {msg.type === "expense_split" && msg.expenseData && (
+                  <div className="mb-2 rounded-[14px] border border-[#E5E5E0] bg-[#FFF] p-3 text-[#111111]">
+                    <p className="font-extrabold text-xs flex items-center gap-1.5">
+                      <Wallet className="size-4 text-[#7B9E00]" /> {msg.expenseData.title}
+                    </p>
+                    <p className="text-[11px] font-bold text-[#7B9E00] mt-0.5">
+                      Итого: {msg.expenseData.totalAmount.toLocaleString("ru-RU")} ₽
+                    </p>
+                    <div className="mt-2 space-y-1.5 border-t border-[#E5E5E0] pt-2">
+                      {msg.expenseData.shares.map((share) => (
+                        <div
+                          key={share.memberId}
+                          className="flex items-center justify-between text-[10.5px]"
+                        >
+                          <span className="font-semibold">{share.memberName}:</span>
+                          <div className="flex items-center gap-2">
+                            <span>{share.amount.toLocaleString("ru-RU")} ₽</span>
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePaid(msg.id, share.memberId)}
+                              className={`rounded-full px-2 py-0.5 font-bold text-[9.5px] ${
+                                share.isPaid
+                                  ? "bg-[#7B9E00] text-white"
+                                  : "bg-gray-100 text-[#6B6F66]"
+                              }`}
+                            >
+                              {share.isPaid ? "Оплачено" : "Ожидает"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Voice Message Bubble */}
+                {msg.type === "voice" && (
+                  <div className="flex items-center gap-3 py-1">
+                    <button
+                      type="button"
+                      className="grid size-8 shrink-0 place-items-center rounded-full bg-[#7B9E00] text-white"
+                    >
+                      <Play className="size-4 ml-0.5" />
+                    </button>
+                    <div className="flex-1 space-y-1">
+                      <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
+                        <div className="h-full w-1/3 bg-[#7B9E00]" />
+                      </div>
+                      <span className="text-[10px] text-gray-400">{msg.voiceDuration || "0:14"}</span>
+                    </div>
+                  </div>
+                )}
+
                 <p className="whitespace-pre-wrap">{msg.content}</p>
 
+                {/* Emoji Reactions Badge */}
+                {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {Object.entries(msg.reactions).map(([emoji, count]) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => handleReaction(msg.id, emoji)}
+                        className="inline-flex items-center gap-1 rounded-full border border-[#E5E5E0] bg-white px-2 py-0.5 text-[10px] font-bold text-[#111111]"
+                      >
+                        <span>{emoji}</span>
+                        <span>{count}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Timestamp */}
                 <div
                   className={`mt-1.5 flex items-center justify-end gap-1 text-[9.5px] ${
                     isUser ? "text-gray-400" : "text-[#878881]"
@@ -288,6 +546,20 @@ export function ChatWindow({
                 >
                   <span>{msg.timestamp}</span>
                   {isUser && <CheckCheck className="size-3 text-[#7B9E00]" />}
+                </div>
+
+                {/* Quick Emoji Reaction Trigger */}
+                <div className="absolute -top-3 right-2 hidden group-hover:flex items-center gap-1 rounded-full border border-[#E5E5E0] bg-white p-1 shadow-md">
+                  {EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handleReaction(msg.id, emoji)}
+                      className="hover:scale-125 transition-transform text-xs"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -313,20 +585,20 @@ export function ChatWindow({
       <div className="px-4 py-2 border-t border-[#E5E5E0] bg-white flex items-center gap-2 overflow-x-auto no-scrollbar">
         {[
           {
-            text: "📅 Предложить время просмотра в четверг после 18:00",
-            action: () => handleSend("Привет! Мы готовы прийти на просмотр в четверг после 18:00. Вам будет удобно?"),
+            text: "📅 Запросить просмотр",
+            action: () => setIsViewingModalOpen(true),
           },
           {
-            text: "📄 Отправить состав нашей группы",
-            action: () => handleSend("Наша группа состоит из 3 человек: Мария (маркетолог), Артём (разработчик) и Екатерина (дизайнер). Общий бюджет 90 000 ₽."),
+            text: "📊 Создать опрос",
+            action: () => setIsPollModalOpen(true),
           },
           {
-            text: "🏠 Отправить вариант из избранного",
-            action: () => setIsAttachmentModalOpen(true),
+            text: "💰 Разделить залог",
+            action: () => setIsExpenseModalOpen(true),
           },
           {
-            text: "❓ Уточнить правила проживания и животных",
-            action: () => handleSend("Подскажите, пожалуйста, какие в квартире правила относительно гостей и домашних животных?"),
+            text: "🏠 Отправить квартиру",
+            action: () => setIsPropertyModalOpen(true),
           },
         ].map((chip, idx) => (
           <button
@@ -351,8 +623,8 @@ export function ChatWindow({
         >
           <button
             type="button"
-            onClick={() => setIsAttachmentModalOpen(true)}
-            title="Прикрепить квартиру"
+            onClick={() => setIsPropertyModalOpen(true)}
+            title="Прикрепить квартиру из каталога"
             className="grid size-10 shrink-0 place-items-center rounded-full border border-[#E5E5E0] text-[#6B6F66] hover:border-[#111111] hover:bg-[#F4F4F0]"
           >
             <Plus className="size-5" />
@@ -376,13 +648,47 @@ export function ChatWindow({
         </form>
       </div>
 
-      {/* Property Attachment Modal */}
+      {/* Modals */}
       <PropertyAttachmentModal
-        isOpen={isAttachmentModalOpen}
-        onClose={() => setIsAttachmentModalOpen(false)}
+        isOpen={isPropertyModalOpen}
+        onClose={() => setIsPropertyModalOpen(false)}
         onSelectProperty={(propId) => {
           const prop = demoProperties.find((p) => p.id === propId);
-          handleSend(`Посмотрите вариант: ${prop?.title || "Квартира"}`, "property_card", propId);
+          handleSend(`Посмотрите вариант: ${prop?.title || "Квартира"}`, "property_card", { propertyId: propId });
+        }}
+      />
+
+      <ViewingModal
+        isOpen={isViewingModalOpen}
+        onClose={() => setIsViewingModalOpen(false)}
+        onSubmit={(date, timeSlot, propertyId) => {
+          handleSend("Запрос на просмотр квартиры", "viewing_request", {
+            propertyId,
+            viewingData: {
+              id: `view-${Date.now()}`,
+              propertyId,
+              date,
+              timeSlot,
+              status: "pending",
+              requestedBy: "user",
+            },
+          });
+        }}
+      />
+
+      <PollCreateModal
+        isOpen={isPollModalOpen}
+        onClose={() => setIsPollModalOpen(false)}
+        onSubmit={(pollData) => {
+          handleSend(`Опрос: ${pollData.question}`, "poll", { pollData });
+        }}
+      />
+
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
+        onSubmit={(expenseData) => {
+          handleSend(`Расчёт расходов: ${expenseData.title}`, "expense_split", { expenseData });
         }}
       />
     </div>

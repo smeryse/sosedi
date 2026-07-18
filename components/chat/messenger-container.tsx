@@ -46,6 +46,7 @@ export function MessengerContainer({ activeThreadId }: MessengerContainerProps) 
           threads={threads}
           activeThreadId={selectedThreadId}
           onSelectThread={(id) => setSelectedThreadId(id)}
+          onThreadsUpdate={(updated) => setThreads(updated)}
         />
       </div>
 
