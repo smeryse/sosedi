@@ -64,12 +64,12 @@
 
 | Токен | Значение |
 | --- | --- |
-| `--background` | `#F7F8F3` |
+| `--background` | `#F4F4F0` |
 | `--surface` | `#FFFEFB` |
-| `--surface-muted` | `#F1F3ED` |
+| `--surface-muted` | `#F0F1EC` |
 | `--foreground` | `#11120F` |
 | `--muted-foreground` | `#6B6F66` |
-| `--border` | `#E3E7DD` |
+| `--border` | `#E5E5E0` |
 | `--accent` | `#B3DB00` |
 | `--accent-hover` | `#9FC400` |
 | `--accent-soft` | `#EFF8C6` |

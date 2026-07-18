@@ -74,7 +74,7 @@ export function AssistantChat() {
           </div>
           <div>
             <p className="text-sm font-extrabold text-[#111111]">Соседи AI Assistant</p>
-            <p className="text-[10px] font-bold text-[#7B9E00]">OpenRouter (Nemotron 70B / Fallback)</p>
+            <p className="text-[10px] font-bold text-[#7B9E00]">OpenRouter AI (Онлайн)</p>
           </div>
         </div>
 

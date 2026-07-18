@@ -1,6 +1,15 @@
 import type { DemoProperty, DemoRoommate } from "@/data/demo";
 import { createClient } from "@/lib/supabase/server";
-import type { DemoAnswer, DemoApplication, DemoGroup, DemoState, Repository } from "./types";
+import type {
+  ChatMessage,
+  ChatMessageType,
+  ChatThread,
+  DemoAnswer,
+  DemoApplication,
+  DemoGroup,
+  DemoState,
+  Repository,
+} from "./types";
 
 /** Server-side repository. Browser code must use the demo repository or server actions. */
 export class SupabaseRepository implements Repository {
@@ -80,5 +89,31 @@ export class SupabaseRepository implements Repository {
   async submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId">): Promise<DemoApplication> {
     void input;
     throw new Error("Заявка отправляется через серверный action после авторизации.");
+  }
+
+  async getChatThreads(): Promise<ChatThread[]> {
+    throw new Error("Диалоги загружаются через серверный action или Supabase realtime.");
+  }
+
+  async getMessages(threadId: string): Promise<ChatMessage[]> {
+    void threadId;
+    throw new Error("Сообщения загружаются через серверный action или Supabase realtime.");
+  }
+
+  async sendMessage(
+    threadId: string,
+    content: string,
+    type?: ChatMessageType,
+    propertyId?: string,
+  ): Promise<ChatMessage> {
+    void threadId;
+    void content;
+    void type;
+    void propertyId;
+    throw new Error("Сообщение отправляется через серверный action после авторизации.");
+  }
+
+  async markThreadAsRead(threadId: string): Promise<void> {
+    void threadId;
   }
 }

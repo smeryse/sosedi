@@ -1,5 +1,20 @@
-import Link from "next/link";
-import { ArrowLeft, Paperclip, Send } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
+import { MessengerContainer } from "@/components/chat/messenger-container";
 
-export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) { const { id } = await params; const title = id === "group" ? "Квартира в центре" : id === "owner" ? "Собственник квартиры" : "Мария"; return <PageFrame backHref="/app/messages" backLabel="К сообщениям" title={title} description="Защищённый чат Соседей · личные контакты откроются после взаимного согласия."><div className="mx-auto max-w-3xl overflow-hidden rounded-[22px] border bg-surface"><div className="min-h-[390px] space-y-4 p-5"><div className="max-w-[75%] rounded-[16px] bg-surface-muted p-3 text-sm leading-5">Привет! Я посмотрела квартиру. Район и бюджет подходят, давай обсудим просмотр?</div><div className="ml-auto max-w-[75%] rounded-[16px] bg-foreground p-3 text-sm leading-5 text-background">Да, четверг после 18:00 подходит. Напишу группе и подтвержу.</div><div className="max-w-[75%] rounded-[16px] bg-surface-muted p-3 text-sm leading-5">Отлично. И ещё вопрос про правила гостей — предлагаю обсудить это заранее.</div></div><form className="flex items-center gap-2 border-t p-4"><button type="button" aria-label="Прикрепить файл" className="grid size-10 place-items-center rounded-full border"><Paperclip className="size-4" /></button><input placeholder="Напишите сообщение" className="h-10 min-w-0 flex-1 rounded-full bg-surface-muted px-4 text-sm outline-none" /><button type="submit" aria-label="Отправить" className="grid size-10 place-items-center rounded-full bg-[hsl(var(--accent))]"><Send className="size-4" /></button></form></div><Link href="/app/group" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground"><ArrowLeft className="size-4" /> Открыть группу</Link></PageFrame>; }
+export default async function ChatPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
+  return (
+    <PageFrame
+      eyebrow="Общение"
+      title="Сообщения"
+      description="Переписка с потенциальными соседями, группой и собственниками жилья."
+    >
+      <MessengerContainer activeThreadId={id} />
+    </PageFrame>
+  );
+}

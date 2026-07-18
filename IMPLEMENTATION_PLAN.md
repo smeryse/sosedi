@@ -2,7 +2,7 @@
 
 ## Текущее состояние — 18 июля 2026
 
-Аудит выполнен. Реализованы брендовая дизайн-система, AppShell, tenant/owner кабинеты, публичные страницы, demo repository, каталоги людей и жилья, избранное, анкета, группы, заявки, сообщения, бюджет, задачи, AI mock, Supabase migration/RLS/seed и эксплуатационная документация.
+Аудит выполнен. Реализованы светлая брендовая дизайн-система, AppShell, tenant/owner кабинеты, публичные страницы, demo repository, каталоги людей и жилья, избранное, анкета, группы, заявки, сообщения, бюджет, задачи, AI mock, Supabase migration/RLS/seed и эксплуатационная документация. Landing сохранён в editorial-композиции и связан с продуктовой системой через реальные UI mockup, профили, карту и сценарии группы.
 
 Исходный репозиторий был Next.js + Supabase App Template с базовыми auth/tutorial-страницами. Его структура сохранена; продуктовые маршруты добавлены в `app/app`, `app/owner` и публичные страницы. Проверены все ключевые маршруты через Playwright route smoke, а dashboard — на 1440×900 и 390×844.
 
@@ -11,13 +11,13 @@
 1. Полностью прочитаны `DO_APP.md` и связанные Markdown-документы, просмотрены все изображения и архивные assets.
 2. Созданы `docs/reference-audit.md` и этот план.
 3. Добавлены Manrope, CSS tokens, canonical green shell, responsive sidebar/header/mobile nav и брендированные UI primitives.
-4. Собран эталонный dashboard с картой-fallback, рекомендациями, группой, AI-блоком и задачами.
+4. Собран эталонный dashboard с MapLibre-картой Краснодара, рекомендациями, группой, AI-блоком и задачами.
 5. Добавлен typed repository layer: `DemoRepository` с localStorage и серверный Supabase read adapter.
 6. Добавлены миграция, таблицы доменов, индексы, triggers, RLS, storage policies и seed.
 7. Добавлены auth guard/middleware allowlist и русские auth forms; demo-режим работает без env.
 8. Добавлены compatibility engine, 20 вопросов, explainable breakdown и unit tests.
 9. Реализованы страницы соседей, сравнения, избранного и рекомендаций.
-10. Реализованы жильё, карта-fallback, объект и group-property fit.
+10. Реализованы жильё, split-view со списком и MapLibre-картой, объект и group-property fit.
 11. Реализованы группы, приглашение (demo flow), общий чат, заявки и timeline.
 12. Реализованы сообщения, уведомления, бюджет, расходы, уборка и задачи.
 13. Реализованы кабинет собственника, объекты, заявки, сообщения, аналитика, профиль и настройки.
@@ -39,7 +39,7 @@
 - Demo-сценарии имеют реальное состояние, loading/empty/error/success/disabled состояния там, где это нужно.
 - SQL содержит UUID, timestamps, constraints, indexes, triggers, RLS и storage policies.
 - После крупных этапов запускаются `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`.
-- Визуальный контроль выполняется на 1440×900 и 390×844; route smoke проверяет HTTP 200 для публичных и основных внутренних маршрутов.
+- Визуальный контроль выполнен на 1440×900, 1600×900 и 1920×1080; route smoke проверяет HTTP 200 для публичных и основных внутренних маршрутов.
 
 ## Принятые решения
 

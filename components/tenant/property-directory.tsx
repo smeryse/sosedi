@@ -224,12 +224,25 @@ export function PropertyDirectory() {
                       <Sparkles className="size-3.5" /> Подходит группе на {property.match}%
                     </span>
 
-                    <Link
-                      href={`/app/housing/${property.id}`}
-                      className="flex h-8 items-center justify-center rounded-full border border-[#E5E5E0] bg-white text-[11px] font-bold text-[#111111] transition-colors hover:border-[#111111] hover:bg-[#F4F4F0]"
-                    >
-                      Подробнее
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/app/housing/${property.id}`}
+                        className="flex h-8 flex-1 items-center justify-center rounded-full border border-[#E5E5E0] bg-white text-[11px] font-bold text-[#111111] transition-colors hover:border-[#111111] hover:bg-[#F4F4F0]"
+                      >
+                        Подробнее
+                      </Link>
+                      {property.cianUrl ? (
+                        <a
+                          href={property.cianUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-8 items-center justify-center rounded-full bg-[#005BFF]/10 px-3 text-[10.5px] font-bold text-[#005BFF] hover:bg-[#005BFF]/20"
+                          title="Открыть карточку на ЦИАН"
+                        >
+                          ЦИАН ↗
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </article>

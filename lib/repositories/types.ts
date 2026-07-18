@@ -24,11 +24,42 @@ export type DemoAnswer = {
   importance: number;
 };
 
+export type ChatMessageType = "text" | "property_card" | "system_notice" | "attachment";
+
+export type ChatMessage = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  content: string;
+  timestamp: string;
+  type?: ChatMessageType;
+  propertyId?: string;
+  attachmentUrl?: string;
+  isRead?: boolean;
+};
+
+export type ChatThread = {
+  id: string;
+  name: string;
+  type: "roommate" | "group" | "owner";
+  avatar?: string;
+  avatars?: string[];
+  sublabel?: string;
+  propertyId?: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+  isOnline?: boolean;
+};
+
 export type DemoState = {
   favorites: { type: "profile" | "property"; id: string }[];
   group: DemoGroup | null;
   applications: DemoApplication[];
   answers: DemoAnswer[];
+  threads: ChatThread[];
+  messages: Record<string, ChatMessage[]>;
 };
 
 export interface Repository {
@@ -39,4 +70,8 @@ export interface Repository {
   saveAnswer(answer: DemoAnswer): Promise<DemoState>;
   createGroup(input: Pick<DemoGroup, "name" | "targetBudget" | "moveInDate">): Promise<DemoGroup>;
   submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId">): Promise<DemoApplication>;
+  getChatThreads(): Promise<ChatThread[]>;
+  getMessages(threadId: string): Promise<ChatMessage[]>;
+  sendMessage(threadId: string, content: string, type?: ChatMessageType, propertyId?: string): Promise<ChatMessage>;
+  markThreadAsRead(threadId: string): Promise<void>;
 }

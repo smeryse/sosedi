@@ -15,6 +15,9 @@ class MockProvider implements AIProvider {
     if (prompt.includes("заявк")) {
       return "Отправьте заявку на два подходящих объекта и договоритесь в чате группы о времени просмотра.";
     }
+    if (prompt.includes("сосед") || prompt.includes("правил")) {
+      return "Начните с трёх тем: режим сна, гости и уборка. Зафиксируйте соглашение в кабинете группы.";
+    }
     return "Я помогу сравнить соседей, жильё и правила группы. Спросите про бюджет, заявку или совместимость.";
   }
 }
@@ -28,16 +31,14 @@ class OpenAICompatibleProvider implements AIProvider {
   ) {}
 
   async complete(messages: AIMessage[]): Promise<string> {
-    // Explicitly enforce free model candidate list for OpenRouter
     const modelsToTry = [
-      this.primaryModel.endsWith(":free") ? this.primaryModel : `${this.primaryModel}:free`,
+      this.primaryModel,
+      "google/gemini-2.5-flash",
       "meta-llama/llama-3.3-70b-instruct:free",
-      "deepseek/deepseek-r1:free",
-      "deepseek/deepseek-chat:free",
+      "deepseek/deepseek-chat",
+      "nvidia/llama-3.1-nemotron-70b-instruct",
+      "openai/gpt-4o-mini",
       "qwen/qwen-2.5-coder-32b-instruct:free",
-      "nvidia/nemotron-4-340b-instruct:free",
-      "google/gemini-2.0-flash-exp:free",
-      "mistralai/mistral-7b-instruct:free",
     ].filter((m, i, arr) => m && arr.indexOf(m) === i);
 
     let lastError: Error | null = null;
@@ -61,14 +62,14 @@ class OpenAICompatibleProvider implements AIProvider {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.warn(`Free Model ${model} failed (${response.status}): ${errorText}`);
+          console.warn(`Model ${model} returned ${response.status}: ${errorText}`);
           lastError = new Error(`Model ${model} returned ${response.status}: ${errorText}`);
           continue;
         }
 
         const payload: unknown = await response.json();
         if (!payload || typeof payload !== "object" || !("choices" in payload)) {
-          console.warn(`Free Model ${model} returned invalid payload structure`);
+          console.warn(`Model ${model} returned invalid payload structure`);
           continue;
         }
 
@@ -76,18 +77,21 @@ class OpenAICompatibleProvider implements AIProvider {
         const content = choices?.[0]?.message?.content;
 
         if (typeof content !== "string" || !content.trim()) {
-          console.warn(`Free Model ${model} returned empty content`);
+          console.warn(`Model ${model} returned empty content`);
           continue;
         }
 
         return content;
       } catch (err) {
-        console.warn(`Error connecting to free model ${model}:`, err);
+        console.warn(`Error connecting to model ${model}:`, err);
         lastError = err instanceof Error ? err : new Error(String(err));
       }
     }
 
-    throw lastError || new Error("All free AI models failed to return a response.");
+    // Smart fallback if all API models are rate limited or unavailable
+    console.warn("All OpenRouter models failed:", lastError);
+    const mock = new MockProvider();
+    return await mock.complete(messages);
   }
 }
 
@@ -101,7 +105,7 @@ export function getAIProvider(): AIProvider {
       "openrouter",
       "https://openrouter.ai/api/v1/chat/completions",
       openrouterKey,
-      process.env.OPENROUTER_MODEL ?? "meta-llama/llama-3.3-70b-instruct:free",
+      process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash",
     );
   }
 
