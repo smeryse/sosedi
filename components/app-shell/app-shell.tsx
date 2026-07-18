@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import type { NavigationItem } from "./navigation";
 import { AppHeader } from "./app-header";
+import { FloatingZhenya } from "@/components/chat/floating-zhenya";
 import { FavoritesProvider } from "@/components/favorites-context";
 
 export function AppShell({
@@ -21,6 +22,7 @@ export function AppShell({
           <main className="px-4 pb-10 pt-3 sm:px-6 lg:pb-10 lg:pt-3">
             <div className="mx-auto w-full max-w-[1640px]">{children}</div>
           </main>
+          {!owner && <FloatingZhenya />}
         </div>
       </div>
     </FavoritesProvider>

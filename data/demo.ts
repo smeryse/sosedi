@@ -86,7 +86,7 @@ export const demoProperties: DemoProperty[] = [
     image: "/demo/properties/center-loft.jpg",
     match: 98,
     photosCount: 10,
-    tags: ["Реальный объект ЦИАН", "От: АРЕАТОР", "Центр"],
+    tags: ["Реальный объект ЦИАН", "От: АРЕАТОР", "Центр", "Мебель", "Можно с животными"],
     cianUrl: "https://krasnodar.cian.ru/rent/flat/317717478/"
   },
   {
@@ -101,7 +101,7 @@ export const demoProperties: DemoProperty[] = [
     image: "/demo/properties/festival-flat.jpg",
     match: 97,
     photosCount: 11,
-    tags: ["Реальный объект ЦИАН", "От: Застроевъ", "ККБ"],
+    tags: ["Реальный объект ЦИАН", "От: Застроевъ", "ККБ", "Мебель"],
     cianUrl: "https://krasnodar.cian.ru/rent/flat/318182747/"
   },
   {
@@ -116,7 +116,7 @@ export const demoProperties: DemoProperty[] = [
     image: "/demo/properties/park-room.jpg",
     match: 96,
     photosCount: 12,
-    tags: ["Реальный объект ЦИАН", "Видовой этаж", "Центр"],
+    tags: ["Реальный объект ЦИАН", "Видовой этаж", "Центр", "Можно с животными"],
     cianUrl: "https://krasnodar.cian.ru/rent/flat/317424192/"
   },
   {
@@ -131,7 +131,7 @@ export const demoProperties: DemoProperty[] = [
     image: "/demo/properties/yubileyniy-room.jpg",
     match: 95,
     photosCount: 13,
-    tags: ["Реальный объект ЦИАН", "Доступная аренда", "РИП"],
+    tags: ["Реальный объект ЦИАН", "Доступная аренда", "РИП", "Мебель"],
     cianUrl: "https://krasnodar.cian.ru/rent/flat/318181657/"
   },
   {

@@ -262,6 +262,147 @@ export async function sendMessage(input: {
   return message;
 }
 
+export async function uploadMessageAttachment(input: {
+  conversationId: string;
+  file: File;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Не авторизован");
+
+  // Check membership
+  const { data: member } = await supabase
+    .from("conversation_members")
+    .select("conversation_id")
+    .eq("conversation_id", input.conversationId)
+    .eq("profile_id", user.id)
+    .single();
+
+  if (!member) throw new Error("Нет доступа к диалогу");
+
+  // Validate file
+  const MAX_SIZE = 25 * 1024 * 1024; // 25MB
+  if (input.file.size > MAX_SIZE) {
+    throw new Error("Файл слишком большой (макс. 25 МБ)");
+  }
+
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+  ];
+  if (!allowedTypes.includes(input.file.type)) {
+    throw new Error("Неподдерживаемый тип файла");
+  }
+
+  // Generate unique storage path
+  const ext = input.file.name.split('.').pop() || '';
+  const storagePath = `${input.conversationId}/${user.id}/${Date.now()}.${ext}`;
+
+  // Upload to storage
+  const { error: uploadError } = await supabase.storage
+    .from('message-attachments')
+    .upload(storagePath, input.file, {
+      contentType: input.file.type,
+      upsert: false,
+    });
+
+  if (uploadError) throw new Error(`Ошибка загрузки: ${uploadError.message}`);
+
+  // Save attachment record (without message_id initially)
+  const { data: attachment, error: attachError } = await supabase
+    .from('message_attachments')
+    .insert({
+      message_id: '', // Will be updated after message creation
+      storage_path: storagePath,
+      mime_type: input.file.type,
+      byte_size: input.file.size,
+    })
+    .select()
+    .single();
+
+  if (attachError) {
+    // Cleanup storage on failure
+    await supabase.storage.from('message-attachments').remove([storagePath]);
+    throw new Error("Не удалось сохранить вложение");
+  }
+
+  return { attachment, storagePath };
+}
+
+export async function sendMessageWithAttachments(input: {
+  conversationId: string;
+  body: string;
+  type?: "text" | "voice" | "property_card" | "viewing_request" | "poll" | "expense_split" | "ai_bot" | "system_notice" | "attachment" | "chat";
+  extraData?: {
+    propertyId?: string;
+    viewingData?: any;
+    pollData?: any;
+    expenseData?: any;
+    voiceDuration?: string;
+  };
+  attachmentIds?: string[]; // IDs of pre-uploaded attachments
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Не авторизован");
+
+  // Check membership
+  const { data: member } = await supabase
+    .from("conversation_members")
+    .select("conversation_id")
+    .eq("conversation_id", input.conversationId)
+    .eq("profile_id", user.id)
+    .single();
+
+  if (!member) throw new Error("Нет доступа к диалогу");
+
+  // Create message
+  const { data: message, error } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: input.conversationId,
+      sender_id: user.id,
+      body: input.body,
+      system_type: input.type !== "text" ? input.type : null,
+      sent_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error("Не удалось отправить сообщение");
+
+  // Link attachments to message
+  if (input.attachmentIds?.length) {
+    const { error: attachError } = await supabase
+      .from('message_attachments')
+      .update({ message_id: message.id })
+      .in('id', input.attachmentIds);
+
+    if (attachError) {
+      console.error('Failed to link attachments:', attachError);
+    }
+  }
+
+  // Update conversation updated_at
+  await supabase
+    .from("conversations")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", input.conversationId);
+
+  // Update last_read_at for sender
+  await supabase
+    .from("conversation_members")
+    .update({ last_read_at: new Date().toISOString() })
+    .eq("conversation_id", input.conversationId)
+    .eq("profile_id", user.id);
+
+  revalidatePath(`/app/messages/${input.conversationId}`);
+  return message;
+}
+
 export async function markConversationRead(conversationId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

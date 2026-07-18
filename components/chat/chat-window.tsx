@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -23,7 +23,13 @@ import {
   Info,
   ShieldCheck,
   Volume2,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
+  Download,
+  X,
 } from "lucide-react";
+import { ReactionButton, ReactionAnimation, useReactionAnimations } from "./reaction-animations";
 import { FormattedMarkdown } from "@/components/ui/formatted-markdown";
 import { PropertyAttachmentModal } from "./property-attachment-modal";
 import { ViewingModal } from "./viewing-modal";
@@ -31,8 +37,10 @@ import { PollCreateModal } from "./poll-create-modal";
 import { ExpenseModal } from "./expense-modal";
 import { demoProperties, formatRubles } from "@/data/demo";
 import { DemoRepository } from "@/lib/repositories/demo-repository";
+import { uploadMessageAttachment, sendMessageWithAttachments } from "@/app/actions/messages";
 import type {
   ChatMessage,
+  ChatMessageType,
   ChatThread,
   ExpenseSplit,
   GroupPoll,
@@ -45,7 +53,28 @@ interface ChatWindowProps {
   onBackToList?: () => void;
 }
 
-const EMOJIS = ["👍", "❤️", "🔥", "🏠", "😮"];
+interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  storagePath?: string;
+  uploading?: boolean;
+}
+
+const EMOJIS = ["👍", "❤️", "🔥", "🤡", "🎉", "😮"];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+}
+
+function getFileIcon(mimeType: string) {
+  if (mimeType.startsWith("image/")) return <ImageIcon className="size-5 text-[#7B9E00]" />;
+  if (mimeType === "application/pdf") return <FileText className="size-5 text-red-500" />;
+  return <FileText className="size-5 text-gray-500" />;
+}
 
 export function ChatWindow({
   thread,
@@ -61,9 +90,12 @@ export function ChatWindow({
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(true);
   const [isAdapting, setIsAdapting] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const contextProperty = demoProperties.find(
     (p) => p.id === (thread.propertyId || "center-loft")
@@ -77,6 +109,67 @@ export function ChatWindow({
     new DemoRepository().markThreadAsRead(thread.id);
   }, [thread.id]);
 
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const MAX_FILES = 5;
+    const newFiles = files.slice(0, MAX_FILES - attachments.length);
+    
+    newFiles.forEach((file) => {
+      const attachment: Attachment = {
+        id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        uploading: true,
+      };
+      setAttachments((prev) => [...prev, attachment]);
+    });
+
+    uploadAttachments(newFiles);
+    
+    // Clear input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [attachments.length]);
+
+  const uploadAttachments = async (files: File[]) => {
+    setIsUploading(true);
+    const uploadedIds: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const result = await uploadMessageAttachment({
+          conversationId: thread.id,
+          file,
+        });
+        
+        // Update attachment with server ID and storage path
+        setAttachments((prev) =>
+          prev.map((a) =>
+            a.uploading && a.name === file.name && a.size === file.size
+              ? { ...a, id: result.attachment.id, storagePath: result.storagePath, uploading: false }
+              : a
+          )
+        );
+        uploadedIds.push(result.attachment.id);
+      } catch (error) {
+        console.error("Upload failed:", error);
+        // Remove failed attachment
+        setAttachments((prev) =>
+          prev.filter((a) => !(a.uploading && a.name === file.name && a.size === file.size))
+        );
+      }
+    }
+    
+    setIsUploading(false);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
   const handleSend = async (
     textToSend?: string,
     type: ChatMessage["type"] = "text",
@@ -89,12 +182,40 @@ export function ChatWindow({
     }
   ) => {
     const text = (textToSend || input).trim();
-    if (!text && type === "text") return;
+    if (!text && type === "text" && attachments.length === 0) return;
 
-    if (!textToSend) setInput("");
+    if (!textToSend) {
+      setInput("");
+      // Keep attachments for server action
+    }
 
     const repo = new DemoRepository();
-    const sentMsg = await repo.sendMessage(thread.id, text || "Смарт-карточка", type, extraData);
+    let sentMsg: ChatMessage;
+
+    if (attachments.length > 0) {
+      // Use server action with attachments
+      const attachmentIds = attachments
+        .filter((a) => !a.uploading)
+        .map((a) => a.id);
+      
+      if (attachmentIds.length !== attachments.filter((a) => !a.uploading).length) {
+        // Wait for uploads to complete
+        return;
+      }
+
+      sentMsg = await sendMessageWithAttachments({
+        conversationId: thread.id,
+        body: text || "📎 Вложение",
+        type,
+        extraData,
+        attachmentIds,
+      }) as unknown as ChatMessage;
+      
+      setAttachments([]);
+    } else {
+      sentMsg = await repo.sendMessage(thread.id, text || "Смарт-карточка", type as ChatMessageType, extraData);
+    }
+
     setMessages((prev) => [...prev, sentMsg]);
 
     // Real AI Assistant Bot Call via /api/ai/chat
@@ -120,7 +241,7 @@ export function ChatWindow({
           }
         }
 
-        const botMsg = await repo.sendMessage("ai-assistant", aiResponse, "ai_bot");
+        const botMsg = await repo.sendMessage("ai-assistant", aiResponse, "ai_bot" as ChatMessage["type"]);
         setMessages((prev) => [...prev, botMsg]);
       } catch (err) {
         console.warn("AI endpoint notification:", err);
@@ -212,7 +333,43 @@ export function ChatWindow({
     setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
   };
 
-  const handleReaction = async (msgId: string, emoji: string) => {
+  const triggerReactionParticles = (e: React.MouseEvent, emoji: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    const numParticles = 12;
+    for (let i = 0; i < numParticles; i++) {
+      const el = document.createElement("span");
+      el.innerText = emoji;
+      el.className = "reaction-particle";
+      
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 1.5);
+      const velocity = 60 + Math.random() * 100;
+      const dx = Math.cos(angle) * velocity;
+      const dy = Math.sin(angle) * velocity - 20;
+      const rotMid = (Math.random() - 0.5) * 60 + "deg";
+      const rotEnd = (Math.random() - 0.5) * 180 + "deg";
+
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.setProperty("--dx", `${dx}px`);
+      el.style.setProperty("--dy", `${dy}px`);
+      el.style.setProperty("--rot-mid", rotMid);
+      el.style.setProperty("--rot-end", rotEnd);
+
+      document.body.appendChild(el);
+
+      setTimeout(() => {
+        el.remove();
+      }, 1000);
+    }
+  };
+
+  const handleReaction = async (msgId: string, emoji: string, e?: React.MouseEvent) => {
+    if (e) {
+      triggerReactionParticles(e, emoji);
+    }
     const repo = new DemoRepository();
     const updated = await repo.toggleMessageReaction(thread.id, msgId, emoji);
     setMessages((prev) => prev.map((m) => (m.id === msgId ? updated : m)));
@@ -221,7 +378,6 @@ export function ChatWindow({
   const handleAdaptTone = () => {
     if (!input.trim()) return;
     setIsAdapting(true);
-    // Simulate AI rewriting into optimized communication style
     setTimeout(() => {
       let rewritten = input;
       if (input.toLowerCase().includes("гряз") || input.toLowerCase().includes("посуд")) {
@@ -371,6 +527,9 @@ export function ChatWindow({
             const attachedProp = msg.propertyId
               ? demoProperties.find((p) => p.id === msg.propertyId)
               : null;
+
+            // Get attachments from message (if available)
+            const msgAttachments = (msg as any).attachments || [];
 
             return (
               <div
@@ -568,6 +727,34 @@ export function ChatWindow({
 
                   <FormattedMarkdown content={msg.content} />
 
+                  {/* Attachments Display */}
+                  {msgAttachments.length > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      {msgAttachments.map((att: any) => (
+                        <div
+                          key={att.id}
+                          className="flex items-center gap-3 p-2.5 rounded-xl bg-white/50 border border-[#E5E5E0]/60 hover:bg-white/80 transition-colors"
+                        >
+                          <div className="grid size-10 place-items-center rounded-lg bg-[#F4F4F0] shrink-0">
+                            {getFileIcon(att.mime_type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[#111111] truncate">{att.name || att.storage_path?.split('/').pop()}</p>
+                            <p className="text-[11px] text-[#6B6F66]">{formatFileSize(att.byte_size)}</p>
+                          </div>
+                          <a
+                            href={`/api/attachments/${att.id}`}
+                            download
+                            className="grid size-8 place-items-center rounded-lg border border-[#E5E5E0] bg-white text-[#6B6F66] hover:bg-[#F4F4F0] hover:border-[#111111] transition-colors cursor-pointer"
+                            title="Скачать"
+                          >
+                            <Download className="size-4" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Emoji Reactions Badge */}
                   {msg.reactions && Object.keys(msg.reactions).length > 0 && (
                     <div className="mt-2.5 flex flex-wrap gap-1">
@@ -661,6 +848,35 @@ export function ChatWindow({
 
         {/* Input Bar */}
         <div className="p-3 border-t border-[#E5E5E0]/60 bg-white/50 backdrop-blur">
+          {/* Attachments Preview */}
+          {attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {attachments.map((att) => (
+                <div
+                  key={att.id}
+                  className="flex items-center gap-2 rounded-full bg-white border border-[#E5E5E0] px-3 py-1.5 shadow-sm"
+                >
+                  <div className="grid size-7 place-items-center rounded-full bg-[#F4F4F0] shrink-0">
+                    {getFileIcon(att.type)}
+                  </div>
+                  <span className="text-sm font-medium text-[#111111] truncate max-w-[150px]">{att.name}</span>
+                  <span className="text-[10px] text-[#6B6F66]">{formatFileSize(att.size)}</span>
+                  {att.uploading ? (
+                    <span className="size-3.5 animate-spin border-1.5 border-[#7B9E00] border-t-transparent rounded-full text-[#7B9E00]" />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(att.id)}
+                      className="grid size-5 place-items-center rounded-full text-[#6B6F66] hover:bg-[#F4F4F0] hover:text-[#111111] transition-colors cursor-pointer"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -676,6 +892,23 @@ export function ChatWindow({
             >
               <Plus className="size-5" />
             </button>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Прикрепить файл"
+              className="grid size-10 shrink-0 place-items-center rounded-full border border-[#E5E5E0] bg-white text-[#6B6F66] hover:border-[#111111] hover:bg-[#F4F4F0] cursor-pointer"
+            >
+              <Paperclip className="size-5" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+              accept="image/*,application/pdf,.doc,.docx,.txt"
+            />
 
             <div className="relative flex-1 flex items-center">
               <input
@@ -702,7 +935,7 @@ export function ChatWindow({
 
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() && attachments.length === 0 || isUploading}
               className="grid size-10 shrink-0 place-items-center rounded-full bg-[#7B9E00] text-white disabled:opacity-40 transition-all hover:bg-[#688600] cursor-pointer shadow-sm"
             >
               <Send className="size-4" />

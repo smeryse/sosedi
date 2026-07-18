@@ -71,6 +71,14 @@ export type ChatMessageType =
   | "voice"
   | "ai_bot";
 
+export type MessageAttachment = {
+  id: string;
+  name: string;
+  mime_type: string;
+  byte_size: number;
+  storage_path: string;
+};
+
 export type ChatMessage = {
   id: string;
   senderId: string;
@@ -88,6 +96,7 @@ export type ChatMessage = {
   pollData?: GroupPoll;
   expenseData?: ExpenseSplit;
   voiceDuration?: string;
+  attachments?: MessageAttachment[];
 };
 
 export type ChatThread = {
@@ -161,6 +170,7 @@ export interface Repository {
       senderId?: string;
       senderName?: string;
       senderAvatar?: string;
+      attachments?: MessageAttachment[];
     }
   ): Promise<ChatMessage>;
   markThreadAsRead(threadId: string): Promise<void>;
@@ -169,7 +179,7 @@ export interface Repository {
   toggleExpensePaid(threadId: string, messageId: string, memberId: string): Promise<ChatMessage>;
   togglePinThread(threadId: string): Promise<ChatThread[]>;
   toggleMessageReaction(threadId: string, messageId: string, emoji: string): Promise<ChatMessage>;
-  
+
   // New interactive methods
   listChores(): Promise<DemoChore[]>;
   createChore(title: string, assigneeId: string, dueDate: string): Promise<DemoChore[]>;
