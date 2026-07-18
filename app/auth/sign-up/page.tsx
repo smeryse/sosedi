@@ -1,5 +1,5 @@
-import { SignUpForm } from "@/components/sign-up-form";
+import { AuthScreen } from "@/components/auth-screen";
 
-export default function Page() {
-  return <div className="w-full max-w-sm"><SignUpForm /></div>;
+export default function SignUpPage() {
+  return <AuthScreen initialMode="signup" />;
 }
