@@ -1,5 +1,14 @@
-import Link from "next/link";
-import { MessageCircle, Search } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
+import { MessengerContainer } from "@/components/chat/messenger-container";
 
-export default function OwnerMessagesPage() { return <PageFrame title="Сообщения" description="Диалоги с кандидатами и группами по вашим объектам."><div className="mb-4 flex h-11 items-center gap-2 rounded-full border bg-surface px-4 text-muted-foreground"><Search className="size-4" /><input placeholder="Найти диалог" className="min-w-0 flex-1 bg-transparent text-sm outline-none" /></div><div className="divide-y overflow-hidden rounded-[20px] border bg-surface">{[["Мария и группа", "По квартире в центре", "Готовы на просмотр", "10:30"], ["Илья", "По квартире рядом с парком", "Спасибо за ответ!", "Вчера"], ["Екатерина", "По комнате в Юбилейном", "Есть вопрос про залог", "12 мая"]].map(([name, context, preview, time]) => <Link href="/owner/messages" key={name} className="flex items-center gap-3 p-4 hover:bg-surface-muted"><div className="grid size-10 place-items-center rounded-full bg-[hsl(var(--accent-soft))] text-xs font-extrabold">{name.slice(0, 1)}</div><div className="min-w-0 flex-1"><div className="flex justify-between gap-3"><p className="text-sm font-extrabold">{name}</p><span className="text-[10px] text-muted-foreground">{time}</span></div><p className="mt-1 truncate text-[10px] text-muted-foreground">{context} · {preview}</p></div><MessageCircle className="size-4 text-muted-foreground" /></Link>)}</div></PageFrame>; }
+export default function OwnerMessagesPage() {
+  return (
+    <PageFrame
+      eyebrow="Кабинет собственника"
+      title="Сообщения"
+      description="Диалоги с арендаторами и группами кандидатов по вашим объектам."
+    >
+      <MessengerContainer activeThreadId="group" />
+    </PageFrame>
+  );
+}

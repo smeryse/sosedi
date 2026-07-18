@@ -118,7 +118,7 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
             <UsersRound className="size-4" /> Подать заявку группой
           </Link>
           <Link
-            href="/app/messages"
+            href={`/app/messages/${property.id}`}
             className="flex items-center justify-center gap-2 rounded-full border bg-surface px-4 py-3 text-xs font-extrabold"
           >
             <MessageCircle className="size-4" /> Задать вопрос

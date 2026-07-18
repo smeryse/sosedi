@@ -46,7 +46,7 @@ class SingleAPIProvider {
           body: JSON.stringify({
             model,
             messages,
-            temperature: 0.2,
+            temperature: 0.3,
           }),
         });
 
@@ -111,6 +111,27 @@ export function getAIProvider(): AIProvider {
 
   const providers: SingleAPIProvider[] = [];
 
+  // Prioritize Groq API as primary for speed (75ms response) and zero rate limits
+  if (groqKey) {
+    const primaryGroqModel = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+    const groqModels = [
+      primaryGroqModel,
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+      "mixtral-8x7b-32768",
+    ].filter((m, i, arr) => m && arr.indexOf(m) === i);
+
+    providers.push(
+      new SingleAPIProvider(
+        "groq",
+        "https://api.groq.com/openai/v1/chat/completions",
+        groqKey,
+        groqModels,
+      ),
+    );
+  }
+
+  // OpenRouter as high-capability secondary provider
   if (openrouterKey) {
     const primaryOpenRouterModel = process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash";
     const openrouterModels = [
@@ -129,25 +150,6 @@ export function getAIProvider(): AIProvider {
         "https://openrouter.ai/api/v1/chat/completions",
         openrouterKey,
         openrouterModels,
-      ),
-    );
-  }
-
-  if (groqKey) {
-    const primaryGroqModel = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
-    const groqModels = [
-      primaryGroqModel,
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant",
-      "mixtral-8x7b-32768",
-    ].filter((m, i, arr) => m && arr.indexOf(m) === i);
-
-    providers.push(
-      new SingleAPIProvider(
-        "groq",
-        "https://api.groq.com/openai/v1/chat/completions",
-        groqKey,
-        groqModels,
       ),
     );
   }

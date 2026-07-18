@@ -261,6 +261,81 @@ function writeState(state: DemoState) {
   window.localStorage.setItem(storageKey, JSON.stringify(state));
 }
 
+function ensureThreadExists(state: DemoState, threadId: string): ChatThread {
+  let thread = state.threads.find((t) => t.id === threadId);
+  if (thread) return thread;
+
+  const person = demoRoommates.find((r) => r.id === threadId);
+  if (person) {
+    thread = {
+      id: person.id,
+      name: person.name,
+      type: "roommate",
+      avatar: person.image,
+      sublabel: `Сосед · ${person.compatibility}% совпадение`,
+      lastMessage: `Привет! Рад(а) пообщаться!`,
+      lastMessageTime: "Только что",
+      unreadCount: 0,
+      isOnline: true,
+    };
+    state.threads.push(thread);
+    state.messages[threadId] = [
+      {
+        id: `msg-init-${Date.now()}`,
+        senderId: person.id,
+        senderName: person.name,
+        senderAvatar: person.image,
+        content: `Привет! Я посмотрел(а) ваш профиль. Готов(а) обсудить совместный поиск жилья в районе ${person.district}!`,
+        timestamp: "Только что",
+        isRead: true,
+      },
+    ];
+    writeState(state);
+    return thread;
+  }
+
+  const property = demoProperties.find((p) => p.id === threadId);
+  if (property) {
+    thread = {
+      id: property.id,
+      name: `Собственник (${property.title.slice(0, 25)}...)`,
+      type: "owner",
+      sublabel: property.address,
+      propertyId: property.id,
+      lastMessage: "Здравствуйте! Объявление актуально.",
+      lastMessageTime: "Только что",
+      unreadCount: 0,
+      isOnline: true,
+    };
+    state.threads.push(thread);
+    state.messages[threadId] = [
+      {
+        id: `msg-init-${Date.now()}`,
+        senderId: "owner",
+        senderName: "Собственник",
+        content: `Здравствуйте! Объявление «${property.title}» по адресу ${property.address} актуально. Готовы ответить на ваши вопросы и показать объект!`,
+        timestamp: "Только что",
+        isRead: true,
+      },
+    ];
+    writeState(state);
+    return thread;
+  }
+
+  thread = {
+    id: threadId,
+    name: "Диалог",
+    type: "roommate",
+    lastMessage: "Начните общение",
+    lastMessageTime: "Только что",
+    unreadCount: 0,
+  };
+  state.threads.push(thread);
+  state.messages[threadId] = [];
+  writeState(state);
+  return thread;
+}
+
 export class DemoRepository implements Repository {
   async listRoommates(query = "") {
     const normalized = query.trim().toLocaleLowerCase("ru");
@@ -342,6 +417,7 @@ export class DemoRepository implements Repository {
 
   async getMessages(threadId: string) {
     const state = readState();
+    ensureThreadExists(state, threadId);
     return state.messages[threadId] || [];
   }
 

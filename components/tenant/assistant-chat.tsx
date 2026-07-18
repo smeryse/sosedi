@@ -50,14 +50,13 @@ export function AssistantChat() {
       setMessages((prev) => [...prev, { role: "assistant", text: data.reply }]);
     } catch (err) {
       console.warn("AI endpoint notification:", err);
-      let fallbackText = "Я помогу сравнить соседей, жильё и правила группы. Спросите про бюджет, заявку или совместимость.";
-      const lower = textToSend.toLowerCase();
-      if (lower.includes("бюджет")) {
-        fallbackText = "Для вашей группы безопасный ориентир — до 90 000 ₽ в месяц. Оставьте ещё 10% на коммунальные расходы.";
-      } else if (lower.includes("заявк")) {
-        fallbackText = "Лучше отправить заявку на два объекта: так вы сохраните выбор и не будете ждать один ответ.";
-      }
-      setMessages((prev) => [...prev, { role: "assistant", text: fallbackText }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: "К сожалению, сервис временно недоступен. Попробуйте повторить запрос еще раз через несколько секунд.",
+        },
+      ]);
     } finally {
       setLoading(false);
     }

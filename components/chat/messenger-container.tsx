@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChatSidebar } from "./chat-sidebar";
 import { ChatWindow } from "./chat-window";
 import { DemoRepository } from "@/lib/repositories/demo-repository";
@@ -8,13 +9,21 @@ import type { ChatMessage, ChatThread } from "@/lib/repositories/types";
 
 interface MessengerContainerProps {
   activeThreadId?: string;
+  baseRoute?: string;
 }
 
-export function MessengerContainer({ activeThreadId }: MessengerContainerProps) {
+export function MessengerContainer({ activeThreadId, baseRoute = "/app/messages" }: MessengerContainerProps) {
+  const router = useRouter();
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState(activeThreadId || "maria");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (activeThreadId) {
+      setSelectedThreadId(activeThreadId);
+    }
+  }, [activeThreadId]);
 
   useEffect(() => {
     async function load() {
@@ -27,6 +36,13 @@ export function MessengerContainer({ activeThreadId }: MessengerContainerProps) 
     }
     load();
   }, [selectedThreadId]);
+
+  const handleSelectThread = (id: string) => {
+    setSelectedThreadId(id);
+    if (baseRoute) {
+      router.push(`${baseRoute}/${id}`);
+    }
+  };
 
   const activeThread = threads.find((t) => t.id === selectedThreadId) || threads[0];
 
@@ -45,7 +61,7 @@ export function MessengerContainer({ activeThreadId }: MessengerContainerProps) 
         <ChatSidebar
           threads={threads}
           activeThreadId={selectedThreadId}
-          onSelectThread={(id) => setSelectedThreadId(id)}
+          onSelectThread={handleSelectThread}
           onThreadsUpdate={(updated) => setThreads(updated)}
         />
       </div>
@@ -55,7 +71,10 @@ export function MessengerContainer({ activeThreadId }: MessengerContainerProps) 
         <ChatWindow
           thread={activeThread}
           initialMessages={messages}
-          onBackToList={() => setSelectedThreadId("")}
+          onBackToList={() => {
+            setSelectedThreadId("");
+            router.push(baseRoute);
+          }}
         />
       </div>
     </div>
