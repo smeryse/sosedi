@@ -15,6 +15,7 @@ import type {
   ExpenseShare,
   ExpenseSplit,
   GroupPoll,
+  PropertyFilters,
   Repository,
   ViewingBooking,
 } from "./types";
@@ -162,9 +163,11 @@ export class SupabaseRepository implements Repository {
     return filtered.sort((a, b) => b.compatibility - a.compatibility);
   }
 
-  async listProperties(query = "") {
+  async listProperties(filters: PropertyFilters = {}) {
     const supabase = await getSupabaseClient();
-    const { data: properties, error } = await supabase
+    const { query, city, districts, minPrice, maxPrice, rooms, petsAllowed, furnished, sortBy } = filters;
+    
+    let request = supabase
       .from("properties")
       .select(`
         id, title, description, district, address, monthly_rent, rooms, area, floor, total_floors,
@@ -172,17 +175,42 @@ export class SupabaseRepository implements Repository {
       `)
       .eq("status", "published")
       .is("archived_at", null)
-      .limit(50);
+      .limit(100);
+
+    // Apply city filter (search in address)
+    if (city) {
+      request = request.ilike("address", `%${city}%`);
+    }
+
+    // Apply district filter
+    if (districts && districts.length > 0) {
+      request = request.in("district", districts);
+    }
+
+    // Apply price filters
+    if (minPrice !== undefined) {
+      request = request.gte("monthly_rent", minPrice);
+    }
+    if (maxPrice !== undefined) {
+      request = request.lte("monthly_rent", maxPrice);
+    }
+
+    // Apply rooms filter
+    if (rooms && rooms.length > 0) {
+      request = request.in("rooms", rooms);
+    }
+
+    const { data: properties, error } = await request;
 
     if (error) throw new Error("Не удалось загрузить каталог жилья.");
 
-    const mapped: DemoProperty[] = (properties ?? []).map((prop: any) => {
+    let mapped: DemoProperty[] = (properties ?? []).map((prop: any) => {
       const photos = prop.property_images ?? [];
       const imagePath = photos.length > 0 ? photos[0].storage_path : "/demo/properties/center-loft.jpg";
       return {
         id: prop.id,
         title: prop.title,
-        address: prop.address ?? `Краснодар, ${prop.district}`,
+        address: prop.address ?? `${city || "Краснодар"}, ${prop.district}`,
         district: prop.district,
         price: prop.monthly_rent,
         rooms: prop.rooms,
@@ -195,14 +223,47 @@ export class SupabaseRepository implements Repository {
       };
     });
 
-    const normalizedQuery = query.trim().toLowerCase();
-    return normalizedQuery
-      ? mapped.filter((p) =>
-          p.title.toLowerCase().includes(normalizedQuery) ||
-          p.district.toLowerCase().includes(normalizedQuery) ||
-          p.address.toLowerCase().includes(normalizedQuery)
-        )
-      : mapped;
+    // Client-side filtering for features that may not be in DB
+    const normalizedQuery = query?.trim().toLowerCase() || "";
+    mapped = mapped.filter((p) => {
+      if (normalizedQuery) {
+        const searchable = [p.title, p.district, p.address].join(" ").toLowerCase();
+        if (!searchable.includes(normalizedQuery)) return false;
+      }
+      
+      if (petsAllowed !== undefined) {
+        const hasPets = p.tags.some(t => t.toLowerCase().includes("животн") || t.toLowerCase().includes("pet"));
+        if (petsAllowed && !hasPets) return false;
+        if (!petsAllowed && hasPets) return false;
+      }
+      
+      if (furnished !== undefined) {
+        const hasFurnished = p.tags.some(t => t.toLowerCase().includes("мебел") || t.toLowerCase().includes("furnish"));
+        if (furnished && !hasFurnished) return false;
+        if (!furnished && hasFurnished) return false;
+      }
+      
+      return true;
+    });
+
+    // Sorting
+    switch (sortBy) {
+      case "price_asc":
+        mapped.sort((a, b) => a.price - b.price);
+        break;
+      case "price_desc":
+        mapped.sort((a, b) => b.price - a.price);
+        break;
+      case "newest":
+        mapped.sort((a, b) => b.id.localeCompare(a.id));
+        break;
+      case "match":
+      default:
+        mapped.sort((a, b) => b.match - a.match);
+        break;
+    }
+
+    return mapped;
   }
 
   async getState(): Promise<DemoState> {
