@@ -57,7 +57,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
       // Demo Mode fallback
       setTimeout(() => {
         router.push("/app");
-      }, 400);
+      }, 350);
       return;
     }
 
@@ -94,60 +94,62 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1440px] items-center justify-center p-3 sm:p-6 lg:p-8">
-      <div className="grid min-h-[720px] w-full grid-cols-1 overflow-hidden rounded-[28px] border border-[#E5E5E0] bg-white shadow-xl lg:grid-cols-12">
+    <div className="flex min-h-screen w-full items-center justify-center bg-[#EBEBE6] p-2 sm:p-4 lg:p-6">
+      <div className="grid min-h-[calc(100vh-32px)] w-full max-w-[1380px] grid-cols-1 overflow-hidden rounded-[32px] border border-[#E0E0D8] bg-white shadow-2xl lg:grid-cols-12">
+        
         {/* Left Hero Panel */}
-        <div className="relative min-h-[380px] overflow-hidden bg-[#111111] p-6 sm:p-10 lg:col-span-6 lg:min-h-[720px] xl:col-span-6">
-          {/* Background Image & Overlay */}
+        <div className="relative min-h-[440px] overflow-hidden rounded-[26px] bg-[#111111] p-6 sm:p-10 lg:col-span-6 lg:m-2.5 lg:min-h-[calc(100vh-52px)] xl:col-span-6">
+          {/* Background Image */}
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
             style={{ backgroundImage: "url('/brand/auth-hero.jpg')" }}
           />
+          {/* Dark Cinematic Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/30" />
 
-          {/* Header Logo */}
+          {/* Top Logo */}
           <div className="relative z-10">
             <Link href="/" className="inline-flex items-center gap-1">
-              <span className="text-[26px] font-black tracking-tight text-white">
+              <span className="text-[28px] font-black tracking-tight text-white">
                 соседи
               </span>
-              <span className="h-2 w-2 rounded-full bg-[#B3DB00]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#B3DB00]" />
             </Link>
           </div>
 
           {/* Bottom Hero Content */}
           <div className="absolute bottom-6 left-6 right-6 z-10 sm:bottom-10 sm:left-10 sm:right-10">
-            <h1 className="text-2xl font-extrabold leading-[1.2] text-white sm:text-3xl lg:text-[34px] xl:text-[38px]">
+            <h1 className="text-2xl font-black leading-[1.15] text-white sm:text-3xl lg:text-[38px] xl:text-[42px]">
               Хорошие соседи — лучшее решение
             </h1>
-            <p className="mt-3 text-xs leading-relaxed text-white/80 sm:text-sm lg:max-w-[440px]">
+            <p className="mt-3 text-xs leading-relaxed text-white/80 sm:text-sm lg:max-w-[460px]">
               Подбираем совместимых людей, жильё и условия, чтобы совместная жизнь была комфортной.
             </p>
 
-            {/* Social Proof */}
-            <div className="mt-6 flex items-center gap-3 border-t border-white/15 pt-5">
+            {/* Social Proof Bar */}
+            <div className="mt-6 flex items-center gap-3.5 border-t border-white/15 pt-5">
               <div className="flex -space-x-2.5">
                 <AvatarImage
                   src="/demo/people/maria.jpg"
                   name="Мария"
-                  size={36}
-                  className="size-[36px] ring-2 ring-black"
+                  size={40}
+                  className="size-[40px] ring-2 ring-black"
                 />
                 <AvatarImage
                   src="/demo/people/ekaterina.jpg"
                   name="Екатерина"
-                  size={36}
-                  className="size-[36px] ring-2 ring-black"
+                  size={40}
+                  className="size-[40px] ring-2 ring-black"
                 />
                 <AvatarImage
                   src="/demo/people/artem.jpg"
                   name="Артём"
-                  size={36}
-                  className="size-[36px] ring-2 ring-black"
+                  size={40}
+                  className="size-[40px] ring-2 ring-black"
                 />
               </div>
               <div>
-                <p className="text-[13px] font-extrabold text-white">
+                <p className="text-[14px] font-extrabold text-white">
                   12 500+ человек
                 </p>
                 <p className="text-[11px] font-medium text-white/70">
@@ -158,9 +160,9 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
           </div>
         </div>
 
-        {/* Right Auth Form Area */}
-        <div className="flex flex-col justify-between bg-[#FAFAFA] p-6 sm:p-8 lg:col-span-6 lg:p-10 xl:col-span-6">
-          {/* Top Help Link */}
+        {/* Right Form Area */}
+        <div className="flex flex-col justify-between bg-[#FAFAFA] p-6 sm:p-10 lg:col-span-6 lg:p-12 xl:col-span-6">
+          {/* Top Bar Link */}
           <div className="flex justify-end">
             <Link
               href="/faq"
@@ -170,11 +172,11 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
             </Link>
           </div>
 
-          {/* Main Auth Form Container */}
-          <div className="mx-auto my-auto w-full max-w-[430px] space-y-6 py-4">
-            {/* Title & Subtitle */}
+          {/* Center Form Box */}
+          <div className="mx-auto my-auto w-full max-w-[440px] space-y-6 py-2">
+            {/* Header Title */}
             <div>
-              <h2 className="text-2xl font-black tracking-tight text-[#111111] sm:text-3xl">
+              <h2 className="text-2xl font-black tracking-tight text-[#111111] sm:text-3xl lg:text-[34px]">
                 Добро пожаловать
               </h2>
               <p className="mt-1 text-[13px] font-medium text-[#6B6F66]">
@@ -182,8 +184,8 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               </p>
             </div>
 
-            {/* Segmented Tab Switcher */}
-            <div className="grid grid-cols-2 rounded-[18px] bg-[#EAEAEA] p-1.5">
+            {/* Segmented Control Track */}
+            <div className="grid grid-cols-2 rounded-[20px] bg-[#EAEAEA] p-1.5">
               <button
                 type="button"
                 onClick={() => {
@@ -191,7 +193,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                   setError(null);
                 }}
                 className={cn(
-                  "h-10 rounded-[14px] text-[13px] font-extrabold transition-all duration-200",
+                  "h-11 rounded-[15px] text-[13px] font-extrabold transition-all duration-200 cursor-pointer",
                   mode === "login"
                     ? "bg-white text-[#111111] shadow-sm"
                     : "text-[#6B6F66] hover:text-[#111111]",
@@ -206,7 +208,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                   setError(null);
                 }}
                 className={cn(
-                  "h-10 rounded-[14px] text-[13px] font-extrabold transition-all duration-200",
+                  "h-11 rounded-[15px] text-[13px] font-extrabold transition-all duration-200 cursor-pointer",
                   mode === "signup"
                     ? "bg-white text-[#111111] shadow-sm"
                     : "text-[#6B6F66] hover:text-[#111111]",
@@ -216,11 +218,11 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               </button>
             </div>
 
-            {/* Form */}
+            {/* Inputs Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "signup" && (
                 <div>
-                  <label className="mb-1.5 block text-[12px] font-bold text-[#111111]">
+                  <label className="mb-1.5 block text-[12px] font-extrabold text-[#111111]">
                     Имя
                   </label>
                   <input
@@ -229,13 +231,13 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                     placeholder="Иван Иванов"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F5F5F2] px-4 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
+                    className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F4F4F0] px-4 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
                   />
                 </div>
               )}
 
               <div>
-                <label className="mb-1.5 block text-[12px] font-bold text-[#111111]">
+                <label className="mb-1.5 block text-[12px] font-extrabold text-[#111111]">
                   Email
                 </label>
                 <input
@@ -244,12 +246,12 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F5F5F2] px-4 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
+                  className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F4F4F0] px-4 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[12px] font-bold text-[#111111]">
+                <label className="mb-1.5 block text-[12px] font-extrabold text-[#111111]">
                   Пароль
                 </label>
                 <div className="relative">
@@ -262,7 +264,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                     }
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F5F5F2] pl-4 pr-11 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
+                    className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F4F4F0] pl-4 pr-11 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
                   />
                   <button
                     type="button"
@@ -280,7 +282,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
 
               {mode === "signup" && (
                 <div>
-                  <label className="mb-1.5 block text-[12px] font-bold text-[#111111]">
+                  <label className="mb-1.5 block text-[12px] font-extrabold text-[#111111]">
                     Повторите пароль
                   </label>
                   <div className="relative">
@@ -291,7 +293,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                       placeholder="Повторите пароль"
                       value={repeatPassword}
                       onChange={(e) => setRepeatPassword(e.target.value)}
-                      className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F5F5F2] pl-4 pr-11 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
+                      className="h-12 w-full rounded-[16px] border border-[#E2E2DC] bg-[#F4F4F0] pl-4 pr-11 text-[13px] font-medium text-[#111111] outline-none transition-all focus:border-[#B3DB00] focus:bg-white placeholder:text-[#9A9B93]"
                     />
                     <button
                       type="button"
@@ -308,7 +310,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                 </div>
               )}
 
-              {/* Options row */}
+              {/* Options Row */}
               {mode === "login" ? (
                 <div className="flex items-center justify-between pt-1">
                   <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -316,7 +318,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="size-4 rounded border-[#D0D0CA] text-[#B3DB00] accent-[#B3DB00]"
+                      className="size-4 rounded border-[#D0D0CA] accent-[#B3DB00]"
                     />
                     <span className="text-[12px] font-medium text-[#444540]">
                       Запомнить меня
@@ -336,7 +338,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                       type="checkbox"
                       checked={acceptTerms}
                       onChange={(e) => setAcceptTerms(e.target.checked)}
-                      className="mt-0.5 size-4 rounded border-[#D0D0CA] text-[#B3DB00] accent-[#B3DB00]"
+                      className="mt-0.5 size-4 rounded border-[#D0D0CA] accent-[#B3DB00]"
                     />
                     <span className="text-[11.5px] leading-tight font-medium text-[#444540]">
                       Я соглашаюсь с{" "}
@@ -362,7 +364,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative inline-flex h-13 w-full items-center justify-center rounded-full bg-[#B3DB00] px-6 text-[14px] font-extrabold text-[#111111] transition-all duration-200 hover:bg-[#A5CB00] active:scale-[0.99] disabled:opacity-70"
+                className="group relative inline-flex h-13 w-full items-center justify-center rounded-full bg-[#B3DB00] px-6 text-[14px] font-extrabold text-[#111111] transition-all duration-200 hover:bg-[#A5CB00] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
               >
                 <span>
                   {loading
@@ -371,7 +373,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                       ? "Войти в аккаунт"
                       : "Создать аккаунт"}
                 </span>
-                <span className="absolute right-2.5 grid size-9 place-items-center rounded-full bg-[#111111] text-white transition-transform group-hover:translate-x-0.5">
+                <span className="absolute right-2 grid size-9 place-items-center rounded-full bg-[#111111] text-white transition-transform group-hover:translate-x-0.5">
                   <ArrowRight className="size-4" />
                 </span>
               </button>
@@ -392,7 +394,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               <button
                 type="button"
                 onClick={() => router.push("/app")}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F5F5F2]"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
               >
                 <svg className="size-4" viewBox="0 0 24 24">
                   <path
@@ -418,7 +420,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               <button
                 type="button"
                 onClick={() => router.push("/app")}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F5F5F2]"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
               >
                 <svg className="size-4 fill-current" viewBox="0 0 24 24">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.67-.82 1.13-1.96.99-3.1-.98.04-2.17.65-2.88 1.48-.63.73-1.19 1.9-.1 3.04 1.1.09 2.21-.57 2.89-1.42z" />
@@ -429,7 +431,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               <button
                 type="button"
                 onClick={() => router.push("/app")}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F5F5F2]"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
               >
                 <svg className="size-4 fill-[#0077FF]" viewBox="0 0 24 24">
                   <path d="M15.684 0H8.316C1.592 0 0 1.592 0 8.316v7.368C0 22.408 1.592 24 8.316 24h7.368C22.408 24 24 22.408 24 15.684V8.316C24 1.592 22.408 0 15.684 0zm3.692 17.123h-1.644c-.624 0-.816-.495-1.936-1.616-1.008-.984-1.456-1.112-1.704-1.112-.344 0-.448.096-.448.56v1.448c0 .4-.128.648-1.2.648-1.776 0-3.752-1.08-5.144-3.088-2.104-2.984-2.672-5.224-2.672-5.68 0-.248.096-.48.56-.48h1.644c.416 0 .568.192.728.648.792 2.296 2.128 4.304 2.68 4.304.208 0 .312-.096.312-.624V9.672c-.064-1.128-.656-1.224-.656-1.632 0-.2.168-.4.432-.4h2.712c.36 0 .488.192.488.608v3.272c0 .352.152.48.256.48.208 0 .384-.128.768-.512 1.184-1.328 2.032-3.376 2.032-3.376.112-.248.312-.4.728-.4h1.644c.488 0 .6.248.488.608-.2.92-2.144 3.704-2.144 3.704-.176.272-.248.4 0 .736.176.248.744.728 1.128 1.176.704.792 1.24 1.456 1.384 1.912.136.456-.08.696-.536.696z" />
@@ -439,7 +441,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
             </div>
 
             {/* Bottom Callout Card */}
-            <div className="mt-6 flex flex-col items-start justify-between gap-3 rounded-[22px] bg-[#EFEFEA] p-4 sm:flex-row sm:items-center">
+            <div className="mt-6 flex flex-col items-start justify-between gap-3 rounded-[24px] bg-[#EFEFEA] p-5 sm:flex-row sm:items-center">
               <div>
                 <p className="text-[13px] font-extrabold text-[#111111]">
                   {mode === "login"
@@ -458,7 +460,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                   setMode(mode === "login" ? "signup" : "login");
                   setError(null);
                 }}
-                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[11.5px] font-extrabold text-[#111111] shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[11.5px] font-extrabold text-[#111111] shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 {mode === "login" ? "Создать профиль" : "Войти"}
                 <ArrowRight className="size-3.5 text-[#111111]" />
@@ -467,7 +469,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
           </div>
 
           {/* Footer Copyright */}
-          <div className="text-center text-[11px] font-medium text-[#878881]">
+          <div className="pt-2 text-center text-[11px] font-medium text-[#878881]">
             © {new Date().getFullYear()} Соседи · Платформа безопасной совместной аренды
           </div>
         </div>
