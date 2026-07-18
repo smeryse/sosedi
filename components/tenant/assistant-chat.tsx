@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Bot, Send, Sparkles } from "lucide-react";
 import { FormattedMarkdown } from "@/components/ui/formatted-markdown";
 
@@ -10,6 +11,7 @@ interface Message {
 }
 
 export function AssistantChat() {
+  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -73,6 +75,14 @@ export function AssistantChat() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const q = searchParams.get("q") || searchParams.get("search");
+    if (q) {
+      sendMessage(undefined, q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">

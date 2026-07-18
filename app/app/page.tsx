@@ -204,12 +204,12 @@ export default async function TenantDashboardPage() {
               <p className="mt-0.5 text-[10px] leading-4 text-[#6B6F66] font-medium">Спросите меня о совместимости, конфликтах, быте или поиске жилья.</p>
             </div>
           </div>
-          <div className="mt-3 flex items-center rounded-full border border-[#E5E5E0] bg-white p-1 pl-3.5 shadow-sm">
-            <input type="text" placeholder="Напишите свой вопрос..." className="min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-[#878881]" />
-            <button type="button" aria-label="Отправить" className="grid size-8 place-items-center rounded-full bg-[#B3DB00] text-[#111111]">
+          <form action="/app/assistant" method="GET" className="mt-3 flex items-center rounded-full border border-[#E5E5E0] bg-white p-1 pl-3.5 shadow-sm">
+            <input name="q" type="text" placeholder="Напишите свой вопрос..." className="min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-[#878881] text-black" />
+            <button type="submit" aria-label="Отправить" className="grid size-8 place-items-center rounded-full bg-[#B3DB00] text-[#111111] cursor-pointer">
               <Send className="size-3.5 stroke-[2]" />
             </button>
-          </div>
+          </form>
         </section>
 
         {/* Card 3: Мои группы */}
