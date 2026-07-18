@@ -45,12 +45,16 @@ export class SupabaseRepository implements Repository {
       (property): DemoProperty => ({
         id: property.id,
         title: property.title,
-        district: property.district,
+        address: property.district ? `Краснодар, ${property.district}` : "Краснодар",
+        district: property.district ?? "Центральный",
         price: property.monthly_rent,
         rooms: property.rooms,
         area: Number(property.area),
+        floor: "5/12",
         image: "/demo/properties/center-loft.jpg",
         match: 86,
+        photosCount: 12,
+        tags: ["Проверенное жильё", "Мебель", "Техника"],
       }),
     );
   }

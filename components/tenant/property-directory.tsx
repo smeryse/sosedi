@@ -7,78 +7,28 @@ import {
   Heart,
   LayoutGrid,
   Map as MapIcon,
+  MapPin,
   Search,
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
 import { CityMap } from "@/components/map/city-map";
 import { MediaImage } from "@/components/ui/media-image";
-import { formatRubles } from "@/data/demo";
+import { demoProperties, formatRubles } from "@/data/demo";
 import { DemoRepository } from "@/lib/repositories/demo-repository";
-
-const extendedProperties = [
-  {
-    id: "center-loft",
-    title: "2-комнатная квартира в центре",
-    price: 28000,
-    district: "Центральный район",
-    rooms: 2,
-    area: 56,
-    match: 87,
-    photosCount: 12,
-    tags: ["Кухня-гостиная", "Балкон", "Современный ремонт"],
-    image: "/demo/properties/loft.jpg",
-  },
-  {
-    id: "festival-apartment",
-    title: "1-комнатная квартира на Фестивальном",
-    price: 24500,
-    district: "Фестивальный район",
-    rooms: 1,
-    area: 43,
-    match: 92,
-    photosCount: 15,
-    tags: ["Полностью меблирована", "Вся техника", "Быстрый интернет"],
-    image: "/demo/properties/cozy.jpg",
-  },
-  {
-    id: "jubilee-studio",
-    title: "Уютная студия в Юбилейном",
-    price: 20000,
-    district: "Юбилейный микрорайон",
-    rooms: 1,
-    area: 38,
-    match: 83,
-    photosCount: 10,
-    tags: ["Тихий двор", "Рядом парк", "Можно с животными"],
-    image: "/demo/properties/modern.jpg",
-  },
-  {
-    id: "panorama-flat",
-    title: "Просторная 2-к квартира возле парка Галицкого",
-    price: 26000,
-    district: "Панорама / Галицкий",
-    rooms: 2,
-    area: 52,
-    match: 89,
-    photosCount: 14,
-    tags: ["Вид на парк", "Кондиционер", "Панорамные окна"],
-    image: "/demo/properties/loft.jpg",
-  },
-];
 
 export function PropertyDirectory() {
   const [query, setQuery] = useState("");
   const [district, setDistrict] = useState("Любой район");
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(["center-loft"]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(["bolshoy-red"]);
   const [viewMode, setViewMode] = useState<"split" | "list" | "map">("split");
 
   const properties = useMemo(() => {
-    return extendedProperties.filter((property) => {
+    return demoProperties.filter((property) => {
       const needle = query.trim().toLocaleLowerCase("ru");
       const matchQuery =
         !needle ||
-        `${property.title} ${property.district}`
+        `${property.title} ${property.address} ${property.district}`
           .toLocaleLowerCase("ru")
           .includes(needle);
       const matchDistrict =
@@ -103,7 +53,7 @@ export function PropertyDirectory() {
             Поиск жилья
           </h1>
           <p className="mt-0.5 text-[13px] text-[#6B6F66]">
-            Найдите квартиру или комнату для совместной аренды
+            Найдите квартиру или комнату в Краснодаре (всего {demoProperties.length} проверенных объявлений)
           </p>
         </div>
 
@@ -135,14 +85,14 @@ export function PropertyDirectory() {
 
       {/* Filter capsule bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <label className="relative flex h-[42px] min-w-[220px] items-center rounded-full border border-[#E5E5E0] bg-white px-4 shadow-sm hover:border-[#111111]">
-          <Search className="mr-2 size-3.5 text-[#878881]" />
+        <label className="relative flex h-[42px] items-center rounded-full border border-[#E5E5E0] bg-white px-4 shadow-sm hover:border-[#111111]">
+          <Search className="mr-2 size-4 text-[#878881]" />
           <input
             type="text"
-            placeholder="Поиск по названию..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-transparent text-[11px] font-medium text-[#111111] outline-none placeholder:text-[#878881]"
+            placeholder="Поиск по названию или улице..."
+            className="w-[200px] bg-transparent text-[11px] text-[#111111] outline-none placeholder:text-[#878881]"
           />
         </label>
 
@@ -158,17 +108,18 @@ export function PropertyDirectory() {
             <option>Фестивальный</option>
             <option>Юбилейный</option>
             <option>Панорама</option>
+            <option>Черёмушки</option>
+            <option>Губернский</option>
+            <option>40 лет Победы</option>
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 size-3.5 text-[#878881]" />
         </label>
 
         {[
-          ["Бюджет", "Любой"],
+          ["Бюджет", "До 50 000 ₽"],
           ["Комнаты", "Любое кол-во"],
-          ["Срок аренды", "Любой срок"],
-          ["Можно с животными", "Не важно"],
-          ["Мебель", "Любая"],
-          ["Сортировка", "Сначала новые"],
+          ["Срок аренды", "От 6 мес."],
+          ["Сортировка", "Сначала лучшие"],
         ].map(([label, val]) => (
           <button
             key={label}
@@ -195,7 +146,11 @@ export function PropertyDirectory() {
       {/* Main split grid */}
       <div className="grid gap-5 xl:grid-cols-[480px_minmax(0,1fr)] 2xl:grid-cols-[520px_minmax(0,1fr)]">
         {/* Left list column */}
-        <section className="min-w-0 space-y-4">
+        <section className="min-w-0 space-y-4 max-h-[calc(100vh-170px)] overflow-y-auto pr-1 soft-scrollbar">
+          <p className="text-[11.5px] font-bold text-[#6B6F66]">
+            Найдено {properties.length} объектов в Краснодаре
+          </p>
+
           {properties.map((property) => {
             const isFav = favoriteIds.includes(property.id);
             return (
@@ -230,27 +185,30 @@ export function PropertyDirectory() {
 
                 {/* Info container */}
                 <div className="flex min-w-0 flex-col p-3 sm:pl-4">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <div>
-                      <p className="text-[16px] font-black tracking-tight text-[#111111]">
-                        {formatRubles(property.price)}{" "}
-                        <span className="text-[11px] font-normal text-[#6B6F66]">
-                          / мес.
-                        </span>
-                      </p>
-                      <p className="text-[11px] font-semibold text-[#6B6F66]">
-                        {property.district}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-[16px] font-black tracking-tight text-[#111111]">
+                      {formatRubles(property.price)}{" "}
+                      <span className="text-[11px] font-normal text-[#6B6F66]">
+                        / мес.
+                      </span>
+                    </p>
+                    <h3 className="mt-0.5 text-[12px] font-extrabold text-[#111111]">
+                      {property.title}
+                    </h3>
+                    <p className="mt-1 flex items-center gap-1 text-[10.5px] font-medium text-[#6B6F66]">
+                      <MapPin className="size-3 text-[#7B9E00]" /> {property.address}, {property.district}
+                    </p>
                   </div>
 
-                  <div className="mt-2.5 flex items-center gap-3 text-[10.5px] text-[#6B6F66]">
-                    <span>{property.rooms} комнаты</span>
+                  <div className="mt-2 flex items-center gap-2 text-[10.5px] text-[#6B6F66]">
+                    <span>{property.rooms} комн.</span>
                     <span>·</span>
                     <span>{property.area} м²</span>
+                    <span>·</span>
+                    <span>{property.floor} эт.</span>
                   </div>
 
-                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  <div className="mt-2 flex flex-wrap gap-1.5">
                     {property.tags.map((tag) => (
                       <span
                         key={tag}
@@ -261,14 +219,14 @@ export function PropertyDirectory() {
                     ))}
                   </div>
 
-                  <div className="mt-4 pt-2 border-t border-[#E5E5E0]/60 flex flex-col gap-2.5">
+                  <div className="mt-3.5 pt-2 border-t border-[#E5E5E0]/60 flex flex-col gap-2">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF7B6] px-3 py-1 text-[10.5px] font-extrabold text-[#7B9E00]">
                       <Sparkles className="size-3.5" /> Подходит группе на {property.match}%
                     </span>
 
                     <Link
                       href={`/app/housing/${property.id}`}
-                      className="flex h-9 items-center justify-center rounded-full border border-[#E5E5E0] bg-white text-[11px] font-bold text-[#111111] transition-colors hover:border-[#111111] hover:bg-[#F4F4F0]"
+                      className="flex h-8 items-center justify-center rounded-full border border-[#E5E5E0] bg-white text-[11px] font-bold text-[#111111] transition-colors hover:border-[#111111] hover:bg-[#F4F4F0]"
                     >
                       Подробнее
                     </Link>
@@ -277,10 +235,17 @@ export function PropertyDirectory() {
               </article>
             );
           })}
+
+          {!properties.length ? (
+            <div className="rounded-[24px] border border-[#E5E5E0] bg-white p-8 text-center shadow-sm">
+              <p className="text-[14px] font-extrabold text-[#111111]">Ничего не найдено</p>
+              <p className="mt-1 text-[11px] text-[#6B6F66]">Попробуйте изменить поисковый запрос или фильтр по району.</p>
+            </div>
+          ) : null}
         </section>
 
         {/* Right Map column */}
-        <section className="sticky top-[92px] h-[calc(100vh-120px)] min-h-[580px] overflow-hidden rounded-[24px] border border-[#E5E5E0] bg-white shadow-sm">
+        <section className="sticky top-[92px] h-[calc(100vh-170px)] min-h-[560px] overflow-hidden rounded-[24px] border border-[#E5E5E0] bg-white shadow-sm">
           <CityMap className="h-full w-full" />
         </section>
       </div>

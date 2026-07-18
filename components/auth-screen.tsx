@@ -364,7 +364,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative inline-flex h-13 w-full items-center justify-center rounded-full bg-[#B3DB00] px-6 text-[14px] font-extrabold text-[#111111] transition-all duration-200 hover:bg-[#A5CB00] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
+                className="group relative inline-flex h-[52px] w-full items-center justify-center rounded-full bg-[#B3DB00] px-6 text-[14px] font-extrabold text-[#111111] transition-all duration-200 hover:bg-[#A5CB00] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
               >
                 <span>
                   {loading
@@ -389,54 +389,28 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
               </span>
             </div>
 
-            {/* Social Buttons */}
-            <div className="grid grid-cols-3 gap-2.5">
+            {/* Russian OAuth Buttons: VK ID & Yandex ID */}
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => router.push("/app")}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12.5px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
               >
-                <svg className="size-4" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                Google
-              </button>
-
-              <button
-                type="button"
-                onClick={() => router.push("/app")}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
-              >
-                <svg className="size-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.67-.82 1.13-1.96.99-3.1-.98.04-2.17.65-2.88 1.48-.63.73-1.19 1.9-.1 3.04 1.1.09 2.21-.57 2.89-1.42z" />
-                </svg>
-                Apple
-              </button>
-
-              <button
-                type="button"
-                onClick={() => router.push("/app")}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
-              >
-                <svg className="size-4 fill-[#0077FF]" viewBox="0 0 24 24">
+                <svg className="size-5 fill-[#0077FF]" viewBox="0 0 24 24">
                   <path d="M15.684 0H8.316C1.592 0 0 1.592 0 8.316v7.368C0 22.408 1.592 24 8.316 24h7.368C22.408 24 24 22.408 24 15.684V8.316C24 1.592 22.408 0 15.684 0zm3.692 17.123h-1.644c-.624 0-.816-.495-1.936-1.616-1.008-.984-1.456-1.112-1.704-1.112-.344 0-.448.096-.448.56v1.448c0 .4-.128.648-1.2.648-1.776 0-3.752-1.08-5.144-3.088-2.104-2.984-2.672-5.224-2.672-5.68 0-.248.096-.48.56-.48h1.644c.416 0 .568.192.728.648.792 2.296 2.128 4.304 2.68 4.304.208 0 .312-.096.312-.624V9.672c-.064-1.128-.656-1.224-.656-1.632 0-.2.168-.4.432-.4h2.712c.36 0 .488.192.488.608v3.272c0 .352.152.48.256.48.208 0 .384-.128.768-.512 1.184-1.328 2.032-3.376 2.032-3.376.112-.248.312-.4.728-.4h1.644c.488 0 .6.248.488.608-.2.92-2.144 3.704-2.144 3.704-.176.272-.248.4 0 .736.176.248.744.728 1.128 1.176.704.792 1.24 1.456 1.384 1.912.136.456-.08.696-.536.696z" />
                 </svg>
-                VK
+                VK ID
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/app")}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#E2E2DC] bg-white text-[12.5px] font-extrabold text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0] cursor-pointer"
+              >
+                <span className="grid size-5 place-items-center rounded-full bg-[#FC3F1D] text-[11px] font-black text-white leading-none">
+                  Я
+                </span>
+                Яндекс ID
               </button>
             </div>
 
