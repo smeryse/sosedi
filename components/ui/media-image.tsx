@@ -22,8 +22,8 @@ export function MediaImage({
 
   if (failed || !src) {
     return (
-      <span className={cn("absolute inset-0 grid place-items-center bg-[#F0F1EC] text-[#9A9B94]", className)}>
-        <ImageIcon className="size-7 stroke-[1.4]" aria-hidden="true" />
+      <span className={cn("absolute inset-0 grid place-items-center bg-[#F4F4F0] text-[#878881]", className)}>
+        <ImageIcon className="size-8 stroke-[1.4]" aria-hidden="true" />
         <span className="sr-only">Изображение недоступно: {alt}</span>
       </span>
     );
@@ -36,6 +36,7 @@ export function MediaImage({
       fill
       priority={priority}
       sizes={sizes}
+      unoptimized
       onError={() => setFailed(true)}
       className={className}
     />

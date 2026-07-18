@@ -66,7 +66,7 @@ $$\text{Поиск} \rightarrow \text{Знакомство} \rightarrow \text{Ф
 
 * **Фреймворк**: [Next.js 15](https://nextjs.org/) (App Router, React 19, Server & Client Components)
 * **Язык**: TypeScript (строгая типизация без `any`)
-* **Стилизация**: Tailwind CSS + Vanilla CSS tokens, Manrope font, Emerald/Teal дизайн-система
+* **Стилизация**: Tailwind CSS + Vanilla CSS tokens, Inter font, Emerald/Teal дизайн-система
 * **База данных & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security, Triggers, Functions, Storage)
 * **Тестирование**: Vitest / Custom Validation Scripts, Playwright E2E test suite
 * **Линтинг & Сборка**: ESLint, PostCSS, TypeScript compiler

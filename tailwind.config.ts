@@ -63,7 +63,7 @@ export default {
       },
       boxShadow: { card: "var(--shadow-card)" },
       maxWidth: { content: "var(--content-max-width)" },
-      fontFamily: { sans: ["var(--font-manrope)", "sans-serif"] },
+      fontFamily: { sans: ["var(--font-inter)", "sans-serif"] },
     },
   },
   plugins: [tailwindAnimate],

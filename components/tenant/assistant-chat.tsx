@@ -3,14 +3,164 @@
 import { useState } from "react";
 import { Bot, Send, Sparkles } from "lucide-react";
 
-const answers: Record<string, string> = {
-  бюджет: "Для вашей группы безопасный ориентир — до 90 000 ₽ в месяц. Оставьте ещё 10% на коммунальные расходы и интернет.",
-  заявк: "Лучше отправить заявку на два объекта: так вы сохраните выбор и не будете ждать один ответ в пустоте.",
-  сосед: "Начните с трёх тем: режим сна, гости и уборка. Потом обсудите правила, которые важны именно вам.",
-};
+interface Message {
+  role: "user" | "assistant";
+  text: string;
+}
 
 export function AssistantChat() {
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([{ role: "assistant", text: "Привет! Я помогу сравнить варианты, подготовить заявку или обсудить правила группы." }]); const [value, setValue] = useState("");
-  const send = (event: React.FormEvent) => { event.preventDefault(); const text = value.trim(); if (!text) return; const lower = text.toLocaleLowerCase("ru"); const key = Object.keys(answers).find((item) => lower.includes(item)); const reply = key ? answers[key] : "Соберу это в понятный следующий шаг. Проверьте группу, бюджет и выбранный объект — там уже есть нужные данные."; setMessages((current) => [...current, { role: "user", text }, { role: "assistant", text: reply }]); setValue(""); };
-  return <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]"><section className="surface-card flex min-h-[520px] flex-col p-4 sm:p-6"><div className="flex items-center gap-3 border-b pb-4"><div className="grid size-10 place-items-center rounded-full bg-[hsl(var(--accent))]"><Bot className="size-5" /></div><div><p className="text-sm font-extrabold">Соседи AI</p><p className="text-[10px] text-muted-foreground">Подсказывает по вашим данным</p></div></div><div className="flex-1 space-y-3 py-5">{messages.map((message, index) => <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}><div className={`max-w-[85%] rounded-[16px] px-4 py-3 text-sm leading-6 ${message.role === "user" ? "bg-foreground text-background" : "bg-surface-muted"}`}>{message.text}</div></div>)}</div><form onSubmit={send} className="flex items-center gap-2 border-t pt-4"><input value={value} onChange={(event) => setValue(event.target.value)} placeholder="Например: как распределить бюджет?" className="h-11 min-w-0 flex-1 rounded-full bg-surface-muted px-4 text-sm outline-none" /><button type="submit" aria-label="Отправить сообщение" className="grid size-11 place-items-center rounded-full bg-[hsl(var(--accent))]"><Send className="size-4" /></button></form></section><aside className="space-y-4"><div className="rounded-[20px] bg-foreground p-5 text-background"><Sparkles className="size-5 text-[hsl(var(--accent))]" /><p className="mt-4 text-sm font-extrabold">Попробуйте спросить</p><div className="mt-3 space-y-2 text-xs text-background/70"><p>«Какой бюджет заложить?»</p><p>«Как подготовить заявку?»</p><p>«Что обсудить с соседом?»</p></div></div><div className="surface-card p-5 text-xs leading-5 text-muted-foreground">AI использует только данные вашего профиля и группы. Проверяйте важные решения с участниками.</div></aside></div>;
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      text: "Привет! Я — AI-ассистент платформы «Соседи» на базе модели OpenRouter oss-120b. Помогу расчитать бюджет, составить правила проживания или подготовить заявку.",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const sendMessage = async (e?: React.FormEvent, promptText?: string) => {
+    if (e) e.preventDefault();
+    const textToSend = (promptText || input).trim();
+    if (!textToSend || loading) return;
+
+    const userMsg: Message = { role: "user", text: textToSend };
+    const newMessages = [...messages, userMsg];
+
+    setMessages(newMessages);
+    if (!promptText) setInput("");
+    setLoading(true);
+
+    try {
+      const apiMessages = newMessages.map((m) => ({
+        role: m.role,
+        content: m.text,
+      }));
+
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}`);
+      }
+
+      const data = await res.json();
+      const replyText = data.reply || "К сожалению, не удалось сформировать ответ.";
+
+      setMessages((prev) => [...prev, { role: "assistant", text: replyText }]);
+    } catch (err) {
+      console.error("Failed to send AI message:", err);
+      // Fallback local response
+      let fallbackText = "Я помогу сравнить соседей, жильё и правила группы. Спросите про бюджет, заявку или совместимость.";
+      const lower = textToSend.toLowerCase();
+      if (lower.includes("бюджет")) {
+        fallbackText = "Для вашей группы безопасный ориентир — до 90 000 ₽ в месяц. Оставьте ещё 10% на коммунальные расходы.";
+      } else if (lower.includes("заявк")) {
+        fallbackText = "Лучше отправить заявку на два объекта: так вы сохраните выбор и не будете ждать один ответ.";
+      }
+      setMessages((prev) => [...prev, { role: "assistant", text: fallbackText }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <section className="surface-card flex min-h-[540px] flex-col p-4 sm:p-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 border-b border-[#E5E5E0] pb-4">
+          <div className="grid size-10 place-items-center rounded-full bg-[#B3DB00]">
+            <Bot className="size-5 text-[#111111]" />
+          </div>
+          <div>
+            <p className="text-sm font-extrabold text-[#111111]">Соседи AI Assistant</p>
+            <p className="text-[10px] font-bold text-[#7B9E00]">OpenRouter (oss-120b)</p>
+          </div>
+        </div>
+
+        {/* Message Feed */}
+        <div className="flex-1 space-y-3 overflow-y-auto py-5 soft-scrollbar">
+          {messages.map((m, idx) => (
+            <div
+              key={`${m.role}-${idx}`}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-[18px] px-4 py-3 text-sm leading-6 whitespace-pre-wrap ${
+                  m.role === "user"
+                    ? "bg-[#111111] text-white"
+                    : "bg-[#F4F4F0] text-[#111111] border border-[#E5E5E0]"
+                }`}
+              >
+                {m.text}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] rounded-[18px] bg-[#F4F4F0] px-4 py-3 text-xs font-bold text-[#6B6F66] border border-[#E5E5E0] animate-pulse">
+                AI генерирует ответ с помощью OpenRouter oss-120b...
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input form */}
+        <form onSubmit={(e) => sendMessage(e)} className="flex items-center gap-2 border-t border-[#E5E5E0] pt-4">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Например: как распределить бюджет на 3 человек?"
+            disabled={loading}
+            className="h-11 min-w-0 flex-1 rounded-full bg-[#F4F4F0] px-4 text-sm outline-none text-[#111111] placeholder:text-[#878881] border border-transparent focus:border-[#B3DB00]"
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            aria-label="Отправить сообщение"
+            className="grid size-11 place-items-center rounded-full bg-[#B3DB00] text-[#111111] transition-opacity hover:opacity-90 disabled:opacity-50 cursor-pointer"
+          >
+            <Send className="size-4" />
+          </button>
+        </form>
+      </section>
+
+      {/* Sidebar prompts */}
+      <aside className="space-y-4">
+        <div className="rounded-[20px] bg-[#111111] p-5 text-white">
+          <Sparkles className="size-5 text-[#B3DB00]" />
+          <p className="mt-4 text-sm font-extrabold">Попробуйте спросить</p>
+          <div className="mt-3 space-y-2 text-xs text-white/70">
+            <button
+              type="button"
+              onClick={() => sendMessage(undefined, "Какой бюджет заложить на 3 человек в центре?")}
+              className="block w-full text-left font-semibold text-[#EBF7B6] hover:underline cursor-pointer"
+            >
+              «Какой бюджет заложить?»
+            </button>
+            <button
+              type="button"
+              onClick={() => sendMessage(undefined, "Как правильно подготовить групповую заявку собственнику?")}
+              className="block w-full text-left font-semibold text-[#EBF7B6] hover:underline cursor-pointer"
+            >
+              «Как подготовить заявку?»
+            </button>
+            <button
+              type="button"
+              onClick={() => sendMessage(undefined, "Какие бытовые правила обсудить с новым соседом при заселении?")}
+              className="block w-full text-left font-semibold text-[#EBF7B6] hover:underline cursor-pointer"
+            >
+              «Что обсудить с соседом?»
+            </button>
+          </div>
+        </div>
+
+        <div className="surface-card p-5 text-xs leading-5 text-[#6B6F66]">
+          Подключена модель <strong className="text-[#111111]">oss-120b</strong> через OpenRouter API. Используются контекстные алгоритмы совместной аренды.
+        </div>
+      </aside>
+    </div>
+  );
 }
