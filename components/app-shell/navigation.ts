@@ -1,4 +1,4 @@
-export type NavigationIconName =
+export type NavIconName =
   | "bell"
   | "bot"
   | "building"
@@ -14,54 +14,35 @@ export type NavigationIconName =
   | "settings"
   | "users";
 
-export type NavigationItem = {
+export interface NavItem {
   label: string;
   href: string;
-  icon: NavigationIconName;
-  badge?: number;
-  exact?: boolean;
-};
+  icon: NavIconName;
+  badge?: string;
+}
 
-export const tenantNavigation: NavigationItem[] = [
-  { label: "Главная", href: "/app", icon: "home", exact: true },
+export type NavigationItem = NavItem;
+
+export const tenantNavigation: NavItem[] = [
+  { label: "Главная", href: "/app", icon: "home" },
+  { label: "Поиск сожителей", href: "/app/roommates", icon: "search" },
   { label: "Поиск жилья", href: "/app/housing", icon: "building" },
-  { label: "Поиск соседей", href: "/app/roommates", icon: "search" },
-  { label: "Моя группа", href: "/app/group", icon: "users" },
-  { label: "Заявки", href: "/app/applications", icon: "file" },
+  { label: "Мои объявления", href: "/app/applications", icon: "file" },
   { label: "Избранное", href: "/app/favorites", icon: "heart" },
-  {
-    label: "Сообщения",
-    href: "/app/messages",
-    icon: "message",
-    badge: 3,
-  },
-  {
-    label: "Бюджет и расходы",
-    href: "/app/budget",
-    icon: "wallet",
-  },
-  {
-    label: "Уборка и задачи",
-    href: "/app/chores",
-    icon: "calendar",
-  },
-  { label: "AI-помощник", href: "/app/assistant", icon: "bot" },
-  {
-    label: "Уведомления",
-    href: "/app/notifications",
-    icon: "bell",
-    badge: 5,
-  },
-  { label: "Профиль", href: "/app/profile", icon: "user" },
+  { label: "Сообщения", href: "/app/messages", icon: "message", badge: "2" },
+  { label: "Заявки", href: "/app/recommendations", icon: "bell" },
+  { label: "Мои группы", href: "/app/group", icon: "users" },
+  { label: "Календарь уборок", href: "/app/chores", icon: "calendar" },
+  { label: "Расходы", href: "/app/budget", icon: "wallet" },
+  { label: "AI ассистент", href: "/app/assistant", icon: "bot", badge: "BETA" },
   { label: "Настройки", href: "/app/settings", icon: "settings" },
 ];
 
-export const ownerNavigation: NavigationItem[] = [
-  { label: "Обзор", href: "/owner", icon: "dashboard", exact: true },
+export const ownerNavigation: NavItem[] = [
+  { label: "Главная", href: "/owner", icon: "home" },
   { label: "Мои объекты", href: "/owner/properties", icon: "building" },
   { label: "Заявки", href: "/owner/applications", icon: "file" },
-  { label: "Сообщения", href: "/owner/messages", icon: "message" },
-  { label: "Аналитика", href: "/owner/analytics", icon: "wallet" },
-  { label: "Профиль", href: "/owner/profile", icon: "user" },
+  { label: "Сообщения", href: "/owner/messages", icon: "message", badge: "2" },
+  { label: "Аналитика", href: "/owner/analytics", icon: "dashboard" },
   { label: "Настройки", href: "/owner/settings", icon: "settings" },
 ];

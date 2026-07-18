@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Bot, Send, Sparkles } from "lucide-react";
+import { FormattedMarkdown } from "@/components/ui/formatted-markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -95,13 +96,13 @@ export function AssistantChat() {
               className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-[18px] px-4 py-3 text-sm leading-6 whitespace-pre-wrap ${
+                className={`max-w-[85%] rounded-[18px] px-4 py-3 text-sm leading-6 ${
                   m.role === "user"
                     ? "bg-[#111111] text-white"
                     : "bg-[#F4F4F0] text-[#111111] border border-[#E5E5E0]"
                 }`}
               >
-                {m.text}
+                <FormattedMarkdown content={m.text} />
               </div>
             </div>
           ))}

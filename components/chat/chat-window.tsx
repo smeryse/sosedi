@@ -19,6 +19,7 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
+import { FormattedMarkdown } from "@/components/ui/formatted-markdown";
 import { PropertyAttachmentModal } from "./property-attachment-modal";
 import { ViewingModal } from "./viewing-modal";
 import { PollCreateModal } from "./poll-create-modal";
@@ -519,7 +520,7 @@ export function ChatWindow({
                   </div>
                 )}
 
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <FormattedMarkdown content={msg.content} />
 
                 {/* Emoji Reactions Badge */}
                 {msg.reactions && Object.keys(msg.reactions).length > 0 && (
