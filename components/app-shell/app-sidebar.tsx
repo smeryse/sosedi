@@ -20,6 +20,7 @@ import {
   Settings,
   Sun,
   UsersRound,
+  Gamepad2,
 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { AvatarImage } from "@/components/ui/avatar-image";
@@ -33,6 +34,7 @@ const iconMap = {
   calendar: CalendarCheck2,
   user: CircleUserRound,
   file: FileCheck2,
+  gamepad: Gamepad2,
   heart: Heart,
   home: Home,
   dashboard: LayoutDashboard,

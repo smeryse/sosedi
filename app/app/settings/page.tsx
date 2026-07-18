@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Bell, LockKeyhole, Loader2, AlertCircle, Save, Check, ShieldCheck, Camera, Eye, EyeOff, LogOut, Settings2, UserRound, Mail, Smartphone, Trash2, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { getCurrentUser, updateProfile, uploadAvatar, updatePassword, updateEmail, deleteAccount, updateNotificationSettings } from "@/app/actions/settings";
+import { getCurrentUser, updateProfile, uploadAvatar, updatePassword, updateEmail, deleteAccount, updateNotificationSettings, getProfile } from "@/app/actions/settings";
 import { createClient } from "@/lib/supabase/client";
 
 type UserProfile = {
@@ -65,10 +65,13 @@ export default function TenantSettingsPage() {
 
   async function loadProfile() {
     try {
-      const data = await getCurrentUser();
-      if (data) {
-        setProfile(data);
-        if (data.avatar_path) setAvatarPreview(data.avatar_path);
+      const user = await getCurrentUser();
+      if (user) {
+        const data = await getProfile(user.id);
+        if (data) {
+          setProfile(data);
+          if (data.avatar_path) setAvatarPreview(data.avatar_path);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -139,7 +142,10 @@ export default function TenantSettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Не авторизован");
 
-      await updateNotificationSettings(user.id, profile.notification_settings);
+      await updateNotificationSettings(user.id, {
+        weekly_digest: false,
+        ...profile.notification_settings,
+      });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: unknown) {

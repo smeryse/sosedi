@@ -348,7 +348,7 @@ export function SettingsForm({
             </div>
 
             <div className="border-t pt-6">
-              <Select value={appearanceSettings.language} onValueChange={v => onAppearanceChange("language", v)} disabled={isLoading}>
+              <Select value={appearanceSettings.language} onValueChange={(v: string) => onAppearanceChange("language", v)} disabled={isLoading}>
                 <SelectTrigger className="w-full max-w-xs">
                   <SelectValue placeholder="Выберите язык" />
                 </SelectTrigger>

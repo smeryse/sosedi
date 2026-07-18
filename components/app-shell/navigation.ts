@@ -5,6 +5,7 @@ export type NavIconName =
   | "calendar"
   | "user"
   | "file"
+  | "gamepad"
   | "heart"
   | "home"
   | "dashboard"
@@ -27,6 +28,7 @@ export const tenantNavigation: NavItem[] = [
   { label: "Главная", href: "/app", icon: "home" },
   { label: "Поиск сожителей", href: "/app/roommates", icon: "search" },
   { label: "Поиск жилья", href: "/app/housing", icon: "building" },
+  { label: "Симулятор быта", href: "/app/simulator", icon: "gamepad", badge: "NEW" },
   { label: "Мои объявления", href: "/app/applications", icon: "file" },
   { label: "Избранное", href: "/app/favorites", icon: "heart" },
   { label: "Сообщения", href: "/app/messages", icon: "message", badge: "2" },
@@ -34,7 +36,6 @@ export const tenantNavigation: NavItem[] = [
   { label: "Мои группы", href: "/app/group", icon: "users" },
   { label: "Календарь уборок", href: "/app/chores", icon: "calendar" },
   { label: "Расходы", href: "/app/budget", icon: "wallet" },
-  { label: "AI ассистент", href: "/app/assistant", icon: "bot", badge: "BETA" },
   { label: "Настройки", href: "/app/settings", icon: "settings" },
 ];
 

@@ -62,6 +62,11 @@
   body {
     @apply bg-background font-sans text-foreground;
     background-color: #F4F4F0;
+    background-image: 
+      radial-gradient(at 8% 10%, rgba(235, 247, 182, 0.45) 0px, transparent 45%),
+      radial-gradient(at 92% 15%, rgba(243, 249, 210, 0.5) 0px, transparent 45%),
+      radial-gradient(at 50% 75%, rgba(230, 242, 175, 0.35) 0px, transparent 50%);
+    background-attachment: fixed;
     color: #111111;
     min-width: 320px;
   }
@@ -77,23 +82,87 @@
   }
 }
 
+@font-face {
+  font-family: 'NT Somic';
+  src: url('/fonts/NTSomic-Bold.otf') format('opentype'),
+       url('https://media.uprock.school/fonts/NTSomic/Fonts/OTF/NTSomic-Bold.otf') format('opentype'),
+       local('NT Somic Bold'), local('NTSomic-Bold');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NT Somic';
+  src: url('/fonts/NTSomic-Medium.otf') format('opentype'),
+       url('https://media.uprock.school/fonts/NTSomic/Fonts/OTF/NTSomic-Medium.otf') format('opentype'),
+       local('NT Somic Medium'), local('NTSomic-Medium');
+  font-weight: 500 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NT Somic';
+  src: url('/fonts/NTSomic-Regular.otf') format('opentype'),
+       url('https://media.uprock.school/fonts/NTSomic/Fonts/OTF/NTSomic-Regular.otf') format('opentype'),
+       local('NT Somic Regular'), local('NTSomic-Regular');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+h1, h2, h3, h4, h5, h6,
+.font-heading,
+.font-somic,
+.font-benzin,
+[class*="font-black"],
+[class*="font-extrabold"] {
+  font-family: 'NT Somic', 'NTSomic', var(--font-somic), var(--font-inter), sans-serif;
+  letter-spacing: -0.015em;
+}
+
 @layer components {
+  /* Ultra-sleek Frosted Glassmorphism Card System */
   .surface-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E5E5E0;
-    border-radius: 22px;
-    box-shadow: 0 4px 20px rgba(17, 17, 17, 0.025);
+    background-color: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.035), 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: transform 250ms ease, box-shadow 250ms ease, border-color 250ms ease;
+  }
+
+  .surface-card:hover {
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.04);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(229, 229, 224, 0.7);
   }
 
   .lime-button {
     background-color: #B3DB00;
     color: #111111;
     font-weight: 800;
-    transition: background-color 150ms ease;
+    transition: all 150ms ease;
   }
 
   .lime-button:hover {
     background-color: #9FC400;
+    box-shadow: 0 4px 16px rgba(179, 219, 0, 0.35);
   }
 
   .soft-scrollbar {
@@ -107,12 +176,14 @@
     place-items: center;
     white-space: nowrap;
     border-radius: 999px;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 0 12px;
     color: #111111;
     font-size: 11px;
     font-weight: 800;
-    border: 1px solid #E5E5E0;
+    border: 1px solid rgba(255, 255, 255, 0.8);
     box-shadow: 0 4px 16px rgba(17, 17, 17, 0.08);
   }
 

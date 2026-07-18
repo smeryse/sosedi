@@ -13,6 +13,7 @@ import type {
   ExpenseShare,
   ExpenseSplit,
   GroupPoll,
+  PropertyFilters,
   Repository,
   ViewingBooking,
 } from "./types";
@@ -22,9 +23,9 @@ const storageKey = "sosedi-demo-state-v3";
 const initialThreads: ChatThread[] = [
   {
     id: "ai-assistant",
-    name: "ИИ-Ассистент Соседей 🤖",
+    name: "Женя 🤖",
     type: "ai_assistant",
-    avatar: "/demo/people/artem.jpg",
+    avatar: "/demo/people/zhenya.jpg",
     sublabel: "Помощник по правилам и договору",
     lastMessage: "Здравствуйте! Чем я могу помочь вашей группе сегодня?",
     lastMessageTime: "Только что",

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "@/lib/auth/session-context";
 import "./globals.css";
@@ -25,6 +25,13 @@ const inter = Inter({
   subsets: ["cyrillic", "latin"],
 });
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-somic",
+  display: "swap",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${inter.variable} ${plusJakartaSans.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

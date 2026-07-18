@@ -4,19 +4,22 @@ import { useState } from "react";
 import Image from "next/image";
 import { Camera, Check, ShieldCheck, Loader2, AlertCircle, Save } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { getCurrentUser, updateProfile, uploadAvatar } from "@/app/actions/settings";
 import { createClient } from "@/lib/supabase/client";
+import { getCurrentUser, getProfile, updateProfile, uploadAvatar } from "@/app/actions/settings";
+
+interface OwnerProfile {
+  id: string;
+  display_name: string;
+  age: number;
+  job_title: string;
+  bio: string;
+  city: string;
+  is_public: boolean;
+  avatar_path: string | null;
+}
 
 export default function OwnerProfilePage() {
-  const [profile, setProfile] = useState<{
-    display_name: string;
-    age: number;
-    job_title: string;
-    bio: string;
-    city: string;
-    is_public: boolean;
-    avatar_path: string | null;
-  } | null>(null);
+  const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +28,22 @@ export default function OwnerProfilePage() {
 
   async function loadProfile() {
     try {
-      const data = await getCurrentUser();
-      if (data) {
-        setProfile(data);
-        if (data.avatar_path) setAvatarPreview(data.avatar_path);
+      const user = await getCurrentUser();
+      if (user) {
+        const data = await getProfile(user.id);
+        if (data) {
+          setProfile({
+            id: data.id,
+            display_name: data.display_name ?? "",
+            age: data.age ?? 25,
+            job_title: data.job_title ?? "",
+            bio: data.bio ?? "",
+            city: data.city ?? "",
+            is_public: data.is_public ?? true,
+            avatar_path: data.avatar_path,
+          });
+          if (data.avatar_path) setAvatarPreview(data.avatar_path);
+        }
       }
     } catch (err) {
       console.error(err);

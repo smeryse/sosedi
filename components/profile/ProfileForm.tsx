@@ -195,7 +195,7 @@ export function ProfileForm({ initialData, onSubmit, isLoading = false }: Profil
           <Label htmlFor="city" className="text-xs font-extrabold">
             Город
           </Label>
-          <Select value={formData.city} onValueChange={v => handleChange("city", v)} disabled={isLoading}>
+          <Select value={formData.city} onValueChange={(v: string) => handleChange("city", v)} disabled={isLoading}>
             <SelectTrigger className="mt-2 h-11 rounded-[14px] border bg-background">
               <SelectValue placeholder="Выберите город" />
             </SelectTrigger>
@@ -218,7 +218,7 @@ export function ProfileForm({ initialData, onSubmit, isLoading = false }: Profil
           <Label htmlFor="profession" className="text-xs font-extrabold">
             Профессия / Сфера деятельности
           </Label>
-          <Select value={formData.profession} onValueChange={v => handleChange("profession", v)} disabled={isLoading}>
+          <Select value={formData.profession} onValueChange={(v: string) => handleChange("profession", v)} disabled={isLoading}>
             <SelectTrigger className="mt-2 h-11 rounded-[14px] border bg-background">
               <SelectValue placeholder="Выберите профессию" />
             </SelectTrigger>
@@ -293,7 +293,7 @@ export function ProfileForm({ initialData, onSubmit, isLoading = false }: Profil
             <Label htmlFor="stayDuration" className="text-xs font-extrabold">
               Срок аренды
             </Label>
-            <Select value={formData.stayDuration} onValueChange={v => handleChange("stayDuration", v)} disabled={isLoading}>
+            <Select value={formData.stayDuration} onValueChange={(v: string) => handleChange("stayDuration", v)} disabled={isLoading}>
               <SelectTrigger className="mt-2 h-11 rounded-[14px] border bg-background">
                 <SelectValue placeholder="Выберите срок" />
               </SelectTrigger>
@@ -381,6 +381,3 @@ export function ProfileForm({ initialData, onSubmit, isLoading = false }: Profil
     </form>
   );
 }
-
-import React from "react";
-import { Textarea } from "@/components/ui/textarea";

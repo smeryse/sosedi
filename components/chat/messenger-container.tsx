@@ -48,16 +48,16 @@ export function MessengerContainer({ activeThreadId, baseRoute = "/app/messages"
 
   if (loading || !activeThread) {
     return (
-      <div className="flex h-[calc(100vh-140px)] min-h-[550px] items-center justify-center rounded-[24px] border border-[#E5E5E0] bg-white">
-        <div className="size-6 animate-spin rounded-full border-2 border-[#7B9E00] border-t-transparent" />
+      <div className="flex h-[calc(100vh-140px)] min-h-[550px] items-center justify-center rounded-[24px] border border-white/60 bg-white/70 backdrop-blur-2xl shadow-xl">
+        <div className="size-8 animate-spin rounded-full border-3 border-[#7B9E00] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-[#E5E5E0] bg-white shadow-sm h-[calc(100vh-150px)] min-h-[580px] grid lg:grid-cols-[320px_1fr]">
+    <div className="overflow-hidden rounded-[28px] border border-white/75 bg-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.06)] backdrop-blur-2xl h-[calc(100vh-150px)] min-h-[600px] grid lg:grid-cols-[340px_1fr]">
       {/* Sidebar */}
-      <div className={`h-full ${activeThreadId ? "hidden lg:block" : "block"}`}>
+      <div className={`h-full border-r border-[#E5E5E0]/60 ${activeThreadId ? "hidden lg:block" : "block"}`}>
         <ChatSidebar
           threads={threads}
           activeThreadId={selectedThreadId}
