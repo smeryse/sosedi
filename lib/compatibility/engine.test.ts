@@ -10,6 +10,7 @@ const base: CompatibilityProfile = {
   leaseMonths: 12,
   smoking: "no",
   pets: "no",
+  petTolerance: "any",
   sleep: "early",
   noise: 2,
   guests: "rarely",

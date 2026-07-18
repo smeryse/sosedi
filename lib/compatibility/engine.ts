@@ -67,19 +67,28 @@ export function compatibilityScore(left: CompatibilityProfile, right: Compatibil
       reason: "Разница дат въезда не больше 30 дней",
     },
     {
-      passed: left.smoking !== "yes" || right.smoking !== "no",
+      passed: !(left.smoking === "yes" && right.smoking === "no") && !(right.smoking === "yes" && left.smoking === "no"),
       label: "Курение",
       reason: "Нет критичного конфликта по курению",
     },
     {
-      passed: right.smoking !== "yes" || left.smoking !== "no",
-      label: "Курение",
-      reason: "Нет критичного конфликта по курению",
-    },
-    {
-      passed: left.pets === right.pets || left.pets === "no" || right.pets === "no",
+      passed: (() => {
+        if (left.pets !== "no") {
+          if (right.petTolerance === "no") return false;
+          if (left.pets === "cat" && right.petTolerance === "dog") return false;
+          if (left.pets === "dog" && right.petTolerance === "cat") return false;
+          if (left.pets === "other" && right.petTolerance !== "any") return false;
+        }
+        if (right.pets !== "no") {
+          if (left.petTolerance === "no") return false;
+          if (right.pets === "cat" && left.petTolerance === "dog") return false;
+          if (right.pets === "dog" && left.petTolerance === "cat") return false;
+          if (right.pets === "other" && left.petTolerance !== "any") return false;
+        }
+        return true;
+      })(),
       label: "Животные",
-      reason: "Правила по животным можно согласовать",
+      reason: "Согласовано отношение к животным сожителя",
     },
     {
       passed: Math.min(left.leaseMonths, right.leaseMonths) >= 3,
@@ -99,8 +108,7 @@ export function compatibilityScore(left: CompatibilityProfile, right: Compatibil
     weight: criterion.weight,
   }));
   const weightedSoft = breakdown.reduce((sum, item) => sum + item.score * item.weight, 0);
-  const hardPenalty = blockingConflicts.length ? Math.min(100, blockingConflicts.length * 28) : 0;
-  const score = Math.max(0, Math.round(weightedSoft - hardPenalty));
+  const score = blockingConflicts.length > 0 ? 0 : Math.max(0, Math.round(weightedSoft));
   const positives = breakdown.filter((item) => item.score >= 80).slice(0, 4).map((item) => `Совпадает: ${item.label.toLowerCase()}`);
   const risks = breakdown.filter((item) => item.score < 60).slice(0, 3).map((item) => `Нужно обсудить: ${item.label.toLowerCase()}`);
   const questions = risks.map((risk) => `Как договоримся про ${risk.replace("Нужно обсудить: ", "")}?`);

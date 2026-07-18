@@ -1,5 +1,6 @@
 export type SleepSchedule = "early" | "late" | "flexible";
 export type Frequency = "never" | "rarely" | "sometimes" | "often";
+export type PetPreference = "no" | "cat" | "dog" | "any";
 
 export type CompatibilityProfile = {
   budgetMin: number;
@@ -9,6 +10,7 @@ export type CompatibilityProfile = {
   leaseMonths: number;
   smoking: "no" | "sometimes" | "yes";
   pets: "no" | "cat" | "dog" | "other";
+  petTolerance: PetPreference;
   sleep: SleepSchedule;
   noise: number;
   guests: Frequency;

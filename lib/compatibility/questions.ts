@@ -10,6 +10,7 @@ export const compatibilityQuestions = [
   { key: "smoking", category: "Курение", label: "Курите ли вы?" },
   { key: "alcohol", category: "Алкоголь", label: "Как вы относитесь к алкоголю дома?" },
   { key: "pets", category: "Животные", label: "Есть ли у вас животные?" },
+  { key: "petTolerance", category: "Животные соседа", label: "Как вы относитесь к животным сожителя?" },
   { key: "cleanliness", category: "Уборка", label: "Насколько важен порядок?" },
   { key: "cooking", category: "Готовка", label: "Как часто вы готовите?" },
   { key: "sharedProducts", category: "Общие продукты", label: "Готовы ли делить общие продукты?" },

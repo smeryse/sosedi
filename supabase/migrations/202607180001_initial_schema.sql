@@ -47,6 +47,12 @@ create table if not exists public.profile_preferences (
   cleanliness smallint check (cleanliness between 1 and 5),
   sociability smallint check (sociability between 1 and 5),
   private_space smallint check (private_space between 1 and 5),
+  cooking smallint check (cooking between 1 and 5),
+  shared_products boolean not null default true,
+  temperature smallint check (temperature between 1 and 5),
+  common_zones smallint check (common_zones between 1 and 5),
+  leisure text[] not null default '{}',
+  pet_tolerance text not null default 'any' check (pet_tolerance in ('no', 'cat', 'dog', 'any')),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
