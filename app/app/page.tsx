@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Heart,
   Home,
   Receipt,
   Search,
@@ -67,15 +66,17 @@ function DashboardMap() {
   );
 }
 
+import { HeartButton } from "@/components/favorites-context";
+
 function DashboardPropertyCard({ property }: { property: (typeof demoProperties)[number] }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-[22px] border border-[#E5E5E0] bg-white p-3 shadow-sm transition-transform hover:-translate-y-0.5">
-      <Link href={`/app/housing/${property.id}`} className="relative h-[136px] overflow-hidden rounded-[16px]">
-        <MediaImage src={property.image} alt={property.title} sizes="240px" className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
-        <button type="button" aria-label="В избранное" className="absolute right-2.5 top-2.5 grid size-8 place-items-center rounded-full bg-white/90 shadow-sm transition-transform hover:scale-110">
-          <Heart className="size-4 text-[#111111]" />
-        </button>
-      </Link>
+      <div className="relative h-[136px] overflow-hidden rounded-[16px]">
+        <Link href={`/app/housing/${property.id}`}>
+          <MediaImage src={property.image} alt={property.title} sizes="240px" className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+        </Link>
+        <HeartButton type="property" id={property.id} className="absolute right-2.5 top-2.5" />
+      </div>
       <div className="flex flex-1 flex-col pt-3">
         <p className="text-[14px] font-black text-[#111111]">{formatRubles(property.price)} <span className="text-[11px] font-normal text-[#6B6F66]">/ мес</span></p>
         <h3 className="mt-1 line-clamp-1 text-[11.5px] font-extrabold text-[#111111]">{property.title}</h3>

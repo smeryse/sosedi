@@ -11,56 +11,12 @@ import {
 import { BrandLogo } from "@/components/brand-logo";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { MediaImage } from "@/components/ui/media-image";
+import { LandingHeader } from "@/components/landing-header";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#F4F4F0] text-[#111111] font-sans antialiased">
-      {/* 1. Header (Reference 0.png) */}
-      <header className="sticky top-0 z-50 bg-[#F4F4F0]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[80px] max-w-[1360px] items-center justify-between px-5 lg:px-8">
-          <BrandLogo className="[&_img]:h-auto [&_img]:w-[142px]" />
-
-          <nav className="hidden items-center gap-9 text-[13px] font-bold text-[#6B6F66] md:flex">
-            <a href="#about" className="transition-colors hover:text-[#111111]">
-              О проекте
-            </a>
-            <a href="#how" className="transition-colors hover:text-[#111111]">
-              Как это работает
-            </a>
-            <a href="#product" className="transition-colors hover:text-[#111111]">
-              Возможности
-            </a>
-            <a href="#reviews" className="transition-colors hover:text-[#111111]">
-              Отзывы
-            </a>
-            <a href="#faq" className="transition-colors hover:text-[#111111]">
-              FAQ
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/auth/login"
-              className="hidden text-[13px] font-extrabold text-[#111111] hover:underline sm:inline-block pr-2"
-            >
-              Войти
-            </Link>
-            <Link
-              href="/app"
-              className="lime-button inline-flex h-[44px] items-center gap-2 rounded-full px-5 text-[12.5px] font-black shadow-sm transition-transform hover:scale-[1.02]"
-            >
-              Начать поиск <ArrowRight className="size-4 stroke-[2.5]" />
-            </Link>
-            <button
-              type="button"
-              aria-label="Меню"
-              className="grid size-11 place-items-center rounded-full border border-[#E5E5E0] bg-white text-[#111111] md:hidden"
-            >
-              <span className="block h-0.5 w-5 bg-[#111111] rounded-full" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       <main className="mx-auto max-w-[1360px] px-5 lg:px-8">
         {/* 2. Hero Section (Exact 0.png composition) */}

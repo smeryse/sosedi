@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronDown,
-  Heart,
   LayoutGrid,
   Map as MapIcon,
   MapPin,
@@ -15,13 +15,23 @@ import {
 import { CityMap } from "@/components/map/city-map";
 import { MediaImage } from "@/components/ui/media-image";
 import { demoProperties, formatRubles } from "@/data/demo";
-import { DemoRepository } from "@/lib/repositories/demo-repository";
+import { HeartButton } from "@/components/favorites-context";
 
 export function PropertyDirectory() {
-  const [query, setQuery] = useState("");
-  const [district, setDistrict] = useState("Любой район");
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(["bolshoy-red"]);
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const initialDistrict = searchParams.get("district") || "Любой район";
+
+  const [query, setQuery] = useState(initialSearch);
+  const [district, setDistrict] = useState(initialDistrict);
   const [viewMode, setViewMode] = useState<"split" | "list" | "map">("split");
+
+  useEffect(() => {
+    const s = searchParams.get("search") || searchParams.get("q");
+    if (s) setQuery(s);
+    const d = searchParams.get("district");
+    if (d) setDistrict(d);
+  }, [searchParams]);
 
   const properties = useMemo(() => {
     return demoProperties.filter((property) => {
@@ -36,13 +46,6 @@ export function PropertyDirectory() {
       return matchQuery && matchDistrict;
     });
   }, [district, query]);
-
-  const toggleFavorite = async (id: string) => {
-    setFavoriteIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-    await new DemoRepository().toggleFavorite("property", id);
-  };
 
   return (
     <div className="space-y-4">
@@ -61,7 +64,7 @@ export function PropertyDirectory() {
           <button
             type="button"
             onClick={() => setViewMode("split")}
-            className={`inline-flex h-8 items-center gap-2 rounded-full px-4 text-[11px] font-extrabold transition-colors ${
+            className={`inline-flex h-8 items-center gap-2 rounded-full px-4 text-[11px] font-extrabold transition-colors cursor-pointer ${
               viewMode === "split"
                 ? "bg-[#EBF7B6] text-[#111111]"
                 : "text-[#6B6F66] hover:text-[#111111]"
@@ -72,7 +75,7 @@ export function PropertyDirectory() {
           <button
             type="button"
             onClick={() => setViewMode("map")}
-            className={`inline-flex h-8 items-center gap-2 rounded-full px-4 text-[11px] font-extrabold transition-colors ${
+            className={`inline-flex h-8 items-center gap-2 rounded-full px-4 text-[11px] font-extrabold transition-colors cursor-pointer ${
               viewMode === "map"
                 ? "bg-[#EBF7B6] text-[#111111]"
                 : "text-[#6B6F66] hover:text-[#111111]"
@@ -124,7 +127,7 @@ export function PropertyDirectory() {
           <button
             key={label}
             type="button"
-            className="inline-flex h-[42px] items-center gap-1.5 rounded-full border border-[#E5E5E0] bg-white px-4 text-[11px] shadow-sm transition-colors hover:border-[#111111]"
+            className="inline-flex h-[42px] items-center gap-1.5 rounded-full border border-[#E5E5E0] bg-white px-4 text-[11px] shadow-sm transition-colors hover:border-[#111111] cursor-pointer"
           >
             <span className="font-bold text-[#111111]">{label}:</span>
             <span className="font-medium text-[#6B6F66]">{val}</span>
@@ -134,7 +137,7 @@ export function PropertyDirectory() {
 
         <button
           type="button"
-          className="relative inline-flex h-[42px] items-center gap-2 rounded-full border border-[#E5E5E0] bg-white px-4 text-[11px] font-extrabold text-[#111111] shadow-sm hover:border-[#111111]"
+          className="relative inline-flex h-[42px] items-center gap-2 rounded-full border border-[#E5E5E0] bg-white px-4 text-[11px] font-extrabold text-[#111111] shadow-sm hover:border-[#111111] cursor-pointer"
         >
           <SlidersHorizontal className="size-3.5" /> Фильтры
           <span className="grid size-4 place-items-center rounded-full bg-[#B3DB00] text-[9px] font-black text-[#111111]">
@@ -148,11 +151,10 @@ export function PropertyDirectory() {
         {/* Left list column */}
         <section className="min-w-0 space-y-4 max-h-[calc(100vh-170px)] overflow-y-auto pr-1 soft-scrollbar">
           <p className="text-[11.5px] font-bold text-[#6B6F66]">
-            Найдено {properties.length} объектов в Краснодаре
+            Найдено {properties.length} вариантов в Краснодаре
           </p>
 
           {properties.map((property) => {
-            const isFav = favoriteIds.includes(property.id);
             return (
               <article
                 key={property.id}
@@ -169,18 +171,11 @@ export function PropertyDirectory() {
                   <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[#111111]/80 px-2.5 py-1 text-[9.5px] font-extrabold text-white backdrop-blur-sm">
                     {property.photosCount} фото
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => void toggleFavorite(property.id)}
-                    aria-label={isFav ? "Убрать из избранного" : "В избранное"}
-                    className="absolute right-2.5 top-2.5 grid size-8 place-items-center rounded-full bg-white/90 shadow-sm transition-transform hover:scale-110"
-                  >
-                    <Heart
-                      className={`size-4 ${
-                        isFav ? "fill-[#111111] text-[#111111]" : "text-[#111111]"
-                      }`}
-                    />
-                  </button>
+                  <HeartButton
+                    type="property"
+                    id={property.id}
+                    className="absolute right-2.5 top-2.5"
+                  />
                 </div>
 
                 {/* Info container */}
