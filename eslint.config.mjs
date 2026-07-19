@@ -22,6 +22,7 @@ const eslintConfig = [
       "playwright-report/**",
       "test-results/**",
       "mobile/**",
+      ".oss-evaluation/**",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),

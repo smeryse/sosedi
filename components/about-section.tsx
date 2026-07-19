@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { Users, Plus } from "lucide-react";
+import { Reveal } from "@/components/landing/reveal";
+import { landingMetrics } from "@/data/landing";
 
 export function AboutSection() {
   return (
     <section className="relative z-10 bg-[#F6E4CF] text-[#321C04] rounded-t-[25px] mt-[-25px] py-20 md:py-32 px-6 overflow-hidden">
       <div className="max-w-6xl mx-auto flex flex-col items-center">
-        {/* Top Centered Content */}
-        <div className="max-w-xl text-center flex flex-col items-center">
+        <Reveal className="max-w-xl text-center flex flex-col items-center">
           <p className="text-base md:text-lg leading-relaxed text-[#321C04]/90 font-medium">
             Мы создаём сервисы, которые двигаются в вашем ритме, а не вопреки ему. Поиск квартиры и соседей — без лишнего стресса, хаоса и неопределенности.
           </p>
 
-          {/* Action Buttons */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/app/roommates"
@@ -35,18 +35,15 @@ export function AboutSection() {
               <span>Разместить жильё</span>
             </Link>
           </div>
-        </div>
+        </Reveal>
 
-        {/* Decorative Divider */}
         <div className="w-full max-w-6xl my-16 flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#D9C4AA]" />
           <div className="flex-1 h-[2px] bg-[#D9C4AA]" />
           <div className="w-2 h-2 rounded-full bg-[#D9C4AA]" />
         </div>
 
-        {/* Bottom Area */}
         <div className="w-full max-w-6xl flex flex-col md:flex-row items-start justify-between gap-10">
-          {/* Left Emblem Logo */}
           <div className="flex items-center gap-4 shrink-0">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -68,7 +65,6 @@ export function AboutSection() {
             </div>
           </div>
 
-          {/* Right Statement Typography */}
           <div className="max-w-3xl">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] leading-[1.3] font-normal text-[#321C04]">
               Совместная аренда начинается не с квадратных метров. Она начинается с{" "}
@@ -88,6 +84,21 @@ export function AboutSection() {
               . Мы несём всю коммуникационную нагрузку, чтобы вы чувствовали себя спокойно.
             </h2>
           </div>
+        </div>
+
+        <div className="mt-16 grid w-full max-w-6xl grid-cols-2 border-y border-[#D9C4AA] md:grid-cols-4 md:border-y-0">
+          {landingMetrics.map((metric, index) => (
+            <Reveal
+              key={metric.label}
+              delay={index * 0.07}
+              className={`py-7 text-center ${index % 2 ? "border-l border-[#D9C4AA]" : ""} ${
+                index > 1 ? "border-t border-[#D9C4AA] md:border-t-0" : ""
+              } ${index === 2 ? "md:border-l" : ""}`}
+            >
+              <p className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">{metric.value}</p>
+              <p className="mt-1 text-xs text-[#321C04]/60">{metric.label}</p>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>

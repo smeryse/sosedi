@@ -1,21 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ShieldCheck, MessageCircle, Calendar, Sparkles } from "lucide-react";
+import { Check, ShieldCheck, Calendar, Sparkles } from "lucide-react";
 import { AvatarImage } from "@/components/ui/avatar-image";
+import { Reveal } from "@/components/landing/reveal";
 
 export function InteractiveDemoSection() {
   const [sleepTime, setSleepTime] = useState("23:30");
   const [guestFreq, setGuestFreq] = useState("Иногда");
   const [noiseLevel, setNoiseLevel] = useState("Тишина");
-  const [isVegetarian, setIsVegetarian] = useState("Нет");
   const [jointPurchases, setJointPurchases] = useState(true);
 
   return (
     <section id="compatibility" className="relative z-10 bg-[#121311] text-white py-24 md:py-36 px-5 sm:px-10 lg:px-16 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <div className="max-w-3xl mb-16">
+        <Reveal className="max-w-3xl mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#D6FF3F] mb-3">
             <Sparkles className="size-3.5" />
             Интерактивный подбор
@@ -29,11 +28,9 @@ export function InteractiveDemoSection() {
           <p className="mt-4 text-white/60 text-base md:text-lg leading-relaxed">
             Мы собрали в одном процессе всё, что помогает принять уверенное решение и начать совместную жизнь без лишних сюрпризов.
           </p>
-        </div>
+        </Reveal>
 
-        {/* 4 Feature Interactive Blocks Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* Block 1: Lifestyle Profile Simulator */}
+        <Reveal delay={0.12} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           <div className="bg-[#1C1D1A] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -46,9 +43,7 @@ export function InteractiveDemoSection() {
                 Расскажите о себе и ваших бытовых привычках. Система учитывает мелкие детали, из которых складывается идеальный комфорт.
               </p>
 
-              {/* Live Interactive Sliders & Controls Box */}
               <div className="bg-[#141513] rounded-2xl p-5 border border-white/5 flex flex-col gap-4">
-                {/* Sleep Time */}
                 <div>
                   <div className="flex justify-between text-xs font-medium mb-1.5">
                     <span className="text-white/70">Во сколько привыкли спать?</span>
@@ -74,7 +69,6 @@ export function InteractiveDemoSection() {
                   </div>
                 </div>
 
-                {/* Guest Policy */}
                 <div>
                   <span className="text-xs font-medium text-white/70 block mb-2">Принимаете гостей?</span>
                   <div className="grid grid-cols-3 gap-2">
@@ -95,7 +89,6 @@ export function InteractiveDemoSection() {
                   </div>
                 </div>
 
-                {/* Noise Level */}
                 <div>
                   <span className="text-xs font-medium text-white/70 block mb-2">Отношение к шуму</span>
                   <div className="flex items-center gap-2">
@@ -116,7 +109,6 @@ export function InteractiveDemoSection() {
                   </div>
                 </div>
 
-                {/* Joint Purchases Toggle */}
                 <div className="flex items-center justify-between pt-2 border-t border-white/5">
                   <span className="text-xs font-medium text-white/70">Готовность к совместным покупкам</span>
                   <button
@@ -137,7 +129,6 @@ export function InteractiveDemoSection() {
             </div>
           </div>
 
-          {/* Block 2: Smart Roommate Matching Card */}
           <div className="bg-[#1C1D1A] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -150,7 +141,6 @@ export function InteractiveDemoSection() {
                 Алгоритм анализирует сигналы и показывает тех, с кем вам по-настоящему комфортно жить под одной крышей.
               </p>
 
-              {/* Roommate Compatibility Preview Card */}
               <div className="bg-[#141513] rounded-2xl p-5 border border-white/5">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
                   <div className="flex items-center gap-3">
@@ -175,7 +165,6 @@ export function InteractiveDemoSection() {
                   </div>
                 </div>
 
-                {/* Signals breakdown */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between text-xs py-1 px-2.5 rounded-lg bg-[#D6FF3F]/10 border border-[#D6FF3F]/20">
                     <span className="text-[#D6FF3F] font-medium flex items-center gap-2">
@@ -194,7 +183,6 @@ export function InteractiveDemoSection() {
             </div>
           </div>
 
-          {/* Block 3: Safe Communication Widget */}
           <div className="bg-[#1C1D1A] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -207,7 +195,6 @@ export function InteractiveDemoSection() {
                 Общайтесь в чате платформы, задавайте любые вопросы и знакомьтесь до встречи в реальной жизни.
               </p>
 
-              {/* Chat simulator */}
               <div className="bg-[#141513] rounded-2xl p-4 border border-white/5">
                 <div className="flex flex-col gap-3 mb-3">
                   <div className="self-start bg-white/10 text-white/90 text-xs px-3.5 py-2 rounded-2xl rounded-tl-none max-w-[80%]">
@@ -230,7 +217,6 @@ export function InteractiveDemoSection() {
             </div>
           </div>
 
-          {/* Block 4: Co-living Move-in Checklist */}
           <div className="bg-[#1C1D1A] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -243,7 +229,6 @@ export function InteractiveDemoSection() {
                 Подключайтесь к прозрачному процессу: фиксируйте договор, распределяйте счета и бытовые обязанности.
               </p>
 
-              {/* Checklist widget */}
               <div className="bg-[#141513] rounded-2xl p-4 border border-white/5">
                 <div className="flex items-center justify-between mb-3 text-xs">
                   <span className="text-white/60 font-medium">Чек-лист заселения</span>
@@ -278,7 +263,7 @@ export function InteractiveDemoSection() {
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

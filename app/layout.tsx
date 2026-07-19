@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   description:
     "Найдите совместимых соседей, соберите группу и арендуйте подходящее жильё вместе.",
-  icons: { icon: "/brand/sosedi-logo.svg" },
+  icons: { icon: "/brand/sosedi-symbol-v2.svg" },
 };
 
 const inter = Inter({

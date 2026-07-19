@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ShieldCheck, Key, Zap, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Key } from "lucide-react";
 
 interface CoLivingLayoutProps {
   price: number;
   rooms: number;
   area: number;
-  propertyId: string;
+  propertyId?: string;
 }
 
-export function CoLivingLayout({ price, rooms, area, propertyId }: CoLivingLayoutProps) {
+export function CoLivingLayout({ price, rooms, area }: CoLivingLayoutProps) {
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
 
   // Calculate rooms details

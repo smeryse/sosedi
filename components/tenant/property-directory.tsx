@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -34,8 +34,8 @@ export function PropertyDirectory() {
   const initialRooms = searchParams.get("rooms") ? searchParams.get("rooms")!.split(",").map(Number) : [];
   const initialPets = searchParams.get("pets") === "true";
   const initialFurnished = searchParams.get("furnished") === "true";
-  const initialSort = searchParams.get("sort") || "match";
-  const initialSource = searchParams.get("source") || "all";
+  const initialSort = (searchParams.get("sort") || "match") as "match" | "price_asc" | "price_desc" | "newest";
+  const initialSource = (searchParams.get("source") || "all") as "all" | "user" | "ap-r";
 
   const [query, setQuery] = useState(initialSearch);
   const [district, setDistrict] = useState(initialDistrict);
@@ -45,8 +45,8 @@ export function PropertyDirectory() {
   const [rooms, setRooms] = useState<number[]>(initialRooms);
   const [petsAllowed, setPetsAllowed] = useState<boolean | undefined>(searchParams.has("pets") ? initialPets : undefined);
   const [furnished, setFurnished] = useState<boolean | undefined>(searchParams.has("furnished") ? initialFurnished : undefined);
-  const [sortBy, setSortBy] = useState<"match" | "price_asc" | "price_desc" | "newest">(initialSort as any);
-  const [source, setSource] = useState<"all" | "user" | "ap-r">(initialSource as any);
+  const [sortBy, setSortBy] = useState<"match" | "price_asc" | "price_desc" | "newest">(initialSort);
+  const [source] = useState<"all" | "user" | "ap-r">(initialSource);
   const [viewMode, setViewMode] = useState<"split" | "list" | "map">("split");
   const [properties, setProperties] = useState<DemoProperty[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,7 @@ export function PropertyDirectory() {
     const f = searchParams.get("furnished");
     if (f !== null) setFurnished(f === "true");
     const sortVal = searchParams.get("sort");
-    if (sortVal !== null) setSortBy(sortVal as any);
+    if (sortVal !== null) setSortBy(sortVal as "match" | "price_asc" | "price_desc" | "newest");
   }, [searchParams]);
 
   useEffect(() => {
@@ -421,7 +421,7 @@ export function PropertyDirectory() {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => { setSortBy(opt.value as any); setOpenSort(false); }}
+                  onClick={() => { setSortBy(opt.value as "match" | "price_asc" | "price_desc" | "newest"); setOpenSort(false); }}
                   className={`w-full text-left py-1.5 text-[12px] font-medium rounded-lg px-2 ${sortBy === opt.value ? "bg-[#EBF7B6] text-[#7B9E00]" : "text-[#111111] hover:bg-[#F5F5F0]"}`}
                 >
                   {opt.label}

@@ -9,32 +9,36 @@ interface FeatureCardData {
   title: string;
   description: string;
   videoUrl: string;
+  posterUrl: string;
 }
 
 const features: FeatureCardData[] = [
   {
     id: "feature-1",
-    title: "Создан для уюта, а не для спешки",
+    title: "Находим подходящих соседей",
     description:
-      "Sosedi убирают шум и неопределенность из поиска жилья. Каждая деталь интерфейса создана так, чтобы вы двигались вперед уверенно, а не тратили силы на хаотичные созвоны.",
+      "Умный алгоритм подбирает людей, с которыми комфортно жить вместе. Совпадение по привычкам, бюджету и планам видно ещё до первого знакомства.",
     videoUrl:
       "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260702_102608_5fa1187d-9ac6-44fb-82ab-54376200abc0.mp4",
+    posterUrl: "/demo/people/maria.jpg",
   },
   {
     id: "feature-2",
-    title: "Самый бережный способ найти своих",
+    title: "Выбираем жильё",
     description:
-      "Начать совместное проживание должно быть естественным процессом. Алгоритм Sosedi подбирает людей по 30+ параметрам совместимости — от графика сна до бытовых правил.",
+      "Проверенные квартиры от собственников и партнёров: фотографии, документы, условия и понятная стоимость для каждого участника группы.",
     videoUrl:
       "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260625_174131_395bc785-bb21-4e65-abf6-27c56f0764b6.mp4",
+    posterUrl: "/demo/properties/festival-flat.jpg",
   },
   {
     id: "feature-3",
-    title: "Глубокая уверенность и защита",
+    title: "Заселяемся вместе",
     description:
-      "Никаких фейков и сюрпризов. Проверенные профили, встроенный защищенный чат, совместные сплит-платежи и прозрачные договоры дают вам полную безопасность.",
+      "Собирайте группу, подавайте общую заявку и переезжайте без стресса. Чат, бытовые правила, задачи и общий бюджет остаются в одном сервисе.",
     videoUrl:
       "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260525_052706_d2e390fd-1846-4fe7-a4d8-8d2f1c875358.mp4",
+    posterUrl: "/demo/properties/park-room.jpg",
   },
 ];
 
@@ -95,7 +99,6 @@ export function FeaturesSection() {
 
   return (
     <section id="how" className="relative text-white overflow-hidden py-20 md:py-40 lg:py-48 px-5 md:px-10 lg:px-16">
-      {/* Fixed Ambient Background Image */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center transition-opacity duration-500"
         style={{
@@ -105,9 +108,7 @@ export function FeaturesSection() {
         <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px]" />
       </div>
 
-      {/* Main Grid Layout */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[400px_1fr] xl:grid-cols-[460px_1fr] gap-12 lg:gap-24 xl:gap-48 items-start">
-        {/* Sticky Left Column */}
         <div className="lg:sticky lg:top-0 lg:h-screen lg:flex lg:flex-col lg:justify-between lg:py-28">
           <div>
             <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#D6FF3F] mb-4">
@@ -118,7 +119,6 @@ export function FeaturesSection() {
               Технологии, которые заботятся о вашем комфорте
             </h2>
 
-            {/* Feature Nav Buttons (lg+) */}
             <div className="hidden lg:flex flex-col gap-3 mt-10">
               {features.map((feature, idx) => (
                 <button
@@ -137,7 +137,6 @@ export function FeaturesSection() {
             </div>
           </div>
 
-          {/* Bottom Sticky CTA Bar */}
           <div className="hidden lg:block pt-8 border-t border-white/10">
             <p className="text-xs text-white/60 mb-4 leading-relaxed">
               Никакого шума. Никаких случайных просмотров. Только ваш день, разложенный по полочкам.
@@ -152,7 +151,6 @@ export function FeaturesSection() {
           </div>
         </div>
 
-        {/* Right Column: Scrolling Cards */}
         <div className="flex flex-col gap-16 md:gap-24">
           {features.map((feature, idx) => (
             <div
@@ -167,7 +165,6 @@ export function FeaturesSection() {
                   : "translate-x-12 opacity-0"
               }`}
             >
-              {/* SVG Emblem Logo */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="36"
@@ -185,14 +182,15 @@ export function FeaturesSection() {
                 {feature.title}
               </h3>
 
-              {/* Video Player Box */}
               <div className="aspect-video rounded-2xl overflow-hidden bg-black/40 my-6 border border-white/5 relative shadow-2xl">
                 <video
                   src={feature.videoUrl}
+                  poster={feature.posterUrl}
                   autoPlay
                   muted
                   loop
                   playsInline
+                  preload="metadata"
                   className="w-full h-full object-cover"
                 />
               </div>

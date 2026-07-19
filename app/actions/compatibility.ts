@@ -3,10 +3,37 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+interface ProfileRecord {
+  id: string;
+  display_name?: string | null;
+  age?: number | null;
+  job_title?: string | null;
+  budget_min?: number | null;
+  budget_max?: number | null;
+  city?: string | null;
+  profile_preferences?: Record<string, unknown> & {
+    districts?: string[] | null;
+    smoking?: string | null;
+    pets?: string | null;
+    sleep_schedule?: string | null;
+    noise_tolerance?: number | null;
+    guests_frequency?: string | null;
+    remote_work?: string | null;
+    cleanliness?: number | null;
+    sociability?: number | null;
+    private_space?: number | null;
+  } | null;
+  lifestyle_answers?: Array<{
+    question_key: string;
+    answer: unknown;
+    importance?: number | null;
+  }> | null;
+}
+
 interface CompatibilityFactor {
   criterion: string;
-  userValue: any;
-  targetValue: any;
+  userValue: string;
+  targetValue: string;
   weight: number;
   score: number;
   explanation: string;
@@ -43,14 +70,17 @@ export async function calculateCompatibility(targetId: string): Promise<{
 
   if (!me || !target) throw new Error("Профиль не найден");
 
+  const myProfile = me as unknown as ProfileRecord;
+  const targetProfile = target as unknown as ProfileRecord;
+
   const factors: CompatibilityFactor[] = [];
 
   // 1. Budget compatibility (weight: 25%)
-  const budgetScore = calculateBudgetCompatibility(me, target);
+  const budgetScore = calculateBudgetCompatibility(myProfile, targetProfile);
   factors.push({
     criterion: "Бюджет",
-    userValue: `${me.budget_min || 0}–${me.budget_max || 0} ₽`,
-    targetValue: `${target.budget_min || 0}–${target.budget_max || 0} ₽`,
+    userValue: `${myProfile.budget_min || 0}–${myProfile.budget_max || 0} ₽`,
+    targetValue: `${targetProfile.budget_min || 0}–${targetProfile.budget_max || 0} ₽`,
     weight: 0.25,
     score: budgetScore,
     explanation: budgetScore > 80 ? "Бюджеты почти совпадают" :
@@ -58,7 +88,7 @@ export async function calculateCompatibility(targetId: string): Promise<{
   });
 
   // 2. Lifestyle preferences (weight: 35%)
-  const prefScore = calculatePreferencesCompatibility(me, target);
+  const prefScore = calculatePreferencesCompatibility(myProfile, targetProfile);
   factors.push({
     criterion: "Образ жизни",
     userValue: "Ваши предпочтения",
@@ -69,7 +99,7 @@ export async function calculateCompatibility(targetId: string): Promise<{
   });
 
   // 3. Lifestyle answers (weight: 25%)
-  const answerScore = calculateAnswersCompatibility(me, target);
+  const answerScore = calculateAnswersCompatibility(myProfile, targetProfile);
   factors.push({
     criterion: "Анкета",
     userValue: "Ваши ответы",
@@ -81,11 +111,11 @@ export async function calculateCompatibility(targetId: string): Promise<{
   });
 
   // 4. Location/district (weight: 15%)
-  const locationScore = calculateLocationCompatibility(me, target);
+  const locationScore = calculateLocationCompatibility(myProfile, targetProfile);
   factors.push({
     criterion: "Район",
-    userValue: me.profile_preferences?.districts?.join(", ") || "Любой",
-    targetValue: target.city || "Не указан",
+    userValue: myProfile.profile_preferences?.districts?.join(", ") || "Любой",
+    targetValue: targetProfile.city || "Не указан",
     weight: 0.15,
     score: locationScore,
     explanation: locationScore > 80 ? "Предпочитаете одни районы" :
@@ -102,7 +132,7 @@ export async function calculateCompatibility(targetId: string): Promise<{
   return { overall, factors, summary };
 }
 
-function calculateBudgetCompatibility(me: any, target: any): number {
+function calculateBudgetCompatibility(me: ProfileRecord, target: ProfileRecord): number {
   const myMin = me.budget_min || 0;
   const myMax = me.budget_max || 100000;
   const theirMin = target.budget_min || 0;
@@ -125,7 +155,7 @@ function calculateBudgetCompatibility(me: any, target: any): number {
   return Math.round((myOverlapPct + theirOverlapPct) / 2 * 100);
 }
 
-function calculatePreferencesCompatibility(me: any, target: any): number {
+function calculatePreferencesCompatibility(me: ProfileRecord, target: ProfileRecord): number {
   const prefs = [
     { key: "smoking", weight: 15 },
     { key: "pets", weight: 15 },
@@ -154,7 +184,7 @@ function calculatePreferencesCompatibility(me: any, target: any): number {
       score = Math.max(0, 100 - diff * 20);
     } else if (myVal === theirVal) {
       score = 100;
-    } else {
+    } else if (typeof myVal === "string" && typeof theirVal === "string") {
       // Categorical: check if compatible
       const compatible = areCompatible(myVal, theirVal, key);
       score = compatible ? 80 : 20;
@@ -185,19 +215,19 @@ function areCompatible(a: string, b: string, key: string): boolean {
   return a === b;
 }
 
-function calculateAnswersCompatibility(me: any, target: any): number {
+function calculateAnswersCompatibility(me: ProfileRecord, target: ProfileRecord): number {
   const myAnswers = me.lifestyle_answers || [];
   const theirAnswers = target.lifestyle_answers || [];
 
   if (!myAnswers.length || !theirAnswers.length) return 50;
 
   // Match by question_key
-  const theirMap = new Map((theirAnswers as any[]).map((a: any) => [a.question_key, a]));
+  const theirMap = new Map(theirAnswers.map((a) => [a.question_key, a]));
 
   let totalScore = 0;
   let count = 0;
 
-  for (const myAnswer of myAnswers as any[]) {
+  for (const myAnswer of myAnswers) {
     const theirAnswer = theirMap.get(myAnswer.question_key);
     if (!theirAnswer) continue;
 
@@ -218,7 +248,7 @@ function calculateAnswersCompatibility(me: any, target: any): number {
     }
 
     // Weight by importance
-    const importance = (myAnswer.importance || 3) + ((theirAnswers as any[]).find(a => a.question_key === myAnswer.question_key)?.importance || 3);
+    const importance = (myAnswer.importance || 3) + (theirAnswer.importance || 3);
     totalScore += score * importance;
     count += importance;
   }
@@ -226,7 +256,7 @@ function calculateAnswersCompatibility(me: any, target: any): number {
   return count > 0 ? Math.round(totalScore / count) : 50;
 }
 
-function calculateLocationCompatibility(me: any, target: any): number {
+function calculateLocationCompatibility(me: ProfileRecord, target: ProfileRecord): number {
   const myDistricts = me.profile_preferences?.districts || [];
   const theirCity = target.city || "";
 

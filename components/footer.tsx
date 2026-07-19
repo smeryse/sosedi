@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Mail, Send } from "lucide-react";
+import { Mail, Send } from "lucide-react";
 
 export function Footer() {
   return (

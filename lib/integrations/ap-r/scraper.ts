@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { defaultAPRImporter } from "./importer";
 import { parseAPRFeedContent } from "./parser";
 import { normalizeAPRItem } from "./schema";
 import type { NormalizedAPRProperty, RawAPRFeedItem } from "./types";

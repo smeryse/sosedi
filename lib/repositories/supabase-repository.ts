@@ -19,7 +19,10 @@ import type {
   ViewingBooking,
 } from "./types";
 
-function mapProfileToCompatibility(profile: any, pref: any): CompatibilityProfile {
+function mapProfileToCompatibility(
+  profile: Record<string, any>,
+  pref?: Record<string, any> | null,
+): CompatibilityProfile {
   return {
     budgetMin: profile.budget_min ?? 0,
     budgetMax: profile.budget_max ?? 150000,

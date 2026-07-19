@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,21 +11,17 @@ export function Navbar() {
   const navLinks = [
     { label: "Как это работает", href: "#how" },
     { label: "Совместимость", href: "#compatibility" },
+    { label: "Отзывы", href: "#reviews" },
     { label: "Собственникам", href: "#owners" },
-    { label: "Безопасность", href: "#safety" },
+    { label: "Безопасность", href: "/safety" },
     { label: "FAQ", href: "#faq" },
   ];
 
   return (
     <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-lg flex flex-col items-center">
-      {/* Centered Floating Pill Navbar */}
       <nav className="w-full bg-white/95 dark:bg-[#111110]/95 backdrop-blur-md rounded-full shadow-xl px-5 py-3 flex items-center justify-between border border-black/5 dark:border-white/10 transition-all duration-300">
-        {/* Brand Logo */}
-        <Link href="/" className="font-heading text-xl font-bold tracking-tight text-black dark:text-white flex items-center">
-          sosedi<span className="text-[#D6FF3F] text-2xl leading-none">.</span>
-        </Link>
+        <BrandLogo className="[&_img]:h-auto [&_img]:w-[138px] dark:[&_img]:brightness-0 dark:[&_img]:invert" />
 
-        {/* Action Button & Hamburger Toggle */}
         <div className="flex items-center gap-3">
           <Link
             href="/app/roommates"
@@ -34,7 +31,6 @@ export function Navbar() {
             <ArrowUpRight className="size-3.5" />
           </Link>
 
-          {/* Animated Hamburger Icon */}
           <button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
@@ -43,12 +39,12 @@ export function Navbar() {
             className="relative size-9 flex flex-col items-center justify-center gap-1.5 focus:outline-none rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
           >
             <span
-              className={`w-4 h-0.5 bg-black dark:bg-white transition-all duration-300 ease-[cubic-bezier(0.77,0,0.175,1)] ${
+              className={`w-4 h-0.5 bg-black dark:bg-white transition-all duration-300 ease-in-out ${
                 isOpen ? "rotate-45 translate-y-[3px]" : ""
               }`}
             />
             <span
-              className={`w-4 h-0.5 bg-black dark:bg-white transition-all duration-300 ease-[cubic-bezier(0.77,0,0.175,1)] ${
+              className={`w-4 h-0.5 bg-black dark:bg-white transition-all duration-300 ease-in-out ${
                 isOpen ? "-rotate-45 -translate-y-[5px]" : ""
               }`}
             />
@@ -56,7 +52,6 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* Dropdown Menu Container */}
       <div
         className={`w-full mt-2 bg-white/95 dark:bg-[#111110]/95 backdrop-blur-xl rounded-2xl p-5 shadow-2xl border border-black/5 dark:border-white/10 transition-all duration-300 ease-out origin-top ${
           isOpen

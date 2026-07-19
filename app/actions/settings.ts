@@ -184,10 +184,12 @@ export async function enable2FA() {
 
   if (error) throw new Error(error.message);
 
+  const totpData = data.totp as unknown as { qr_code?: string; qrCode?: string; secret?: string } | undefined;
+
   return { 
     success: true, 
-    qrCode: (data.totp as any)?.qr_code || (data.totp as any)?.qrCode,
-    secret: (data.totp as any)?.secret,
+    qrCode: totpData?.qr_code || totpData?.qrCode,
+    secret: totpData?.secret,
     factorId: data.id 
   };
 }
@@ -416,7 +418,7 @@ export async function disconnectOAuthProvider(provider: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Не авторизован");
-  const identity = user.identities?.find((i: any) => i.provider === provider);
+  const identity = user.identities?.find((i) => i.provider === provider);
   if (!identity) throw new Error("Провайдер не найден");
 
   const { error } = await supabase.auth.unlinkIdentity(identity);

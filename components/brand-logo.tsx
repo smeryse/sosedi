@@ -6,10 +6,10 @@ export function BrandLogo({ className }: { className?: string }) {
   return (
     <Link href="/" className={cn("inline-flex items-center", className)}>
       <Image
-        src="/brand/sosedi-logo.svg"
+        src="/brand/sosedi-logo-v2.svg"
         alt="Соседи"
-        width={146}
-        height={34}
+        width={160}
+        height={38}
         priority
       />
     </Link>

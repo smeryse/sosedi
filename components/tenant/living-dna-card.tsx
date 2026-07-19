@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, Zap, Sparkles, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Sparkles, CheckCircle2 } from "lucide-react";
 
 export interface LivingDNAScores {
   cleanliness: number;
@@ -14,7 +14,6 @@ export interface LivingDNAScores {
 export function LivingDNACard({
   scores,
   roommateName = "Мария",
-  groupName = "Квартира в центре",
 }: {
   scores: LivingDNAScores;
   roommateName?: string;

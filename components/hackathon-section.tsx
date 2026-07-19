@@ -1,12 +1,12 @@
 "use client";
 
 import { Award, Clock, MapPin, Zap } from "lucide-react";
+import { Reveal } from "@/components/landing/reveal";
 
 export function HackathonSection() {
   return (
     <section className="px-5 sm:px-10 lg:px-16 py-8">
-      <div className="max-w-7xl mx-auto bg-gradient-to-br from-[#A54726] to-[#8C3A1D] text-white rounded-3xl p-8 sm:p-12 md:p-16 relative overflow-hidden shadow-2xl border border-white/10">
-        {/* Background decorative glow */}
+      <Reveal className="max-w-7xl mx-auto bg-gradient-to-br from-[#A54726] to-[#8C3A1D] text-white rounded-3xl p-8 sm:p-12 md:p-16 relative overflow-hidden shadow-2xl border border-white/10">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#D6FF3F]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl">
@@ -27,7 +27,6 @@ export function HackathonSection() {
           </p>
         </div>
 
-        {/* 3 Stats Grid */}
         <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 pt-10 border-t border-white/15">
           <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 text-[#D6FF3F] mb-2">
@@ -59,7 +58,7 @@ export function HackathonSection() {
             </p>
           </div>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { Component, type ReactNode, type ErrorInfo } from "react";
+import { AlertTriangle, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ErrorFallback } from "./ErrorFallback";
-import { cn } from "@/lib/utils";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -198,6 +199,3 @@ export function UnauthorizedFallback() {
   );
 }
 
-// Import icons needed
-import { MessageCircle, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";

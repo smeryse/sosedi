@@ -3,8 +3,6 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-const ease = [0.22, 1, 0.36, 1] as const;
-
 export function Reveal({
   children,
   className,
@@ -28,8 +26,6 @@ export function Reveal({
 }
 
 export function Stagger({ children, className }: { children: ReactNode; className?: string }) {
-  const reduceMotion = useReducedMotion();
-
   return (
     <motion.div
       className={className}
@@ -41,8 +37,6 @@ export function Stagger({ children, className }: { children: ReactNode; classNam
 }
 
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
-  const reduceMotion = useReducedMotion();
-
   return (
     <motion.div
       className={`stagger-item-enter ${className ?? ""}`}

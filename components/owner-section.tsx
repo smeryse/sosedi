@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, Home, Users } from "lucide-react";
+import { ArrowUpRight, CheckCircle2 } from "lucide-react";
+import { Reveal } from "@/components/landing/reveal";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { MediaImage } from "@/components/ui/media-image";
 
@@ -33,8 +34,7 @@ export function OwnerSection() {
   return (
     <section id="owners" className="relative z-10 bg-[#F4F4F0] text-black py-24 md:py-36 px-5 sm:px-10 lg:px-16 overflow-hidden border-t border-b border-black/5">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        {/* Left Column: Text & Value Proposition */}
-        <div>
+        <Reveal>
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#321C04] mb-4">
             <span className="size-2 rounded-full bg-[#A8CE00]" />
             Для собственников
@@ -66,17 +66,15 @@ export function OwnerSection() {
               Узнать больше для собственников →
             </Link>
           </div>
-        </div>
+        </Reveal>
 
-        {/* Right Column: Interactive Owner Listing & Candidate Group Mockup */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-black/5">
-          {/* Property Card Top */}
+        <Reveal delay={0.12} className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-black/5">
           <div className="flex flex-col sm:flex-row gap-5 items-start pb-6 border-b border-black/10">
             <div className="w-full sm:w-36 h-28 rounded-2xl overflow-hidden relative shrink-0 bg-black/10">
               <MediaImage
-                src="/demo/places/krasnodar-flat-1.jpg"
+                src="/demo/properties/center-loft.jpg"
                 alt="Краснодар, Панорама"
-                fill
+                sizes="(min-width: 640px) 144px, 100vw"
                 className="object-cover"
               />
             </div>
@@ -96,7 +94,6 @@ export function OwnerSection() {
             </div>
           </div>
 
-          {/* Candidate Groups List */}
           <div className="mt-6">
             <h4 className="text-xs font-semibold text-black/40 uppercase tracking-wider mb-4 flex items-center justify-between">
               <span>Кандидаты на заселение</span>
@@ -143,7 +140,7 @@ export function OwnerSection() {
               ))}
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
