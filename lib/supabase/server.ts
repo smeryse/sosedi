@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "./database.types";
 
-const FALLBACK_URL = "https://xyzxxxxxxxxxxxxxxxxx.supabase.co";
-const FALLBACK_KEY =
+const FALLBACK_SUPABASE_URL = "https://xyzxxxxxxxxxxxxxxxxx.supabase.co";
+const FALLBACK_SUPABASE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5enh4eHh4eHh4eHh4eHh4eHgiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYwMDAwMDAwMCwiZXhwIjoyMDAwMDAwMDAwfQ.placeholder";
 
 function getValidConfig() {
@@ -13,11 +13,11 @@ function getValidConfig() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const url =
-    envUrl && envUrl.startsWith("http") && envUrl.length > 12
-      ? envUrl
-      : FALLBACK_URL;
+    envUrl && envUrl.trim().length > 10 && envUrl.startsWith("http")
+      ? envUrl.trim()
+      : FALLBACK_SUPABASE_URL;
 
-  const key = envKey && envKey.length > 20 ? envKey : FALLBACK_KEY;
+  const key = envKey && envKey.trim().length > 20 ? envKey.trim() : FALLBACK_SUPABASE_KEY;
 
   return { url, key };
 }

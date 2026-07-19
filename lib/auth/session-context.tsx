@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 interface SessionContextType {
@@ -16,15 +16,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<{ user: User } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  );
+  const supabase = createClient();
 
   const refreshSession = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session ? { user: data.session.user } : null);
-    setLoading(false);
+    try {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session ? { user: data.session.user } : null);
+    } catch {
+      setSession(null);
+    } finally {
+      setLoading(false);
+    }
   }, [supabase.auth]);
 
   useEffect(() => {
