@@ -26,17 +26,17 @@ export type NavigationItem = NavItem;
 
 export const tenantNavigation: NavItem[] = [
   { label: "Главная", href: "/app", icon: "home" },
-  { label: "Поиск сожителей", href: "/app/roommates", icon: "search" },
   { label: "Поиск жилья", href: "/app/housing", icon: "building" },
-  { label: "Симулятор быта", href: "/app/simulator", icon: "gamepad", badge: "NEW" },
-  { label: "Мои объявления", href: "/app/applications", icon: "file" },
+  { label: "Поиск соседей", href: "/app/roommates", icon: "search" },
+  { label: "Моя группа", href: "/app/group", icon: "users" },
   { label: "Избранное", href: "/app/favorites", icon: "heart" },
   { label: "Сообщения", href: "/app/messages", icon: "message", badge: "2" },
-  { label: "Заявки", href: "/app/recommendations", icon: "bell" },
-  { label: "Мои группы", href: "/app/group", icon: "users" },
-  { label: "Календарь уборок", href: "/app/chores", icon: "calendar" },
+  { label: "Мои заявки", href: "/app/applications", icon: "file" },
+  { label: "Рекомендации", href: "/app/recommendations", icon: "bell" },
+  { label: "Расписание дел", href: "/app/chores", icon: "calendar" },
   { label: "Расходы", href: "/app/budget", icon: "wallet" },
-  { label: "Настройки", href: "/app/settings", icon: "settings" },
+  { label: "Симулятор быта", href: "/app/simulator", icon: "gamepad", badge: "NEW" },
+  { label: "Профиль и настройки", href: "/app/profile", icon: "settings" },
 ];
 
 export const ownerNavigation: NavItem[] = [
@@ -45,5 +45,5 @@ export const ownerNavigation: NavItem[] = [
   { label: "Заявки", href: "/owner/applications", icon: "file" },
   { label: "Сообщения", href: "/owner/messages", icon: "message", badge: "2" },
   { label: "Аналитика", href: "/owner/analytics", icon: "dashboard" },
-  { label: "Настройки", href: "/owner/settings", icon: "settings" },
+  { label: "Настройки", href: "/owner/profile", icon: "settings" },
 ];

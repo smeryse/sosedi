@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Camera, Check, ShieldCheck, Loader2, Save, AlertCircle, Bell, LockKeyhole, Mail, Smartphone, Trash2, Eye, EyeOff, LogOut, Settings2, UserRound, ArrowLeft } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
 import { createClient } from "@/lib/supabase/client";
-import { updateProfile, uploadAvatar, getProfile, getCurrentUser, updateProfilePreferences, updatePassword, updateEmail, deleteAccount, updateNotificationSettings } from "@/app/actions/settings";
+import { updateProfile, uploadAvatar, getProfile, getCurrentUser, getProfilePreferences, updateProfilePreferences, updatePassword, updateEmail, deleteAccount, updateNotificationSettings } from "@/app/actions/settings";
 
 interface Profile {
   id: string;
@@ -25,12 +25,12 @@ interface Profile {
   smoking?: "no" | "sometimes" | "yes" | "indifferent";
   pets?: "no" | "cat" | "dog" | "other" | "indifferent";
   sleep_schedule?: "early" | "late" | "flexible";
-  noise_tolerance?: number;
-  guests_frequency?: "never" | "rarely" | "sometimes" | "often";
-  remote_work?: "never" | "sometimes" | "often";
-  cleanliness?: number;
-  sociability?: number;
-  private_space?: number;
+  noise_tolerance?: number | null;
+  guests_frequency?: "never" | "rarely" | "sometimes" | "often" | null;
+  remote_work?: "never" | "sometimes" | "often" | null;
+  cleanliness?: number | null;
+  sociability?: number | null;
+  private_space?: number | null;
   notification_settings?: {
     email_notifications: boolean;
     push_notifications: boolean;
@@ -43,7 +43,7 @@ interface Profile {
   updated_at?: string;
 }
 
-type Tab = "profile" | "notifications" | "security";
+type Tab = "profile" | "dna" | "verification" | "notifications" | "security";
 
 export default function TenantProfileSettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -53,6 +53,89 @@ export default function TenantProfileSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("profile");
+
+  // Симулятор верификации
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationStep, setVerificationStep] = useState(0); // 0: init, 1: inputs, 2: loader, 3: success
+  const [checkingProgress, setCheckingProgress] = useState([
+    { id: 1, label: "Проверка паспорта по базам розыска МВД РФ", status: "idle" },
+    { id: 2, label: "Проверка отсутствия задолженностей ФССП", status: "idle" },
+    { id: 3, label: "Проверка в реестре финансового мониторинга", status: "idle" },
+  ]);
+  const [phoneOrSnils, setPhoneOrSnils] = useState("");
+  const [gosuPassword, setGosuPassword] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const verified = localStorage.getItem("sosedi_verified") === "true";
+      setIsVerified(verified);
+      if (verified) {
+        setVerificationStep(3);
+      }
+    }
+  }, []);
+
+  const startVerificationProcess = () => {
+    if (!phoneOrSnils || !gosuPassword) {
+      alert("Пожалуйста, заполните поля авторизации.");
+      return;
+    }
+    setVerificationStep(2);
+    setCheckingProgress([
+      { id: 1, label: "Проверка паспорта по базам розыска МВД РФ", status: "loading" },
+      { id: 2, label: "Проверка отсутствия задолженностей ФССП", status: "idle" },
+      { id: 3, label: "Проверка в реестре финансового мониторинга", status: "idle" },
+    ]);
+
+    setTimeout(() => {
+      setCheckingProgress(prev =>
+        prev.map(item =>
+          item.id === 1 ? { ...item, status: "success" } :
+          item.id === 2 ? { ...item, status: "loading" } : item
+        )
+      );
+    }, 1500);
+
+    setTimeout(() => {
+      setCheckingProgress(prev =>
+        prev.map(item =>
+          item.id === 2 ? { ...item, status: "success" } :
+          item.id === 3 ? { ...item, status: "loading" } : item
+        )
+      );
+    }, 3000);
+
+    setTimeout(() => {
+      setCheckingProgress(prev =>
+        prev.map(item =>
+          item.id === 3 ? { ...item, status: "success" } : item
+        )
+      );
+    }, 4500);
+
+    setTimeout(() => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("sosedi_verified", "true");
+      }
+      setIsVerified(true);
+      setVerificationStep(3);
+    }, 5500);
+  };
+
+  const handleResetVerification = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("sosedi_verified");
+    }
+    setIsVerified(false);
+    setVerificationStep(0);
+    setPhoneOrSnils("");
+    setGosuPassword("");
+    setCheckingProgress([
+      { id: 1, label: "Проверка паспорта по базам розыска МВД РФ", status: "idle" },
+      { id: 2, label: "Проверка отсутствия задолженностей ФССП", status: "idle" },
+      { id: 3, label: "Проверка в реестре финансового мониторинга", status: "idle" },
+    ]);
+  };
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -76,10 +159,13 @@ export default function TenantProfileSettingsPage() {
     try {
       const user = await getCurrentUser();
       if (user) {
-        const data = await getProfile(user.id);
-        if (data) {
-          setProfile(data);
-          setAvatarPreview(data.avatar_path);
+        const [profileData, preferencesData] = await Promise.all([
+          getProfile(user.id),
+          getProfilePreferences(user.id)
+        ]);
+        if (profileData) {
+          setProfile({ ...profileData, ...preferencesData });
+          setAvatarPreview(profileData.avatar_path);
         }
       }
     } catch (err: unknown) {
@@ -266,6 +352,8 @@ export default function TenantProfileSettingsPage() {
 
   const tabs = [
     { id: "profile", label: "Профиль", icon: UserRound },
+    { id: "dna", label: "Быт и привычки", icon: Settings2 },
+    { id: "verification", label: "Верификация", icon: ShieldCheck },
     { id: "notifications", label: "Уведомления", icon: Bell },
     { id: "security", label: "Безопасность", icon: LockKeyhole },
   ] as const;
@@ -286,9 +374,11 @@ export default function TenantProfileSettingsPage() {
       title={activeTab === "profile" ? (profile?.display_name || "Профиль") : (tabs.find(t => t.id === activeTab)?.label || "Настройки")}
       description={activeTab === "profile" 
         ? "Так вас видят потенциальные соседи. Личные контакты остаются скрытыми до взаимного согласия."
-        : activeTab === "notifications"
-          ? "Настройте, какие уведомления хотите получать."
-          : "Управление паролем, email и доступом к аккаунту."}
+        : activeTab === "verification"
+          ? "Пройдите верификацию личности для повышения доверия арендодателей и соарендаторов."
+          : activeTab === "notifications"
+            ? "Настройте, какие уведомления хотите получать."
+            : "Управление паролем, email и доступом к аккаунту."}
     >
       {error && (
         <div className="mb-5 flex items-center gap-3 rounded-[14px] bg-red-50 p-4 text-red-700 text-sm" role="alert">
@@ -357,9 +447,17 @@ export default function TenantProfileSettingsPage() {
             <p className="mt-1 text-xs text-muted-foreground">
               {profile?.job_title || "Работа"} · {profile?.city || "Город"}
             </p>
-            <div className="mt-5 flex items-center gap-2 rounded-full bg-[hsl(var(--accent-soft))] px-3 py-2 text-[10px] font-extrabold">
-              <ShieldCheck className="size-3.5" />
-              Профиль {profile?.is_public ? "публичный" : "скрыт"}
+            <div className="mt-5 flex flex-col gap-2 w-full">
+              <div className="flex items-center gap-2 rounded-full bg-[hsl(var(--accent-soft))] px-3 py-2 text-[10px] font-extrabold justify-center">
+                <ShieldCheck className="size-3.5" />
+                Профиль {profile?.is_public ? "публичный" : "скрыт"}
+              </div>
+              {isVerified && (
+                <div className="flex items-center gap-2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 text-[10px] font-extrabold justify-center">
+                  <ShieldCheck className="size-3.5 text-emerald-600 animate-pulse" />
+                  Проверен АЗКК
+                </div>
+              )}
             </div>
           </aside>
 
@@ -384,7 +482,7 @@ export default function TenantProfileSettingsPage() {
                     min={18}
                     max={100}
                     defaultValue={profile?.age || ""}
-                    onChange={(e) => setProfile(p => p ? { ...p, age: parseInt(e.target.value) || 0 } : null)}
+                    onChange={(e) => setProfile(p => p ? { ...p, age: Math.min(100, Math.max(18, parseInt(e.target.value) || 18)) } : null)}
                     className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
                   />
                 </label>
@@ -499,6 +597,126 @@ export default function TenantProfileSettingsPage() {
           </div>
         </form>
       )}
+      {activeTab === "dna" && (
+        <form onSubmit={handleProfileSubmit} className="max-w-2xl space-y-6">
+          <section className="space-y-5 rounded-xl border p-5">
+            <h3 className="flex items-center gap-2 font-extrabold">
+              <Settings2 className="size-4" />
+              Быт и привычки (Living DNA)
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-xs font-extrabold">
+                Курение
+                <select
+                  value={profile?.smoking || "no"}
+                  onChange={(e) => setProfile(p => p ? { ...p, smoking: e.target.value as any } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                >
+                  <option value="no">Не курю</option>
+                  <option value="sometimes">Иногда</option>
+                  <option value="yes">Курю</option>
+                  <option value="indifferent">Всё равно</option>
+                </select>
+              </label>
+              <label className="text-xs font-extrabold">
+                Режим сна
+                <select
+                  value={profile?.sleep_schedule || "flexible"}
+                  onChange={(e) => setProfile(p => p ? { ...p, sleep_schedule: e.target.value as any } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                >
+                  <option value="early">Жаворонок</option>
+                  <option value="late">Сова</option>
+                  <option value="flexible">Гибкий график</option>
+                </select>
+              </label>
+              <label className="text-xs font-extrabold">
+                Питомцы
+                <select
+                  value={profile?.pets || "no"}
+                  onChange={(e) => setProfile(p => p ? { ...p, pets: e.target.value as any } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                >
+                  <option value="no">Нет</option>
+                  <option value="cat">Кот / Кошка</option>
+                  <option value="dog">Собака</option>
+                  <option value="other">Другие</option>
+                  <option value="indifferent">Всё равно</option>
+                </select>
+              </label>
+              <label className="text-xs font-extrabold">
+                Гости
+                <select
+                  value={profile?.guests_frequency || "sometimes"}
+                  onChange={(e) => setProfile(p => p ? { ...p, guests_frequency: e.target.value as any } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                >
+                  <option value="never">Никогда</option>
+                  <option value="rarely">Редко</option>
+                  <option value="sometimes">Иногда</option>
+                  <option value="often">Часто</option>
+                </select>
+              </label>
+              <label className="text-xs font-extrabold">
+                Удалённая работа
+                <select
+                  value={profile?.remote_work || "sometimes"}
+                  onChange={(e) => setProfile(p => p ? { ...p, remote_work: e.target.value as any } : null)}
+                  className="mt-2 h-11 w-full rounded-[14px] border bg-background px-3 text-sm font-normal outline-none"
+                >
+                  <option value="never">В офисе</option>
+                  <option value="sometimes">Гибрид</option>
+                  <option value="often">Полностью удалённо</option>
+                </select>
+              </label>
+            </div>
+            
+            <div className="mt-4 space-y-4 pt-4 border-t">
+              <label className="text-xs font-extrabold block">
+                Чистоплотность ({profile?.cleanliness || 3}/5)
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={profile?.cleanliness || 3}
+                  onChange={(e) => setProfile(p => p ? { ...p, cleanliness: parseInt(e.target.value) } : null)}
+                  className="mt-2 w-full accent-accent"
+                />
+              </label>
+              <label className="text-xs font-extrabold block">
+                Общительность ({profile?.sociability || 3}/5)
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={profile?.sociability || 3}
+                  onChange={(e) => setProfile(p => p ? { ...p, sociability: parseInt(e.target.value) } : null)}
+                  className="mt-2 w-full accent-accent"
+                />
+              </label>
+            </div>
+          </section>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full sm:w-auto inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-xs font-extrabold text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Сохранение...
+              </>
+            ) : (
+              <>
+                <Save className="size-4" />
+                Сохранить настройки
+              </>
+            )}
+          </button>
+        </form>
+      )}
+
 
       {activeTab === "notifications" && (
         <form onSubmit={handleNotificationSubmit} className="max-w-2xl space-y-6">
@@ -571,6 +789,158 @@ export default function TenantProfileSettingsPage() {
             )}
           </button>
         </form>
+      )}
+
+      {activeTab === "verification" && (
+        <div className="max-w-2xl space-y-6">
+          {verificationStep === 0 && (
+            <section className="surface-card p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="grid size-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                  <ShieldCheck className="size-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#111111]">Цифровой паспорт сожителя АЗКК</h3>
+                  <p className="text-xs text-muted-foreground">Верификация через Госуслуги (ЕСИА)</p>
+                </div>
+              </div>
+              <p className="text-sm leading-6 text-[#555555]">
+                Подтверждение личности позволяет застройщикам и собственникам жилья видеть в вас надежного арендатора. Проверенные пользователи получают на 80% больше предложений о совместной аренде и получают значок <b>«Проверен АЗКК»</b> в общем каталоге.
+              </p>
+              <div className="rounded-[16px] bg-surface-muted p-4 space-y-3">
+                <p className="text-xs font-extrabold text-[#111111]">Что мы проверяем:</p>
+                <ul className="space-y-2 text-xs text-muted-foreground">
+                  <li className="flex items-center gap-2">✓ Подлинность паспортных данных по базам МВД</li>
+                  <li className="flex items-center gap-2">✓ Отсутствие крупных задолженностей в базе судебных приставов (ФССП)</li>
+                  <li className="flex items-center gap-2">✓ Соответствие анкетных данных реальному возрасту</li>
+                </ul>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVerificationStep(1)}
+                className="w-full lime-button rounded-full py-3.5 text-xs font-black flex items-center justify-center gap-2"
+              >
+                Начать верификацию
+              </button>
+            </section>
+          )}
+
+          {verificationStep === 1 && (
+            <section className="surface-card overflow-hidden">
+              <div className="bg-[#0A5CFF] p-4 text-white flex items-center justify-between">
+                <span className="text-sm font-extrabold uppercase tracking-wider">ГОСУСЛУГИ</span>
+                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">ЕСИА</span>
+              </div>
+              <div className="p-6 space-y-5">
+                <div className="text-center space-y-2">
+                  <h3 className="font-extrabold text-base">Авторизация для подтверждения профиля</h3>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    Авторизуйтесь на портале Госуслуг для безопасной передачи базовых анкетных данных в приложение «Соседи».
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-xs font-extrabold text-muted-foreground">
+                    Телефон / Email / СНИЛС
+                    <input
+                      type="text"
+                      placeholder="+7 (999) 999-99-99"
+                      value={phoneOrSnils}
+                      onChange={(e) => setPhoneOrSnils(e.target.value)}
+                      className="mt-1.5 h-11 w-full rounded-[12px] border bg-background px-3 text-sm font-normal outline-none focus:border-[#0A5CFF]"
+                    />
+                  </label>
+                  <label className="block text-xs font-extrabold text-muted-foreground">
+                    Пароль
+                    <input
+                      type="password"
+                      placeholder="Введите пароль"
+                      value={gosuPassword}
+                      onChange={(e) => setGosuPassword(e.target.value)}
+                      className="mt-1.5 h-11 w-full rounded-[12px] border bg-background px-3 text-sm font-normal outline-none focus:border-[#0A5CFF]"
+                    />
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setVerificationStep(0)}
+                    className="w-1/2 border rounded-full py-3 text-xs font-extrabold text-muted-foreground"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startVerificationProcess}
+                    className="w-1/2 bg-[#0A5CFF] hover:bg-[#004BD6] text-white rounded-full py-3 text-xs font-extrabold transition-colors"
+                  >
+                    Войти и подтвердить
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {verificationStep === 2 && (
+            <section className="surface-card p-6 space-y-6">
+              <div className="text-center space-y-3">
+                <Loader2 className="size-10 animate-spin text-[#0A5CFF] mx-auto" />
+                <h3 className="font-extrabold text-base">Выполняется государственная проверка</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Система безопасности отправляет запросы к официальным реестрам для подтверждения вашей благонадежности. Это займет несколько секунд.
+                </p>
+              </div>
+              <div className="border-t pt-4 space-y-4">
+                {checkingProgress.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between text-xs">
+                    <span className={item.status === "success" ? "text-emerald-700 font-bold" : item.status === "loading" ? "text-[#111111] font-bold" : "text-muted-foreground"}>
+                      {item.label}
+                    </span>
+                    <span>
+                      {item.status === "success" && <span className="text-emerald-600 font-extrabold">✓ Готово</span>}
+                      {item.status === "loading" && <Loader2 className="size-4 animate-spin text-[#0A5CFF]" />}
+                      {item.status === "idle" && <span className="text-muted-foreground/50">—</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {verificationStep === 3 && (
+            <section className="surface-card p-6 space-y-6">
+              <div className="text-center space-y-3">
+                <div className="grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-600 mx-auto border-4 border-emerald-50">
+                  <ShieldCheck className="size-8" />
+                </div>
+                <h3 className="font-extrabold text-xl text-[#111111]">Профиль верифицирован</h3>
+                <p className="text-xs text-emerald-700 font-bold">
+                  Вам присвоен статус «Проверенный арендатор АЗКК» 🛡️
+                </p>
+              </div>
+              <div className="rounded-[16px] border border-emerald-100 bg-emerald-50/50 p-4 space-y-3 text-xs leading-5">
+                <p className="font-extrabold text-[#111111]">Подтвержденные данные:</p>
+                <div className="grid grid-cols-2 gap-y-2 text-muted-foreground">
+                  <div>ФИО:</div>
+                  <div className="font-bold text-[#111111]">{profile?.display_name || "Пользователь"}</div>
+                  <div>Возраст:</div>
+                  <div className="font-bold text-[#111111]">{profile?.age ? `${profile.age} лет` : "—"}</div>
+                  <div>Паспорт РФ:</div>
+                  <div className="font-bold text-emerald-700">Действителен</div>
+                  <div>Исполнительные дела (ФССП):</div>
+                  <div className="font-bold text-emerald-700">Не обнаружены</div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleResetVerification}
+                className="w-full border border-red-200 hover:bg-red-50 text-red-600 rounded-full py-3 text-xs font-extrabold transition-colors flex items-center justify-center gap-2"
+              >
+                Сбросить верификацию (для повторного теста)
+              </button>
+            </section>
+          )}
+        </div>
       )}
 
       {activeTab === "security" && (
