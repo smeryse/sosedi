@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getRepository } from "@/lib/repositories";
+import { createClientRepository } from "@/lib/repositories";
 import type { DemoProperty, DemoRoommate } from "@/data/demo";
 import { useFavorites } from "@/components/favorites-context";
 import { EmptyState } from "./page-frame";
 import { PersonCard } from "./person-card";
 import { PropertyCard } from "./property-card";
+import { Stagger, StaggerItem } from "@/components/ui/motion-primitives";
 
 export function FavoriteGrid() {
   const { favorites } = useFavorites();
@@ -17,7 +18,7 @@ export function FavoriteGrid() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const repo = getRepository();
+      const repo = createClientRepository();
       const [roommates, properties] = await Promise.all([
         repo.listRoommates(),
         repo.listProperties(),
@@ -78,22 +79,22 @@ export function FavoriteGrid() {
       {people.length > 0 && (
         <section>
           <h2 className="mb-3 text-lg font-extrabold text-[#111111]">Соседи ({people.length})</h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {people.map((person) => (
-              <PersonCard key={person.id} person={person} />
+              <StaggerItem key={person.id}><PersonCard person={person} /></StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </section>
       )}
 
       {properties.length > 0 && (
         <section>
           <h2 className="mb-3 text-lg font-extrabold text-[#111111]">Жильё ({properties.length})</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
+              <StaggerItem key={property.id}><PropertyCard property={property} /></StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </section>
       )}
     </div>

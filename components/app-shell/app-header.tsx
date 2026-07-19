@@ -1,433 +1,87 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
-import {
-  Bell,
-  Bot,
-  Building2,
-  CalendarCheck2,
-  ChevronDown,
-  ChevronRight,
-  CircleUserRound,
-  FileCheck2,
-  Heart,
-  Home,
-  LayoutDashboard,
-  LayoutGrid,
-  Menu,
-  MessageCircle,
-  Plus,
-  ReceiptRussianRuble,
-  Search,
-  Settings,
-  UsersRound,
-  X,
-  Gamepad2,
-  Sparkles,
-  Zap,
-} from "lucide-react";
-import { BrandLogo } from "@/components/brand-logo";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, ChevronDown, MessageCircle, Plus, Search } from "lucide-react";
+import { motion } from "framer-motion";
 import { AvatarImage } from "@/components/ui/avatar-image";
-import { getRepository } from "@/lib/repositories";
-import { tenantNavigation, ownerNavigation } from "./navigation";
+import { createClientRepository } from "@/lib/repositories";
 
-const iconMap = {
-  bell: Bell,
-  bot: Bot,
-  building: Building2,
-  calendar: CalendarCheck2,
-  user: CircleUserRound,
-  file: FileCheck2,
-  gamepad: Gamepad2,
-  heart: Heart,
-  home: Home,
-  dashboard: LayoutDashboard,
-  message: MessageCircle,
-  wallet: ReceiptRussianRuble,
-  search: Search,
-  settings: Settings,
-  users: UsersRound,
-} as const;
+const routeSearchHints: Array<[string, string]> = [
+  ["/app/messages", "Поиск по чатам и сообщениям"],
+  ["/app/roommates", "Поиск по людям, районам и интересам"],
+  ["/app/housing", "Поиск по квартирам, адресам и районам"],
+  ["/app/applications", "Поиск по заявкам"],
+  ["/owner", "Поиск по объектам, заявкам и людям"],
+];
 
 export function AppHeader({ owner = false }: { owner?: boolean }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
+  const [query, setQuery] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(2);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const unreadNotifications = 3;
+  const placeholder = routeSearchHints.find(([route]) => pathname.startsWith(route))?.[1]
+    ?? "Поиск по городам, районам, людям, объявлениям";
 
   useEffect(() => {
-    let isMounted = true;
-    getRepository()
+    let mounted = true;
+    createClientRepository()
       .getChatThreads()
       .then((threads) => {
-        if (!isMounted) return;
-        const count = threads.reduce((acc, t) => acc + (t.unreadCount || 0), 0);
-        setUnreadMessages(count);
+        if (mounted) {
+          setUnreadMessages(threads.reduce((total, thread) => total + (thread.unreadCount || 0), 0));
+        }
       })
-      .catch((err) => console.error(err));
-    return () => {
-      isMounted = false;
-    };
+      .catch(() => undefined);
+    return () => { mounted = false; };
   }, []);
 
-  // Close popover on click outside or escape key
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-        setMoreOpen(false);
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMoreOpen(false);
-    }
-    if (moreOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [moreOpen]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    const target = owner ? "/owner/properties" : "/app/housing";
-    router.push(`${target}?search=${encodeURIComponent(searchQuery.trim())}`);
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!query.trim()) return;
+    const target = owner ? "/owner/properties" : pathname.startsWith("/app/roommates") ? "/app/roommates" : "/app/housing";
+    router.push(`${target}?search=${encodeURIComponent(query.trim())}`);
   };
 
-  const navItems = owner ? ownerNavigation : tenantNavigation;
-
-  // Primary navigation links in the header
-  const primaryHrefs = owner
-    ? ["/owner", "/owner/properties", "/owner/applications"]
-    : ["/app", "/app/roommates", "/app/housing", "/app/simulator", "/app/favorites"];
-
-  const primaryNavItems = navItems.filter((item) => primaryHrefs.includes(item.href));
-  const extraNavItems = navItems.filter((item) => !primaryHrefs.includes(item.href));
-
-  const isExtraActive = extraNavItems.some((item) =>
-    item.href === "/app" || item.href === "/owner"
-      ? pathname === item.href
-      : pathname.startsWith(item.href)
-  );
-
   return (
-    <>
-      <header className="sticky top-0 z-30 flex h-[76px] items-center bg-[#F4F4F0]/80 backdrop-blur-2xl px-4 sm:px-6 border-b border-[#E5E5E0]/60 transition-all">
-        <div className="flex h-full w-full items-center gap-4">
-          
-          {/* Left: Brand Logo Container (flex-1 to align left) */}
-          <div className="flex flex-1 justify-start items-center gap-3 shrink-0">
-            <BrandLogo className="[&_img]:h-auto [&_img]:w-[124px]" />
-          </div>
+    <header className="sticky top-0 z-30 border-b bg-background/88 px-4 py-3 backdrop-blur-2xl sm:px-6 xl:px-8">
+      <div className="mx-auto flex h-12 max-w-[1640px] items-center gap-3">
+        <Link href={owner ? "/owner" : "/app"} className="mr-auto font-heading text-xl font-bold tracking-[-0.04em] lg:hidden">
+          соседи<span className="text-accent">.</span>
+        </Link>
 
-          {/* Middle: Integrated Navigation Dock (Desktop Only, centered) */}
-          <div className="hidden lg:flex justify-center items-center shrink-0">
-            <nav
-              aria-label="Основная навигация"
-              className="flex items-center gap-1 rounded-full border border-white/80 bg-white/60 p-1 shadow-sm ring-1 ring-black/5 relative"
-              ref={popoverRef}
-            >
-              {primaryNavItems.map((item) => {
-                const Icon = iconMap[item.icon];
-                const isActive =
-                  item.href === "/app" || item.href === "/owner"
-                    ? pathname === item.href
-                    : pathname.startsWith(item.href);
+        <form onSubmit={submitSearch} className="hidden min-w-0 flex-1 sm:block lg:max-w-[620px]">
+          <label className="group flex h-12 items-center gap-3 rounded-full border bg-surface/85 px-5 shadow-[0_6px_24px_rgba(0,0,0,0.025)] transition duration-300 focus-within:border-accent/60 focus-within:bg-surface focus-within:shadow-[0_10px_30px_rgba(115,140,10,0.08)] dark:shadow-none">
+            <Search className="size-[18px] shrink-0 text-muted-foreground transition group-focus-within:text-accent" />
+            <span className="sr-only">Поиск</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={placeholder} className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground" />
+            <kbd className="hidden rounded-md bg-secondary px-2 py-1 text-[9px] font-semibold text-muted-foreground xl:block">⌘ K</kbd>
+          </label>
+        </form>
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onMouseEnter={() => setHoveredTab(item.href)}
-                    onMouseLeave={() => setHoveredTab(null)}
-                    className={`group relative flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-black transition-all duration-200 ${
-                      isActive
-                        ? "bg-[#EBF7B6] text-[#111111] shadow-sm scale-[1.01]"
-                        : "text-[#4A4D45] hover:bg-[#F4F4F0]/80 hover:text-[#111111]"
-                    }`}
-                  >
-                    {Icon ? (
-                      <Icon
-                        className={`size-[16px] stroke-[2.2] transition-transform duration-200 group-hover:scale-105 ${
-                          isActive ? "text-[#6A8B00]" : "text-[#4A4D45] group-hover:text-[#111111]"
-                        }`}
-                      />
-                    ) : null}
-
-                    {/* Label is responsive: visible on xl+, or if active on lg+ */}
-                    <span className={`hidden xl:inline-block whitespace-nowrap ${isActive ? "lg:inline-block" : ""}`}>
-                      {item.label}
-                    </span>
-
-                    {item.badge ? (
-                      <span
-                        className={`grid h-4 min-w-[16px] place-items-center rounded-full px-1 text-[8.5px] font-black ${
-                          isActive
-                            ? "bg-[#7B9E00] text-white"
-                            : "bg-[#B3DB00] text-[#111111]"
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    ) : null}
-
-                    {/* Tooltip on Hover */}
-                    {hoveredTab === item.href && !isActive && (
-                      <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#111111] px-2 py-0.5 text-[9.5px] font-bold text-white shadow-lg animate-in fade-in duration-150 pointer-events-none">
-                        {item.label}
-                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 size-1.5 rotate-45 bg-[#111111]" />
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-
-              {/* Separator Line */}
-              {extraNavItems.length > 0 && <div className="h-4 w-px bg-[#E5E5E0]" />}
-
-              {/* 'Ещё' (More) Dropdown Menu */}
-              {extraNavItems.length > 0 && (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setMoreOpen(!moreOpen)}
-                    onMouseEnter={() => setHoveredTab("more")}
-                    onMouseLeave={() => setHoveredTab(null)}
-                    className={`group flex h-9 items-center gap-1 rounded-full px-3 text-[12px] font-black transition-all duration-200 cursor-pointer ${
-                      moreOpen || isExtraActive
-                        ? "bg-[#EBF7B6] text-[#111111] shadow-sm"
-                        : "text-[#4A4D45] hover:bg-[#F4F4F0]/80 hover:text-[#111111]"
-                    }`}
-                  >
-                    <LayoutGrid
-                      className={`size-[16px] stroke-[2.2] ${
-                        moreOpen || isExtraActive ? "text-[#6A8B00]" : "text-[#4A4D45] group-hover:text-[#111111]"
-                      }`}
-                    />
-                    <span>Ещё</span>
-                    {isExtraActive && (
-                      <span className="size-1.5 rounded-full bg-[#7B9E00] shadow-[0_0_6px_#7B9E00]" />
-                    )}
-                  </button>
-
-                  {/* Dropdown Card */}
-                  {moreOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-[280px] overflow-hidden rounded-[22px] border border-white/60 bg-white/95 p-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="space-y-0.5 max-h-[260px] overflow-y-auto soft-scrollbar pr-1">
-                        {extraNavItems.map((item) => {
-                          const Icon = iconMap[item.icon];
-                          const isActive =
-                            item.href === "/app" || item.href === "/owner"
-                              ? pathname === item.href
-                              : pathname.startsWith(item.href);
-
-                          const isAssistant = item.href === "/app/assistant";
-
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => setMoreOpen(false)}
-                              className={`group/item flex h-9 items-center justify-between rounded-[14px] px-2.5 text-[12px] font-black transition-all duration-150 ${
-                                isActive
-                                  ? "bg-[#EBF7B6] text-[#111111]"
-                                  : isAssistant
-                                  ? "bg-[#F3F9D2] text-[#111111] hover:bg-[#E2F594]"
-                                  : "text-[#222222] hover:bg-[#F4F4F0] hover:translate-x-0.5"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                {Icon ? (
-                                  <Icon
-                                    className={`size-[15px] stroke-[2.2] ${
-                                      isActive
-                                        ? "text-[#7B9E00]"
-                                        : isAssistant
-                                        ? "text-[#6A8B00]"
-                                        : "text-[#4A4D45] group-hover/item:text-[#111111]"
-                                    }`}
-                                  />
-                                ) : null}
-                                <span>{item.label}</span>
-                              </div>
-
-                              {item.badge ? (
-                                <span
-                                  className={`grid h-4.5 min-w-[16px] place-items-center rounded-full px-1 text-[8.5px] font-black ${
-                                    isAssistant
-                                      ? "bg-[#7B9E00] text-white"
-                                      : isActive
-                                      ? "bg-[#7B9E00] text-white"
-                                      : "bg-[#B3DB00] text-[#111111]"
-                                  }`}
-                                >
-                                  {item.badge}
-                                </span>
-                              ) : null}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </nav>
-          </div>
-
-          {/* Right side: Search bar (shifted right) + Actions (flex-1 to align right) */}
-          <div className="flex flex-1 justify-end items-center gap-2.5 sm:gap-3">
-            
-            {/* Search Bar - Shifted Right */}
-            <form
-              onSubmit={handleSearchSubmit}
-              className="hidden md:flex h-[38px] w-[180px] lg:w-[220px] focus-within:w-[260px] items-center gap-2.5 rounded-full border border-[#E5E5E0] bg-white px-3 text-[#878881] shadow-sm transition-all focus-within:border-[#B3DB00] focus-within:ring-2 focus-within:ring-[#B3DB00]/20 duration-300"
-            >
-              <Search className="size-[15px] stroke-[2.2] text-[#878881]" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Поиск..."
-                className="min-w-0 flex-1 bg-transparent text-[12px] text-[#111111] outline-none placeholder:text-[#878881]"
-              />
-              <kbd className="pointer-events-none hidden lg:inline-flex h-4.5 select-none items-center gap-0.5 rounded bg-[#F4F4F0] px-1 font-mono text-[9px] font-bold text-[#6B6F66] border border-[#E5E5E0]">
-                ⌘K
-              </kbd>
-            </form>
-
-            <Link
-              href={owner ? "/owner/properties/new" : "/app/group/create"}
-              className="lime-button hidden h-[38px] items-center gap-1.5 rounded-full px-4 text-[12px] font-black shadow-sm transition-transform hover:scale-[1.02] lg:inline-flex"
-            >
-              <Plus className="size-3.5 stroke-[2.5]" />
-              {owner ? "Добавить" : "Создать"}
+        <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
+          <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+            <Link href={owner ? "/owner/properties/new" : "/app/group/create"} className="hidden h-11 items-center gap-2 rounded-full bg-accent px-5 text-[12px] font-bold text-accent-foreground shadow-[0_8px_25px_rgba(166,204,0,0.18)] transition hover:brightness-110 md:inline-flex">
+              <Plus className="size-4" /> {owner ? "Разместить объявление" : "Создать"}
             </Link>
+          </motion.div>
 
-            {/* Messages */}
-            <Link
-              href={owner ? "/owner/messages" : "/app/messages"}
-              aria-label={`Сообщения: ${unreadMessages} новых`}
-              className="relative grid size-9.5 place-items-center rounded-full border border-[#E5E5E0] bg-white text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0]"
-            >
-              <span className="sr-only">Сообщения</span>
-              <svg className="size-[17px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h.008v.008H8.625V12zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h.008v.008h-.008V12zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h.008v.008h-.008V12zM21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              {unreadMessages > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 grid size-[16px] place-items-center rounded-full bg-[#B3DB00] text-[8.5px] font-black text-[#111111]">
-                  {unreadMessages}
-                </span>
-              )}
-            </Link>
-
-            {/* Notifications */}
-            <Link
-              href={owner ? "/owner/notifications" : "/app/notifications"}
-              aria-label={`Уведомления: ${unreadNotifications} новых`}
-              className="relative grid size-9.5 place-items-center rounded-full border border-[#E5E5E0] bg-white text-[#111111] shadow-sm transition-colors hover:bg-[#F4F4F0]"
-            >
-              <Bell className="size-[17px] stroke-[2]" />
-              {unreadNotifications > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 grid size-[16px] place-items-center rounded-full bg-[#B3DB00] text-[8.5px] font-black text-[#111111]">
-                  {unreadNotifications}
-                </span>
-              )}
-            </Link>
-
-            {/* Profile */}
-            <Link
-              href={owner ? "/owner/profile" : "/app/profile"}
-              className="flex items-center gap-1.5 rounded-full border border-[#E5E5E0] bg-white p-0.5 pr-2.5 shadow-sm transition-colors hover:bg-[#F4F4F0]"
-            >
-              <AvatarImage
-                src="/demo/people/maria.jpg"
-                name="Анна Смирнова"
-                size={30}
-                className="size-[30px]"
-              />
-              <ChevronDown className="size-3 text-[#777871]" />
-            </Link>
-
-            {/* Mobile Menu Button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
-              className="grid size-9.5 place-items-center rounded-full border border-[#E5E5E0] bg-white text-[#111111] shadow-sm hover:bg-[#F4F4F0] lg:hidden cursor-pointer"
-            >
-              {mobileMenuOpen ? <X className="size-4.5" /> : <Menu className="size-4.5" />}
-            </button>
-
-          </div>
+          <Link href={owner ? "/owner/messages" : "/app/messages"} aria-label={`Сообщения: ${unreadMessages} новых`} className="relative grid size-11 place-items-center rounded-full border bg-surface/85 transition duration-200 hover:-translate-y-0.5 hover:bg-surface hover:shadow-md">
+            <MessageCircle className="size-[19px] stroke-[1.8]" />
+            {unreadMessages > 0 ? <span className="absolute -right-0.5 -top-0.5 grid size-[18px] place-items-center rounded-full bg-accent text-[9px] font-black text-accent-foreground">{unreadMessages}</span> : null}
+          </Link>
+          <Link href="/app/notifications" aria-label="Уведомления: 3 новых" className="relative grid size-11 place-items-center rounded-full border bg-surface/85 transition duration-200 hover:-translate-y-0.5 hover:bg-surface hover:shadow-md">
+            <Bell className="size-[19px] stroke-[1.8]" />
+            <span className="absolute -right-0.5 -top-0.5 grid size-[18px] place-items-center rounded-full bg-accent text-[9px] font-black text-accent-foreground">3</span>
+          </Link>
+          <Link href={owner ? "/owner/profile" : "/app/profile"} className="flex h-11 items-center gap-2 rounded-full border bg-surface/85 p-1.5 pr-3 transition duration-200 hover:bg-surface hover:shadow-md">
+            <AvatarImage src="/demo/people/maria.jpg" name="Анна Смирнова" size={32} className="size-8" />
+            <span className="hidden text-[12px] font-bold xl:inline">Анна</span>
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          </Link>
         </div>
-      </header>
-
-      {/* Mobile Drawer Navigation Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#F4F4F0] p-6 lg:hidden animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-[#E5E5E0] pb-4">
-            <BrandLogo className="[&_img]:h-auto [&_img]:w-[120px]" />
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(false)}
-              className="grid size-10 place-items-center rounded-full border border-[#E5E5E0] bg-white text-[#111111] cursor-pointer"
-            >
-              <X className="size-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSearchSubmit} className="mt-4 flex items-center gap-2 rounded-full border border-[#E5E5E0] bg-white px-4 py-2.5 shadow-sm">
-            <Search className="size-4 text-[#878881]" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Поиск по сайту..."
-              className="w-full bg-transparent text-sm text-[#111111] outline-none"
-            />
-          </form>
-
-          <nav className="mt-6 space-y-1.5 overflow-y-auto">
-            {navItems.map((item) => {
-              const Icon = iconMap[item.icon];
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3.5 rounded-2xl p-3.5 text-sm font-bold text-[#111111] hover:bg-[#EBF7B6]"
-                >
-                  {Icon ? <Icon className="size-5 text-[#7B9E00]" /> : null}
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="mt-auto pt-6 border-t border-[#E5E5E0] space-y-3">
-            <Link
-              href={owner ? "/owner/properties/new" : "/app/group/create"}
-              onClick={() => setMobileMenuOpen(false)}
-              className="lime-button flex h-12 w-full items-center justify-center gap-2 rounded-full font-black text-sm"
-            >
-              <Plus className="size-4 stroke-[2.5]" />
-              {owner ? "Добавить объект" : "Создать объявление"}
-            </Link>
-          </div>
-        </div>
-      )}
-    </>
+      </div>
+    </header>
   );
 }

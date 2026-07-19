@@ -54,7 +54,14 @@ function renderInlineMarkdown(text: string): React.ReactNode {
         </strong>
       );
     }
-    if ((part.startsWith("*") && part.endsWith("*")) || (part.startsWith("__") && part.endsWith("__"))) {
+    if (part.startsWith("__") && part.endsWith("__")) {
+      return (
+        <em key={i} className="font-semibold italic">
+          {part.slice(2, -2)}
+        </em>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
       return (
         <em key={i} className="font-semibold italic">
           {part.slice(1, -1)}

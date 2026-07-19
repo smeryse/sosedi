@@ -39,7 +39,7 @@ const REACTION_CONFIGS: Record<string, {
     duration: 1200,
     gravity: -0.3,
     spread: 1.2,
-    sizeRange: [18, 28],
+    sizeRange: [24, 36],
     specialEffect: "bounce",
   },
   "❤️": {
@@ -48,7 +48,7 @@ const REACTION_CONFIGS: Record<string, {
     duration: 1500,
     gravity: -0.2,
     spread: 1.5,
-    sizeRange: [16, 26],
+    sizeRange: [22, 34],
     specialEffect: "heartbeat",
   },
   "🔥": {
@@ -57,7 +57,7 @@ const REACTION_CONFIGS: Record<string, {
     duration: 1800,
     gravity: -0.5,
     spread: 1.8,
-    sizeRange: [14, 24],
+    sizeRange: [26, 40],
     specialEffect: "flame",
   },
   "🤡": {
@@ -75,7 +75,7 @@ const REACTION_CONFIGS: Record<string, {
     duration: 2000,
     gravity: -0.1,
     spread: 2.5,
-    sizeRange: [12, 22],
+    sizeRange: [18, 30],
     specialEffect: "confetti",
   },
   "😮": {
@@ -84,7 +84,7 @@ const REACTION_CONFIGS: Record<string, {
     duration: 1000,
     gravity: 0,
     spread: 3.0,
-    sizeRange: [20, 32],
+    sizeRange: [26, 40],
     specialEffect: "shockwave",
   },
 };

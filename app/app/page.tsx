@@ -11,7 +11,7 @@ import {
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { MediaImage } from "@/components/ui/media-image";
 import { CityMap } from "@/components/map/city-map";
-import { getRepository } from "@/lib/repositories";
+import { getRepository } from "@/lib/repositories/server";
 import { formatRubles, type DemoProperty } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
 
@@ -72,7 +72,7 @@ function DashboardPropertyCard({ property }: { property: DemoProperty }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-[22px] border border-[#E5E5E0] bg-white p-3 shadow-sm transition-transform hover:-translate-y-0.5">
       <div className="relative h-[138px] overflow-hidden rounded-[16px]">
-        <Link href={`/app/housing/${property.id}`}>
+        <Link href={`/app/housing/${property.id}`} className="relative block h-full w-full">
           <MediaImage src={property.image} alt={property.title} sizes="240px" className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
         </Link>
         <HeartButton type="property" id={property.id} className="absolute right-2.5 top-2.5" />

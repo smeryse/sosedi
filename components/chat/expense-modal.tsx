@@ -75,8 +75,8 @@ export function ExpenseModal({
             <label className="text-xs font-bold text-[#111111]">Общая сумма (₽):</label>
             <input
               type="number"
-              value={totalAmount}
-              onChange={(e) => setTotalAmount(Number(e.target.value))}
+              value={totalAmount || ""}
+              onChange={(e) => setTotalAmount(Number(e.target.value) || 0)}
               placeholder="50000"
               className="mt-1 w-full rounded-full border border-[#E5E5E0] bg-[#F4F4F0] px-4 py-2 text-xs text-[#111111] outline-none font-extrabold text-[#7B9E00]"
             />

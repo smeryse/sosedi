@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal } from "lucide-react";
-import { getRepository } from "@/lib/repositories";
+import { RotateCcw } from "lucide-react";
+import { createClientRepository } from "@/lib/repositories";
+import { roommateProfiles } from "@/lib/repositories/demo-repository";
 import type { DemoRoommate } from "@/data/demo";
 import { PersonCard } from "./person-card";
+import { Stagger, StaggerItem } from "@/components/ui/motion-primitives";
 
 export function RoommateDirectory() {
   const searchParams = useSearchParams();
@@ -14,15 +16,19 @@ export function RoommateDirectory() {
 
   const [query, setQuery] = useState(initialQuery);
   const [district, setDistrict] = useState(initialDistrict);
+  const [budget, setBudget] = useState(35000);
+  const [lifestyle, setLifestyle] = useState("Неважно");
+  const [smoking, setSmoking] = useState("Неважно");
+  const [pets, setPets] = useState("Неважно");
+  const [remoteWork, setRemoteWork] = useState("Неважно");
+  const [guests, setGuests] = useState("Неважно");
   const [people, setPeople] = useState<DemoRoommate[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = searchParams.get("search") || searchParams.get("q");
-    if (q) setQuery(q);
-    const d = searchParams.get("district");
-    if (d) setDistrict(d);
+    setQuery(searchParams.get("search") || searchParams.get("q") || "");
+    setDistrict(searchParams.get("district") || "Все районы");
   }, [searchParams]);
 
   useEffect(() => {
@@ -30,14 +36,57 @@ export function RoommateDirectory() {
     const fetchRoommates = async () => {
       setLoading(true);
       try {
-        const repo = getRepository();
+        const repo = createClientRepository();
         const results = await repo.listRoommates(query);
         if (active) {
-          const filtered = results.filter((person) =>
-            district === "Все районы" ||
-            person.district.includes(district) ||
-            district.includes(person.district)
-          );
+          const filtered = results.filter((person) => {
+            // District check
+            const districtMatches = district === "Все районы" || person.district.includes(district) || district.includes(person.district);
+            if (!districtMatches) return false;
+
+            // Budget check
+            if (person.budget > budget) return false;
+
+            const profile = roommateProfiles[person.id];
+            if (!profile) return true;
+
+            // Smoking check
+            if (smoking !== "Неважно") {
+              const matchesSmoking = smoking === "Не курит" ? profile.smoking === "no" : profile.smoking !== "no";
+              if (!matchesSmoking) return false;
+            }
+
+            // Pets check
+            if (pets !== "Неважно") {
+              const matchesPets = pets === "Без животных" ? profile.pets === "no" : profile.pets !== "no";
+              if (!matchesPets) return false;
+            }
+
+            // Remote work check
+            if (remoteWork !== "Неважно") {
+              const matchesRemote = remoteWork === "Иногда" ? profile.remoteWork === "sometimes" : profile.remoteWork === "often";
+              if (!matchesRemote) return false;
+            }
+
+            // Guests check
+            if (guests !== "Неважно") {
+              const matchesGuests = guests === "Редко"
+                ? (profile.guests === "never" || profile.guests === "rarely")
+                : guests === "Иногда"
+                  ? profile.guests === "sometimes"
+                  : profile.guests === "often";
+              if (!matchesGuests) return false;
+            }
+
+            // Lifestyle check
+            if (lifestyle !== "Неважно") {
+              if (lifestyle === "Спокойный" && profile.noise > 2) return false;
+              if (lifestyle === "Активный" && profile.sociability < 3) return false;
+              if (lifestyle === "Домосед" && profile.remoteWork === "never") return false;
+            }
+
+            return true;
+          });
           setPeople(filtered);
           setTotalCount(results.length);
         }
@@ -49,39 +98,33 @@ export function RoommateDirectory() {
     };
     fetchRoommates();
     return () => { active = false; };
-  }, [query, district]);
+  }, [query, district, budget, lifestyle, smoking, pets, remoteWork, guests]);
+
+  const resetFilters = () => {
+    setDistrict("Все районы");
+    setBudget(35000);
+    setLifestyle("Неважно");
+    setSmoking("Неважно");
+    setPets("Неважно");
+    setRemoteWork("Неважно");
+    setGuests("Неважно");
+  };
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 rounded-[20px] border border-[#E5E5E0] bg-white p-3 md:grid-cols-[1fr_190px_auto] shadow-sm">
-        <label className="flex h-11 items-center gap-2 rounded-full bg-[#F4F4F0] px-4">
-          <Search className="size-4 text-[#878881]" />
-          <span className="sr-only">Поиск соседей</span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Имя, работа или интересы..."
-            className="min-w-0 flex-1 bg-transparent text-sm text-[#111111] outline-none placeholder:text-[#878881]"
-          />
+      <div className="surface-card grid gap-x-5 gap-y-4 p-4 md:grid-cols-2 xl:grid-cols-3">
+        <label className="space-y-2">
+          <span className="flex items-center justify-between text-[10px] font-black"><span>Бюджет</span><b>до {budget.toLocaleString("ru-RU")} ₽</b></span>
+          <input type="range" min="15000" max="50000" step="1000" value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="h-1.5 w-full accent-[#9FC400]" />
         </label>
-        <select
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-          className="h-11 rounded-full bg-[#F4F4F0] px-4 text-sm font-medium text-[#111111] outline-none cursor-pointer"
-        >
-          <option>Все районы</option>
-          <option>Центр</option>
-          <option>Фестивальный</option>
-          <option>Юбилейный</option>
-          <option>Черёмушки</option>
-          <option>Панорама</option>
-        </select>
-        <button
-          type="button"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#E5E5E0] bg-white px-4 text-xs font-extrabold text-[#111111] shadow-sm hover:bg-[#F4F4F0] cursor-pointer"
-        >
-          <SlidersHorizontal className="size-4" /> Фильтры
-        </button>
+        <FilterSelect label="Район" value={district} onChange={setDistrict} options={["Все районы", "Центр", "Фестивальный", "Юбилейный", "Черёмушки", "Панорама"]} />
+        <label className="space-y-2"><span className="text-[10px] font-black">Дата въезда</span><input type="date" className="h-10 w-full rounded-[12px] border bg-white px-3 text-xs outline-none focus:border-[#B3DB00]" /></label>
+        <FilterSelect label="Образ жизни" value={lifestyle} onChange={setLifestyle} options={["Неважно", "Спокойный", "Активный", "Домосед"]} />
+        <FilterSelect label="Курение" value={smoking} onChange={setSmoking} options={["Неважно", "Не курит", "Курит"]} />
+        <FilterSelect label="Животные" value={pets} onChange={setPets} options={["Неважно", "Можно", "Без животных"]} />
+        <FilterSelect label="Работа из дома" value={remoteWork} onChange={setRemoteWork} options={["Неважно", "Иногда", "Постоянно"]} />
+        <FilterSelect label="Гости" value={guests} onChange={setGuests} options={["Неважно", "Редко", "Иногда", "Часто"]} />
+        <button type="button" onClick={resetFilters} className="pressable mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-[12px] bg-gradient-to-r from-[#F0F8CB] to-[#EAF6AF] text-[11px] font-black"><RotateCcw className="size-3.5" /> Сбросить фильтры</button>
       </div>
 
       <p className="text-xs font-medium text-[#6B6F66]">
@@ -107,11 +150,11 @@ export function RoommateDirectory() {
           ))}
         </div>
       ) : people.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {people.map((person) => (
-            <PersonCard key={person.id} person={person} />
+            <StaggerItem key={person.id}><PersonCard person={person} /></StaggerItem>
           ))}
-        </div>
+        </Stagger>
       ) : (
         <div className="rounded-[20px] border border-[#E5E5E0] bg-white p-10 text-center shadow-sm">
           <h2 className="font-extrabold text-[#111111]">Никого не нашли</h2>
@@ -119,5 +162,16 @@ export function RoommateDirectory() {
         </div>
       )}
     </div>
+  );
+}
+
+function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+  return (
+    <label className="space-y-2">
+      <span className="text-[10px] font-black">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-10 w-full rounded-[12px] border bg-white px-3 text-xs outline-none transition focus:border-[#B3DB00]">
+        {options.map((option) => <option key={option}>{option}</option>)}
+      </select>
+    </label>
   );
 }

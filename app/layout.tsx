@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "@/lib/auth/session-context";
+import { PageErrorBoundary } from "@/components/error-boundary/ErrorBoundary";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -42,12 +43,15 @@ export default function RootLayout({
       <body className={`${inter.variable} ${plusJakartaSans.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          forcedTheme="light"
-          enableSystem={false}
+          defaultTheme="system"
+          enableSystem={true}
           disableTransitionOnChange
         >
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <PageErrorBoundary>
+              {children}
+            </PageErrorBoundary>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

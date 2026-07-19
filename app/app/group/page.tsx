@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Check, Copy, Mail, Plus, Sparkles, UserPlus, UsersRound } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { getRepository } from "@/lib/repositories";
+import { getRepository } from "@/lib/repositories/server";
 import { formatRubles } from "@/data/demo";
 
 export default async function GroupPage() {

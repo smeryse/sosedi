@@ -6,10 +6,17 @@ import { MapPin, Sparkles } from "lucide-react";
 import type { DemoRoommate } from "@/data/demo";
 import { formatRubles } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
+import { motion, useReducedMotion } from "framer-motion";
 
 export function PersonCard({ person }: { person: DemoRoommate; favorite?: boolean; onFavorite?: (id: string) => void }) {
+  const reduceMotion = useReducedMotion();
   return (
-    <article className="group overflow-hidden rounded-[20px] border border-[#E5E5E0] bg-white shadow-sm transition-transform hover:-translate-y-0.5">
+    <motion.article
+      layout
+      whileHover={reduceMotion ? undefined : { y: -5 }}
+      transition={{ type: "spring", stiffness: 340, damping: 26 }}
+      className="interactive-card group overflow-hidden rounded-[20px] border border-[#E5E5E0] bg-white shadow-sm"
+    >
       <div className="relative h-48 overflow-hidden">
         <Image
           src={person.image}
@@ -46,13 +53,11 @@ export function PersonCard({ person }: { person: DemoRoommate; favorite?: boolea
             </span>
           ))}
         </div>
-        <Link
-          href={`/app/roommates/${person.id}`}
-          className="inline-flex w-full items-center justify-center rounded-full border border-[#E5E5E0] bg-white py-2.5 text-xs font-extrabold text-[#111111] transition-colors hover:bg-[#F4F4F0]"
-        >
-          Открыть профиль
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/app/roommates/${person.id}`} className="pressable inline-flex items-center justify-center rounded-full border border-[#E5E5E0] bg-white py-2.5 text-[11px] font-extrabold text-[#111111] hover:bg-[#F4F4F0]">Профиль</Link>
+          <Link href="/app/group/create" className="pressable inline-flex items-center justify-center rounded-full bg-[#B3DB00] py-2.5 text-[11px] font-extrabold text-[#111111] hover:bg-[#A7CD00]">Пригласить</Link>
+        </div>
       </div>
-    </article>
+    </motion.article>
   );
 }

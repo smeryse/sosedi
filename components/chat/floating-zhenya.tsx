@@ -3,13 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bot, MessageSquare, Gamepad2, X, Sparkles } from "lucide-react";
+import { MessageSquare, Gamepad2, X, Sparkles } from "lucide-react";
 
 export function FloatingZhenya() {
   const [isOpen, setIsOpen] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
-  if (dismissed) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 font-sans">

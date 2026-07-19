@@ -1,6 +1,6 @@
 import { Sparkles } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { getRepository } from "@/lib/repositories";
+import { getRepository } from "@/lib/repositories/server";
 import { PersonCard } from "@/components/tenant/person-card";
 
 export default async function RecommendationsPage() {

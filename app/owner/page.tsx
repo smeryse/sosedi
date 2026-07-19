@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Building2, Check, Eye, MessageCircle, Plus, TrendingUp, UsersRound } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { getRepository } from "@/lib/repositories";
+import { getRepository } from "@/lib/repositories/server";
 import { formatRubles } from "@/data/demo";
 
 export default async function OwnerDashboardPage() {

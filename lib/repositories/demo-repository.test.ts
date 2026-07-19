@@ -8,7 +8,7 @@ describe("DemoRepository Messaging", () => {
     expect(threads).toBeDefined();
     expect(threads.length).toBeGreaterThanOrEqual(4);
     const aiBot = threads.find((t) => t.id === "ai-assistant");
-    expect(aiBot?.name).toContain("ИИ-Ассистент");
+    expect(aiBot?.name).toContain("Женя");
   });
 
   it("fetches messages for a thread", async () => {

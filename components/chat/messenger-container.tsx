@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChatSidebar } from "./chat-sidebar";
 import { ChatWindow } from "./chat-window";
-import { DemoRepository } from "@/lib/repositories/demo-repository";
+import { createClientRepository } from "@/lib/repositories";
 import type { ChatMessage, ChatThread } from "@/lib/repositories/types";
 
 interface MessengerContainerProps {
@@ -27,7 +27,7 @@ export function MessengerContainer({ activeThreadId, baseRoute = "/app/messages"
 
   useEffect(() => {
     async function load() {
-      const repo = new DemoRepository();
+      const repo = createClientRepository();
       const loadedThreads = await repo.getChatThreads();
       const loadedMessages = await repo.getMessages(selectedThreadId);
       setThreads(loadedThreads);

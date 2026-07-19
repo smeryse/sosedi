@@ -6,10 +6,12 @@ import { MapPin } from "lucide-react";
 import type { DemoProperty } from "@/data/demo";
 import { formatRubles } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
+import { motion, useReducedMotion } from "framer-motion";
 
 export function PropertyCard({ property }: { property: DemoProperty; favorite?: boolean; onFavorite?: (id: string) => void }) {
+  const reduceMotion = useReducedMotion();
   return (
-    <article className="group overflow-hidden rounded-[20px] border border-[#E5E5E0] bg-white shadow-sm transition-transform hover:-translate-y-0.5">
+    <motion.article layout whileHover={reduceMotion ? undefined : { y: -5 }} transition={{ type: "spring", stiffness: 340, damping: 26 }} className="interactive-card group overflow-hidden rounded-[20px] border border-[#E5E5E0] bg-white shadow-sm">
       <div className="relative h-52 overflow-hidden">
         <Image
           src={property.image}
@@ -48,6 +50,6 @@ export function PropertyCard({ property }: { property: DemoProperty; favorite?: 
           </Link>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }

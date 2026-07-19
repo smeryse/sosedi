@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Minus, Sparkles } from "lucide-react";
-import { getRepository } from "@/lib/repositories";
+import { getRepository } from "@/lib/repositories/server";
 import { formatRubles } from "@/data/demo";
 import { PageFrame } from "@/components/tenant/page-frame";
 

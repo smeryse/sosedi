@@ -4,6 +4,7 @@ import { ArrowLeft, Check, ExternalLink, Heart, MapPin, MessageCircle, UsersRoun
 import { demoProperties, formatRubles } from "@/data/demo";
 import { PageFrame } from "@/components/tenant/page-frame";
 import { notFound } from "next/navigation";
+import { CoLivingLayout } from "@/components/tenant/co-living-layout";
 
 export default async function PropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -79,6 +80,13 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
               </div>
             )}
           </section>
+
+          <CoLivingLayout
+            price={property.price}
+            rooms={property.rooms}
+            area={property.area}
+            propertyId={property.id}
+          />
         </div>
 
         <aside className="space-y-4">

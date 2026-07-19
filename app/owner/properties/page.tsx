@@ -1,6 +1,36 @@
 import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { demoProperties, formatRubles } from "@/data/demo";
+import { formatRubles } from "@/data/demo";
+import { getRepository } from "@/lib/repositories/server";
 
-export default function OwnerPropertiesPage() { return <PageFrame title="Мои объекты" description="Управляйте публикациями, стоимостью и доступностью комнат." actions={<Link href="/owner/properties/new" className="lime-button inline-flex items-center gap-2 rounded-full px-4 py-3 text-xs font-extrabold"><Plus className="size-4" /> Добавить объект</Link>}><div className="grid gap-4 md:grid-cols-2">{demoProperties.map((property) => <article key={property.id} className="surface-card p-5"><div className="flex items-start justify-between gap-3"><div><Building2 className="size-5 text-[hsl(var(--accent-hover))]" /><h2 className="mt-4 font-extrabold">{property.title}</h2><p className="mt-1 text-xs text-muted-foreground">{property.district} · {property.rooms} комнаты · {formatRubles(property.price)}</p></div><span className="rounded-full bg-[hsl(var(--accent-soft))] px-2.5 py-1 text-[10px] font-bold">Опубликован</span></div><div className="mt-5 flex items-center justify-between border-t pt-4 text-xs"><span className="text-muted-foreground">Просмотры за месяц: 48</span><Link href={`/app/housing/${property.id}`} className="font-extrabold">Посмотреть →</Link></div></article>)}</div></PageFrame>; }
+export default async function OwnerPropertiesPage() { 
+  const properties = await getRepository().listProperties();
+
+  return (
+    <PageFrame 
+      title="Мои объекты" 
+      description="Управляйте публикациями, стоимостью и доступностью комнат." 
+      actions={<Link href="/owner/properties/new" className="lime-button inline-flex items-center gap-2 rounded-full px-4 py-3 text-xs font-extrabold"><Plus className="size-4" /> Добавить объект</Link>}
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        {properties.map((property) => (
+          <article key={property.id} className="surface-card p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <Building2 className="size-5 text-[hsl(var(--accent-hover))]" />
+                <h2 className="mt-4 font-extrabold">{property.title}</h2>
+                <p className="mt-1 text-xs text-muted-foreground">{property.district} · {property.rooms} комнаты · {formatRubles(property.price)}</p>
+              </div>
+              <span className="rounded-full bg-[hsl(var(--accent-soft))] px-2.5 py-1 text-[10px] font-bold">Опубликован</span>
+            </div>
+            <div className="mt-5 flex items-center justify-between border-t pt-4 text-xs">
+              <span className="text-muted-foreground">Просмотры за месяц: 48</span>
+              <Link href={`/app/housing/${property.id}`} className="font-extrabold">Посмотреть →</Link>
+            </div>
+          </article>
+        ))}
+      </div>
+    </PageFrame>
+  ); 
+}

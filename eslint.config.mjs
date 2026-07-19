@@ -13,6 +13,9 @@ const eslintConfig = [
   {
     ignores: [
       ".next/**",
+      ".venv/**",
+      ".playwright-mcp/**",
+      "artifacts/**",
       "node_modules/**",
       "public/**",
       "references/**",
@@ -22,6 +25,14 @@ const eslintConfig = [
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/triple-slash-reference": "off",
+      "prefer-const": "warn",
+    },
+  },
 ];
 
 export default eslintConfig;

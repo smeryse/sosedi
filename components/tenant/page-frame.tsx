@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { Reveal } from "@/components/ui/motion-primitives";
 
 export function PageFrame({
   eyebrow,
@@ -20,21 +21,23 @@ export function PageFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {backHref ? (
-        <Link href={backHref} className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground">
+        <Link href={backHref} className="group inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="size-4" /> {backLabel}
         </Link>
       ) : null}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          {eyebrow ? <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--accent-hover))]">{eyebrow}</p> : null}
-          <h1 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold leading-[1.05] tracking-[-0.05em]">{title}</h1>
-          {description ? <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
+      <Reveal>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            {eyebrow ? <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#7B9E00]">{eyebrow}</p> : null}
+            <h1 className="text-[clamp(1.85rem,3vw,2.55rem)] font-black leading-[1.05] tracking-[-0.045em] text-[#111111]">{title}</h1>
+            {description ? <p className="mt-2 max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-sm">{description}</p> : null}
+          </div>
+          {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
-      </div>
-      {children}
+      </Reveal>
+      <Reveal delay={0.08}>{children}</Reveal>
     </div>
   );
 }

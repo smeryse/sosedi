@@ -13,8 +13,9 @@ import {
   Users,
   PinOff,
 } from "lucide-react";
-import { DemoRepository } from "@/lib/repositories/demo-repository";
+import { createClientRepository } from "@/lib/repositories";
 import type { ChatThread } from "@/lib/repositories/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ChatSidebarProps {
   threads: ChatThread[];
@@ -48,7 +49,7 @@ export function ChatSidebar({
   const handleTogglePin = async (e: React.MouseEvent, threadId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const repo = new DemoRepository();
+    const repo = createClientRepository();
     const updated = await repo.togglePinThread(threadId);
     onThreadsUpdate?.(updated);
   };
@@ -129,23 +130,24 @@ export function ChatSidebar({
                 {thread.avatars && thread.avatars.length > 0 ? (
                   <div className="flex -space-x-2.5 overflow-hidden">
                     {thread.avatars.slice(0, 3).map((img, idx) => (
-                      <div
+                      <Avatar
                         key={idx}
                         className="relative size-8 rounded-full border-2 border-white overflow-hidden bg-gray-200 shadow-sm"
                       >
-                        <Image src={img} alt="Avatar" fill className="object-cover" />
-                      </div>
+                        <AvatarImage src={img} alt="Avatar" className="object-cover" />
+                        <AvatarFallback className="text-[10px] font-black bg-[#EBF7B6] text-[#111111]">?</AvatarFallback>
+                      </Avatar>
                     ))}
                   </div>
                 ) : thread.avatar ? (
-                  <div className="relative size-10.5 overflow-hidden rounded-full border-2 border-white bg-gray-100 shadow-sm">
-                    <Image
+                  <Avatar className="relative size-10.5 overflow-hidden rounded-full border-2 border-white bg-gray-100 shadow-sm">
+                    <AvatarImage
                       src={thread.avatar}
                       alt={thread.name}
-                      fill
                       className="object-cover"
                     />
-                  </div>
+                    <AvatarFallback className="text-[10px] font-black bg-[#EBF7B6] text-[#111111]">{thread.name.slice(0, 1)}</AvatarFallback>
+                  </Avatar>
                 ) : (
                   <div className="grid size-10.5 place-items-center rounded-full bg-[#EBF7B6] text-xs font-black text-[#111111] border-2 border-white shadow-sm">
                     {thread.name.slice(0, 1)}

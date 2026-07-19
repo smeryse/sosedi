@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { getRepository } from "@/lib/repositories";
+import { createClientRepository } from "@/lib/repositories";
 import type { DemoState } from "@/lib/repositories/types";
 import { Heart } from "lucide-react";
 
@@ -22,7 +22,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
-    getRepository()
+    createClientRepository()
       .getState()
       .then((state: DemoState) => {
         if (isMounted && state.favorites) {
@@ -54,7 +54,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     setFavorites(nextFavorites);
 
     try {
-      const newState = await getRepository().toggleFavorite(type, id);
+      const newState = await createClientRepository().toggleFavorite(type, id);
       if (newState && newState.favorites) {
         setFavorites(newState.favorites);
       }
@@ -108,7 +108,7 @@ export function HeartButton({
         e.stopPropagation();
         toggleFavorite(type, id);
       }}
-      aria-label={active ? "Убрать из избранного" : "В избранное"}
+      aria-label={active ? "Убрать из избранного" : "Добавить в избранное"}
       className={`grid place-items-center rounded-full bg-white/95 shadow-sm backdrop-blur-sm transition-all hover:scale-110 active:scale-95 cursor-pointer ${
         size === "sm" ? "size-7" : size === "lg" ? "size-9" : "size-8"
       } ${className}`}
