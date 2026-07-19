@@ -289,7 +289,7 @@ export function ChatWindow({
   );
 
   return (
-    <div className="flex h-full grid lg:grid-cols-[1fr_260px] bg-transparent">
+    <div className="h-full grid lg:grid-cols-[1fr_260px] bg-transparent">
       
       {/* Left Chat Stage */}
       <div className="flex h-full flex-col bg-transparent relative">
@@ -320,11 +320,11 @@ export function ChatWindow({
                   ))}
                 </div>
               ) : thread.avatar ? (
-                <div className="relative size-10.5 overflow-hidden rounded-full border-2 border-white bg-gray-100 shadow-sm">
+                <div className="relative size-[42px] overflow-hidden rounded-full border-2 border-white bg-gray-100 shadow-sm shrink-0">
                   <Image src={thread.avatar} alt={thread.name} fill className="object-cover" />
                 </div>
               ) : (
-                <div className="grid size-10.5 place-items-center rounded-full bg-[#EBF7B6] text-xs font-black text-[#111111] border-2 border-white">
+                <div className="grid size-[42px] place-items-center rounded-full bg-[#EBF7B6] text-xs font-black text-[#111111] border-2 border-white shrink-0">
                   {thread.name.slice(0, 1)}
                 </div>
               )}
@@ -425,7 +425,7 @@ export function ChatWindow({
                 }`}
               >
                 {!isUser && (
-                  <Avatar className="size-8.5 shrink-0 border border-[#E5E5E0] bg-gray-200 shadow-sm">
+                  <Avatar className="size-[34px] shrink-0 border border-[#E5E5E0] bg-gray-200 shadow-sm">
                     <AvatarImage src={msg.senderAvatar} alt={msg.senderName} className="object-cover" />
                     <AvatarFallback className="text-[10px] font-black bg-[#EBF7B6] text-[#111111]">
                       {msg.senderName.slice(0, 1)}

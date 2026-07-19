@@ -140,7 +140,7 @@ export function ChatSidebar({
                     ))}
                   </div>
                 ) : thread.avatar ? (
-                  <Avatar className="relative size-10.5 overflow-hidden rounded-full border-2 border-white bg-gray-100 shadow-sm">
+                  <Avatar className="relative size-[42px] overflow-hidden rounded-full border-2 border-white bg-gray-100 shadow-sm shrink-0">
                     <AvatarImage
                       src={thread.avatar}
                       alt={thread.name}
@@ -149,7 +149,7 @@ export function ChatSidebar({
                     <AvatarFallback className="text-[10px] font-black bg-[#EBF7B6] text-[#111111]">{thread.name.slice(0, 1)}</AvatarFallback>
                   </Avatar>
                 ) : (
-                  <div className="grid size-10.5 place-items-center rounded-full bg-[#EBF7B6] text-xs font-black text-[#111111] border-2 border-white shadow-sm">
+                  <div className="grid size-[42px] place-items-center rounded-full bg-[#EBF7B6] text-xs font-black text-[#111111] border-2 border-white shadow-sm shrink-0">
                     {thread.name.slice(0, 1)}
                   </div>
                 )}
