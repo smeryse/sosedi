@@ -87,6 +87,22 @@ export default {
           "var(--font-inter)",
           "sans-serif",
         ],
+        "serif-accent": [
+          "var(--font-instrument-serif)",
+          "Instrument Serif",
+          "Cormorant Garamond",
+          "Georgia",
+          "serif",
+        ],
+      },
+      keyframes: {
+        "fade-in-down": {
+          "0%": { opacity: "0", transform: "translateY(-8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "fade-in-down": "fade-in-down 0.2s ease-out",
       },
     },
   },

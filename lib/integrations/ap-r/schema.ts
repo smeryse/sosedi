@@ -66,6 +66,17 @@ export function normalizeAPRItem(
     images = raw.images.split(",").map((s) => s.trim()).filter(Boolean);
   }
 
+  images = images.map((img) => {
+    const trimmed = img.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
+      return trimmed;
+    }
+    if (trimmed.startsWith("/")) {
+      return `https://ap-r.ru${trimmed}`;
+    }
+    return `https://ap-r.ru/${trimmed}`;
+  });
+
   if (images.length === 0) {
     images = ["/demo/properties/center-loft.jpg"];
   }

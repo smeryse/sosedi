@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ap-r.ru",
+      },
+      {
+        protocol: "http",
+        hostname: "ap-r.ru",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
