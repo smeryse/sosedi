@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Calendar, Clock, X } from "lucide-react";
 import { demoProperties } from "@/data/demo";
 
@@ -20,8 +21,23 @@ export function ViewingModal({
   const [selectedPropertyId, setSelectedPropertyId] = useState(defaultPropertyId);
   const [date, setDate] = useState("Четверг, 24 Июля");
   const [timeSlot, setTimeSlot] = useState("18:30");
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const dates = [
     "Среда, 23 Июля",
@@ -32,20 +48,29 @@ export function ViewingModal({
 
   const slots = ["12:00", "15:00", "17:30", "18:30", "19:30", "20:30"];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-[24px] border border-[#E5E5E0] bg-white p-5 shadow-2xl">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative z-10 w-full max-w-md rounded-[24px] border border-[#E5E5E0] bg-white p-5 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E0]">
           <div className="flex items-center gap-2">
-            <Calendar className="size-5 text-[#7B9E00]" />
-            <h3 className="text-base font-extrabold text-[#111111]">
-              Запросить просмотр квартиры
-            </h3>
+            <div className="grid size-9 place-items-center rounded-full bg-[#EBF7B6] text-[#7B9E00]">
+              <Calendar className="size-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-[#111111]">
+                Запросить просмотр квартиры
+              </h3>
+              <p className="text-[11px] text-[#6B6F66]">
+                Согласуйте время просмотра с собственником
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-full text-[#6B6F66] hover:bg-[#F4F4F0]"
+            className="grid size-8 place-items-center rounded-full text-[#6B6F66] transition-colors hover:bg-[#F4F4F0] hover:text-[#111111]"
           >
             <X className="size-4" />
           </button>
@@ -58,7 +83,7 @@ export function ViewingModal({
             <select
               value={selectedPropertyId}
               onChange={(e) => setSelectedPropertyId(e.target.value)}
-              className="mt-1 w-full rounded-full border border-[#E5E5E0] bg-[#F4F4F0] px-4 py-2 text-xs text-[#111111] outline-none"
+              className="mt-1.5 w-full rounded-full border border-[#E5E5E0] bg-[#F4F4F0] px-4 py-2.5 text-xs text-[#111111] outline-none"
             >
               {demoProperties.slice(0, 10).map((p) => (
                 <option key={p.id} value={p.id}>
@@ -129,6 +154,7 @@ export function ViewingModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

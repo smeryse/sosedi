@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { BarChart3, Plus, Trash2, X } from "lucide-react";
 import type { GroupPoll } from "@/lib/repositories/types";
 
@@ -21,8 +22,23 @@ export function PollCreateModal({
     "Хочу посмотреть еще варианты",
     "Не подходит по бюджету",
   ]);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleAddOption = () => {
     if (options.length < 5) {
@@ -62,20 +78,29 @@ export function PollCreateModal({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-[24px] border border-[#E5E5E0] bg-white p-5 shadow-2xl">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative z-10 w-full max-w-md rounded-[24px] border border-[#E5E5E0] bg-white p-5 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E0]">
           <div className="flex items-center gap-2">
-            <BarChart3 className="size-5 text-[#7B9E00]" />
-            <h3 className="text-base font-extrabold text-[#111111]">
-              Создать опрос для группы
-            </h3>
+            <div className="grid size-9 place-items-center rounded-full bg-[#EBF7B6] text-[#7B9E00]">
+              <BarChart3 className="size-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-[#111111]">
+                Создать опрос для группы
+              </h3>
+              <p className="text-[11px] text-[#6B6F66]">
+                Соберите мнения участников вашей группы
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-full text-[#6B6F66] hover:bg-[#F4F4F0]"
+            className="grid size-8 place-items-center rounded-full text-[#6B6F66] transition-colors hover:bg-[#F4F4F0] hover:text-[#111111]"
           >
             <X className="size-4" />
           </button>
@@ -90,7 +115,7 @@ export function PollCreateModal({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Например: Голосуем за квартиру на Красной?"
-              className="mt-1 w-full rounded-full border border-[#E5E5E0] bg-[#F4F4F0] px-4 py-2 text-xs text-[#111111] outline-none"
+              className="mt-1.5 w-full rounded-full border border-[#E5E5E0] bg-[#F4F4F0] px-4 py-2.5 text-xs text-[#111111] outline-none"
             />
           </div>
 
@@ -111,7 +136,7 @@ export function PollCreateModal({
                     <button
                       type="button"
                       onClick={() => handleRemoveOption(idx)}
-                      className="grid size-8 shrink-0 place-items-center text-red-500 hover:bg-red-50 rounded-full"
+                      className="grid size-8 shrink-0 place-items-center text-red-500 hover:bg-red-50 rounded-full transition-colors"
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -124,7 +149,7 @@ export function PollCreateModal({
               <button
                 type="button"
                 onClick={handleAddOption}
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#7B9E00] hover:underline"
+                className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-[#7B9E00] hover:underline"
               >
                 <Plus className="size-3.5" /> Добавить вариант
               </button>
@@ -142,6 +167,7 @@ export function PollCreateModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
