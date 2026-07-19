@@ -25,6 +25,16 @@ export type DemoProperty = {
   photosCount: number;
   tags: string[];
   cianUrl?: string;
+  source?: "user" | "ap-r" | "cian";
+  externalId?: string;
+  originalUrl?: string;
+  complexName?: string;
+  developer?: string;
+  completionDate?: string;
+  finishing?: string;
+  lastCheckedAt?: string;
+  isStale?: boolean;
+  propertySnapshot?: Record<string, unknown>;
 };
 
 export const demoRoommates: DemoRoommate[] = [
@@ -90,6 +100,54 @@ export const demoProperties: DemoProperty[] = [
     photosCount: 10,
     tags: ["Реальный объект ЦИАН", "От: АРЕАТОР", "Центр", "Мебель", "Можно с животными"],
     cianUrl: "https://krasnodar.cian.ru/rent/flat/317717478/"
+  },
+  {
+    id: "apr-101",
+    externalId: "apr_101",
+    source: "ap-r",
+    title: "2-комн. квартира, 58 м² — ЖК «Парковый квартал» (AP-R)",
+    address: "ул. Западный Обход, д. 65",
+    district: "Прикубанский округ",
+    city: "Краснодар",
+    price: 36000,
+    rooms: 2,
+    area: 58,
+    floor: "8/18",
+    image: "/demo/properties/park-room.jpg",
+    match: 95,
+    photosCount: 8,
+    tags: ["Ассоциация застройщиков Юга AP-R", "Застройщик: ЮгСтройИмпериал", "Чистовая отделка", "Сдача: IV кв. 2026"],
+    originalUrl: "https://ap-r.ru/objects/parkovy-kvartal-101",
+    complexName: "ЖК «Парковый квартал»",
+    developer: "ЮгСтройИмпериал (партнёр AP-R)",
+    completionDate: "IV кв. 2026",
+    finishing: "Под ключ",
+    lastCheckedAt: new Date().toISOString(),
+    isStale: false,
+  },
+  {
+    id: "apr-102",
+    externalId: "apr_102",
+    source: "ap-r",
+    title: "3-комн. квартира, 78 м² — ЖК «Кубань Резиденс» (AP-R)",
+    address: "ул. Кубанская Набережная, д. 22",
+    district: "Центральный район",
+    city: "Краснодар",
+    price: 54000,
+    rooms: 3,
+    area: 78,
+    floor: "12/22",
+    image: "/demo/properties/center-loft.jpg",
+    match: 93,
+    photosCount: 14,
+    tags: ["Ассоциация застройщиков Юга AP-R", "Застройщик: Нефтестройиндустрия", "Предчистовая", "Сдача: II кв. 2026"],
+    originalUrl: "https://ap-r.ru/objects/kuban-residence-102",
+    complexName: "ЖК «Кубань Резиденс»",
+    developer: "Нефтестройиндустрия (партнёр AP-R)",
+    completionDate: "II кв. 2026",
+    finishing: "Предчистовая (White box)",
+    lastCheckedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+    isStale: true,
   },
   {
     id: "cian-318182747",

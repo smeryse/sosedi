@@ -52,8 +52,12 @@ export async function createGroup(input: Pick<DemoGroup, "name" | "targetBudget"
   return run((repository) => repository.createGroup(input));
 }
 
-export async function submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId">) {
+export async function submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId" | "message">) {
   return run((repository) => repository.submitApplication(input));
+}
+
+export async function updateApplicationStatus(id: string, status: DemoApplication["status"]) {
+  return run((repository) => repository.updateApplicationStatus(id, status));
 }
 
 export async function getChatThreads() {

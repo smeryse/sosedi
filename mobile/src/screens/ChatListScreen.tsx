@@ -13,6 +13,7 @@ import { COLORS, RADIUS } from '../theme/colors';
 import { useGlobalState } from '../data/stateStore';
 import { SafeImage } from '../components/SafeImage';
 import { AnimatedListItem, ScreenTransition } from '../components/ScreenTransition';
+import { PEOPLE_IMAGES } from '../data/peopleAssets';
 
 interface ChatListScreenProps {
   navigation: {
@@ -34,7 +35,7 @@ const DIRECT_CHATS = [
     title: 'Мария К.',
     subtitle: 'Да, район мне подходит 👍',
     time: '11:18',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    image: PEOPLE_IMAGES.maria,
     online: true,
   },
   {
@@ -42,7 +43,7 @@ const DIRECT_CHATS = [
     title: 'Екатерина В.',
     subtitle: 'Посмотрела договор, всё понятно',
     time: 'Вчера',
-    image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+    image: PEOPLE_IMAGES.ekaterina,
     online: false,
   },
 ];
@@ -114,7 +115,14 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
             <View style={styles.emptyState}>
               <MessageCircle size={26} color={COLORS.textMuted} />
               <Text style={styles.emptyTitle}>Чаты не найдены</Text>
-              <Text style={styles.emptyText}>Попробуйте другое имя</Text>
+              <Text style={styles.emptyText}>Попробуйте изменить запрос или начните диалог с новым соседом.</Text>
+              <TouchableOpacity
+                style={styles.emptyCTA}
+                onPress={() => navigation.navigate('Roommates')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.emptyCTAText}>Найти соседей</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -150,5 +158,7 @@ const styles = StyleSheet.create({
   onlineDot: { position: 'absolute', width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.accent, right: 0, bottom: 0, borderWidth: 2, borderColor: COLORS.surface },
   emptyState: { alignItems: 'center', paddingVertical: 34 },
   emptyTitle: { fontSize: 14, fontWeight: '800', color: COLORS.text, marginTop: 10 },
-  emptyText: { fontSize: 12, color: COLORS.textMuted, marginTop: 3 },
+  emptyText: { fontSize: 12, color: COLORS.textMuted, marginTop: 3, textAlign: 'center' },
+  emptyCTA: { marginTop: 14, minHeight: 38, paddingHorizontal: 16, borderRadius: RADIUS.full, backgroundColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
+  emptyCTAText: { fontSize: 12, fontWeight: '900', color: COLORS.text },
 });

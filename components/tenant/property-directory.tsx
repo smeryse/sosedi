@@ -35,6 +35,7 @@ export function PropertyDirectory() {
   const initialPets = searchParams.get("pets") === "true";
   const initialFurnished = searchParams.get("furnished") === "true";
   const initialSort = searchParams.get("sort") || "match";
+  const initialSource = searchParams.get("source") || "all";
 
   const [query, setQuery] = useState(initialSearch);
   const [district, setDistrict] = useState(initialDistrict);
@@ -45,6 +46,7 @@ export function PropertyDirectory() {
   const [petsAllowed, setPetsAllowed] = useState<boolean | undefined>(searchParams.has("pets") ? initialPets : undefined);
   const [furnished, setFurnished] = useState<boolean | undefined>(searchParams.has("furnished") ? initialFurnished : undefined);
   const [sortBy, setSortBy] = useState<"match" | "price_asc" | "price_desc" | "newest">(initialSort as any);
+  const [source, setSource] = useState<"all" | "user" | "ap-r">(initialSource as any);
   const [viewMode, setViewMode] = useState<"split" | "list" | "map">("split");
   const [properties, setProperties] = useState<DemoProperty[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,6 +95,7 @@ export function PropertyDirectory() {
           petsAllowed: petsAllowed,
           furnished,
           sortBy,
+          source: source !== "all" ? source : undefined,
         });
         if (active) {
           setProperties(results);
@@ -107,7 +110,7 @@ export function PropertyDirectory() {
     };
     fetchProperties();
     return () => { active = false; };
-  }, [query, city, district, minPrice, maxPrice, rooms, petsAllowed, furnished, sortBy]);
+  }, [query, city, district, minPrice, maxPrice, rooms, petsAllowed, furnished, sortBy, source]);
 
   const updateUrl = () => {
     const params = new URLSearchParams();
@@ -553,11 +556,28 @@ export function PropertyDirectory() {
                     </div>
                   </div>
 
-                  {/* Compatibility Badge & CTA (Exact 3.png) */}
+                  {/* Compatibility Badge, Source Attribution & CTA */}
                   <div className="mt-4 flex flex-col gap-2.5 pt-2 border-t border-[#E5E5E0]/60">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF7B6] px-3 py-1 text-[11px] font-black text-[#7B9E00]">
-                      <Sparkles className="size-3.5" /> Подходит группе на {property.match}%
-                    </span>
+                    {property.source === "ap-r" ? (
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#13374f]/10 px-3 py-1 text-[11px] font-black text-[#13374f]">
+                          <Sparkles className="size-3.5 text-[#17b7bf]" /> по данным AP-R
+                        </span>
+                        {property.isStale ? (
+                          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
+                            нужно уточнить
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-[#6B6F66]">
+                            Обновлено: {property.lastCheckedAt ? new Date(property.lastCheckedAt).toLocaleDateString("ru-RU") : "недавно"}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF7B6] px-3 py-1 text-[11px] font-black text-[#7B9E00]">
+                        <Sparkles className="size-3.5" /> Подходит группе на {property.match}%
+                      </span>
+                    )}
 
                     <div className="flex items-center gap-2">
                       <Link
@@ -566,7 +586,17 @@ export function PropertyDirectory() {
                       >
                         Подробнее
                       </Link>
-                      {property.cianUrl ? (
+                      {property.source === "ap-r" && property.originalUrl ? (
+                        <a
+                          href={property.originalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-8.5 items-center justify-center rounded-full bg-[#13374f] px-3.5 text-[11px] font-black text-white hover:bg-[#0a2237]"
+                          title="Открыть карточку у партнёра AP-R"
+                        >
+                          Открыть у партнёра ↗
+                        </a>
+                      ) : property.cianUrl ? (
                         <a
                           href={property.cianUrl}
                           target="_blank"

@@ -25,8 +25,8 @@ const quickActions = [
 function SectionHeading({ title, href }: { title: string; href: string }) {
   return (
     <div className="mb-3.5 flex items-center justify-between gap-4">
-      <h2 className="text-[17px] font-black tracking-[-0.02em] text-[#111111]">{title}</h2>
-      <Link href={href} className="inline-flex items-center gap-1 text-[11.5px] font-extrabold text-[#6B6F66] hover:text-[#111111]">
+      <h2 className="text-[17px] font-black tracking-[-0.02em] text-foreground">{title}</h2>
+      <Link href={href} className="inline-flex items-center gap-1 text-[11.5px] font-extrabold text-muted-foreground hover:text-foreground">
         Смотреть все <ArrowRight className="size-3.5" />
       </Link>
     </div>
@@ -45,20 +45,20 @@ function DashboardMap() {
   return (
     <section>
       <SectionHeading title="Карта Краснодара" href="/app/housing" />
-      <div className="grid min-h-[310px] overflow-hidden rounded-[24px] border border-[#E5E5E0] bg-white shadow-sm md:grid-cols-[210px_minmax(0,1fr)]">
-        <div className="hidden border-r border-[#E5E5E0] p-5 md:flex md:flex-col md:justify-between">
+      <div className="grid min-h-[310px] overflow-hidden rounded-[24px] border border-border bg-surface shadow-sm md:grid-cols-[210px_minmax(0,1fr)]">
+        <div className="hidden border-r border-border p-5 md:flex md:flex-col md:justify-between">
           <div className="space-y-4">
             {districts.map(([name, price], index) => (
               <Link key={name} href="/app/housing" className="group block">
-                <p className="flex items-center gap-2 text-[12.5px] font-black text-[#111111]">
-                  {index === 0 ? <span className="size-2 rounded-full bg-[#B3DB00]" /> : <span className="size-2 rounded-full bg-transparent" />}
+                <p className="flex items-center gap-2 text-[12.5px] font-black text-foreground">
+                  {index === 0 ? <span className="size-2 rounded-full bg-accent" /> : <span className="size-2 rounded-full bg-transparent" />}
                   {name}
                 </p>
-                <p className="mt-0.5 pl-4 text-[10.5px] font-medium text-[#6B6F66] group-hover:text-[#111111]">{price}</p>
+                <p className="mt-0.5 pl-4 text-[10.5px] font-medium text-muted-foreground group-hover:text-foreground">{price}</p>
               </Link>
             ))}
           </div>
-          <Link href="/app/housing" className="mt-6 inline-flex h-9 items-center justify-center rounded-full bg-[#F4F4F0] px-4 text-[11px] font-black text-[#111111] transition-colors hover:bg-[#EBF7B6]">
+          <Link href="/app/housing" className="mt-6 inline-flex h-9 items-center justify-center rounded-full bg-surface-muted px-4 text-[11px] font-black text-foreground transition-colors hover:bg-accent dark:hover:text-foreground">
             Смотреть все районы
           </Link>
         </div>
@@ -70,7 +70,7 @@ function DashboardMap() {
 
 function DashboardPropertyCard({ property }: { property: DemoProperty }) {
   return (
-    <article className="group flex flex-col overflow-hidden rounded-[22px] border border-[#E5E5E0] bg-white p-3 shadow-sm transition-transform hover:-translate-y-0.5">
+    <article className="group flex flex-col overflow-hidden rounded-[22px] border border-border bg-surface p-3 shadow-sm transition-transform hover:-translate-y-0.5">
       <div className="relative h-[138px] overflow-hidden rounded-[16px]">
         <Link href={`/app/housing/${property.id}`} className="relative block h-full w-full">
           <MediaImage src={property.image} alt={property.title} sizes="240px" className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
@@ -78,9 +78,9 @@ function DashboardPropertyCard({ property }: { property: DemoProperty }) {
         <HeartButton type="property" id={property.id} className="absolute right-2.5 top-2.5" />
       </div>
       <div className="flex flex-1 flex-col pt-3">
-        <p className="text-[14.5px] font-black text-[#111111]">{formatRubles(property.price)} <span className="text-[11px] font-normal text-[#6B6F66]">/ мес</span></p>
-        <h3 className="mt-1 line-clamp-1 text-[12px] font-extrabold text-[#111111]">{property.title}</h3>
-        <p className="mt-1 text-[10px] text-[#6B6F66] font-medium">{property.district} · {property.rooms} комн. · {property.area} м²</p>
+        <p className="text-[14.5px] font-black text-foreground">{formatRubles(property.price)} <span className="text-[11px] font-normal text-muted-foreground">/ мес</span></p>
+        <h3 className="mt-1 line-clamp-1 text-[12px] font-extrabold text-foreground">{property.title}</h3>
+        <p className="mt-1 text-[10px] text-muted-foreground font-medium">{property.district} · {property.rooms} комн. · {property.area} м²</p>
       </div>
     </article>
   );
@@ -103,10 +103,10 @@ export default async function TenantDashboardPage() {
         {/* Hero Greeting (Exact 1.png) */}
         <section className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-[30px] font-black tracking-tight text-[#111111] sm:text-[36px]">
+            <h1 className="text-[30px] font-black tracking-tight text-foreground sm:text-[36px]">
               Доброе утро, Анна! 👋
             </h1>
-            <p className="mt-1 text-[13.5px] text-[#6B6F66] font-medium">
+            <p className="mt-1 text-[13.5px] text-muted-foreground font-medium">
               Продолжайте поиск идеального жилья и людей, с которыми вам по пути.
             </p>
           </div>
@@ -120,17 +120,17 @@ export default async function TenantDashboardPage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className={`group flex min-h-[116px] flex-col justify-between rounded-[22px] p-4.5 transition-transform hover:-translate-y-0.5 ${
+                className={`group flex min-h-[124px] flex-col justify-between rounded-[22px] p-4 transition-transform hover:-translate-y-0.5 ${
                   action.featured
-                    ? "bg-[#B3DB00] text-[#111111] shadow-sm"
-                    : "border border-[#E5E5E0] bg-white text-[#111111] shadow-sm"
+                    ? "bg-accent text-accent-foreground dark:text-foreground shadow-sm hover:brightness-105"
+                    : "border border-border bg-surface text-foreground shadow-sm hover:bg-surface-muted"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <Icon className="size-5 stroke-[2]" />
                   <ArrowRight className="size-4 opacity-80 transition-transform group-hover:translate-x-1" />
                 </div>
-                <span className="text-[13.5px] font-black leading-5">
+                <span className="text-[13.5px] font-black leading-tight">
                   {action.label}
                 </span>
               </Link>
@@ -153,17 +153,17 @@ export default async function TenantDashboardPage() {
       {/* Right Column Aside (Exact 1.png design) */}
       <aside className="space-y-4">
         {/* Card 1: Ваша совместимость */}
-        <section className="rounded-[24px] border border-[#E5E5E0] bg-white p-5 shadow-sm">
+        <section className="rounded-[24px] border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-[14px] font-black text-[#111111]">Ваша совместимость</h2>
-            <Link href="/app/compatibility" className="text-[10.5px] font-extrabold text-[#6B6F66] hover:text-[#111111]">Смотреть все</Link>
+            <h2 className="text-[14px] font-black text-foreground">Ваша совместимость</h2>
+            <Link href="/app/compatibility" className="text-[10.5px] font-extrabold text-muted-foreground hover:text-foreground">Смотреть все</Link>
           </div>
-          <p className="mt-4 text-[11px] font-bold text-[#6B6F66]">Вы совместимы с {roommateName} на</p>
-          <p className="mt-1 text-[40px] font-black leading-none tracking-tight text-[#7B9E00]">{roommateComp}%</p>
-          <p className="mt-1.5 text-[10.5px] font-extrabold text-[#6B6F66]">Это отличный результат!</p>
+          <p className="mt-4 text-[11px] font-bold text-muted-foreground">Вы совместимы с {roommateName} на</p>
+          <p className="mt-1 text-[40px] font-black leading-none tracking-tight text-accent">{roommateComp}%</p>
+          <p className="mt-1.5 text-[10.5px] font-extrabold text-muted-foreground">Это отличный результат!</p>
 
-          <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-[#EBF7B6]">
-            <div className="h-full rounded-full bg-[#B3DB00]" style={{ width: `${roommateComp}%` }} />
+          <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-accent/20">
+            <div className="h-full rounded-full bg-accent" style={{ width: `${roommateComp}%` }} />
           </div>
 
           <div className="mt-4.5 space-y-2.5">
@@ -175,62 +175,62 @@ export default async function TenantDashboardPage() {
               ["Бюджет", 91],
             ].map(([label, score]) => (
               <div key={label as string} className="grid grid-cols-[1fr_80px_32px] items-center gap-2 text-[10.5px]">
-                <span className="text-[#6B6F66] font-medium">{label as string}</span>
-                <span className="h-1.5 rounded-full bg-[#F4F4F0]">
-                  <span className="block h-full rounded-full bg-[#B3DB00]" style={{ width: `${score}%` }} />
+                <span className="text-muted-foreground font-medium">{label as string}</span>
+                <span className="h-1.5 rounded-full bg-surface-muted">
+                  <span className="block h-full rounded-full bg-accent" style={{ width: `${score}%` }} />
                 </span>
-                <span className="text-right font-black text-[#111111]">{score}%</span>
+                <span className="text-right font-black text-foreground">{score}%</span>
               </div>
             ))}
           </div>
 
-          <Link href={topRoommate ? `/app/roommates/${topRoommate.id}` : "/app/roommates"} className="mt-5 flex h-9.5 w-full items-center justify-center rounded-full bg-[#F4F4F0] text-[11.5px] font-black text-[#111111] transition-colors hover:bg-[#EBF7B6]">
+          <Link href={topRoommate ? `/app/roommates/${topRoommate.id}` : "/app/roommates"} className="mt-5 flex h-9.5 w-full items-center justify-center rounded-full bg-surface-muted text-[11.5px] font-black text-foreground transition-colors hover:bg-accent dark:hover:text-foreground">
             Смотреть профиль
           </Link>
         </section>
 
         {/* Card 2: AI помощник BETA */}
-        <section className="rounded-[24px] border border-[#E5E5E0] bg-white p-5 shadow-sm">
+        <section className="rounded-[24px] border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-[14px] font-black text-[#111111]">AI ассистент</h2>
-            <span className="rounded-full bg-[#F4F4F0] px-2 py-0.5 text-[9px] font-black text-[#6B6F66]">BETA</span>
+            <h2 className="text-[14px] font-black text-foreground">AI ассистент</h2>
+            <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[9px] font-black text-muted-foreground">BETA</span>
           </div>
-          <div className="mt-3.5 flex gap-3 rounded-[18px] bg-[#F4F4F0] p-3.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#B3DB00] text-[#111111]">
+          <div className="mt-3.5 flex gap-3 rounded-[18px] bg-surface-muted p-3.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground dark:text-foreground">
               <Sparkles className="size-4" />
             </span>
             <div>
-              <p className="text-[11.5px] font-black text-[#111111]">Привет! Я ваш AI-помощник.</p>
-              <p className="mt-0.5 text-[10px] leading-4 text-[#6B6F66] font-medium">Спросите меня о совместимости, конфликтах, быте или поиске жилья.</p>
+              <p className="text-[11.5px] font-black text-foreground">Привет! Я ваш AI-помощник.</p>
+              <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground font-medium">Спросите меня о совместимости, конфликтах, быте или поиске жилья.</p>
             </div>
           </div>
-          <form action="/app/assistant" method="GET" className="mt-3 flex items-center rounded-full border border-[#E5E5E0] bg-white p-1 pl-3.5 shadow-sm">
-            <input name="q" type="text" placeholder="Напишите свой вопрос..." className="min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-[#878881] text-black" />
-            <button type="submit" aria-label="Отправить" className="grid size-8 place-items-center rounded-full bg-[#B3DB00] text-[#111111] cursor-pointer">
+          <form action="/app/assistant" method="GET" className="mt-3 flex items-center rounded-full border border-border bg-surface p-1 pl-3.5 shadow-sm focus-within:border-accent">
+            <input name="q" type="text" placeholder="Напишите свой вопрос..." className="min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-muted-foreground text-foreground" />
+            <button type="submit" aria-label="Отправить" className="grid size-8 place-items-center rounded-full bg-accent text-accent-foreground dark:text-foreground cursor-pointer transition-transform hover:scale-105">
               <Send className="size-3.5 stroke-[2]" />
             </button>
           </form>
         </section>
 
         {/* Card 3: Мои группы */}
-        <section className="rounded-[24px] border border-[#E5E5E0] bg-white p-5 shadow-sm">
+        <section className="rounded-[24px] border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-[14px] font-black text-[#111111]">Мои группы</h2>
-            <Link href="/app/group" className="text-[10.5px] font-extrabold text-[#6B6F66] hover:text-[#111111]">Смотреть все</Link>
+            <h2 className="text-[14px] font-black text-foreground">Мои группы</h2>
+            <Link href="/app/group" className="text-[10.5px] font-extrabold text-muted-foreground hover:text-foreground">Смотреть все</Link>
           </div>
           <div className="mt-3.5 space-y-3">
             {group ? (
-              <Link href="/app/group" className="flex items-center gap-3 rounded-[18px] border border-[#E5E5E0] p-3 transition-colors hover:bg-[#F4F4F0]">
+              <Link href="/app/group" className="flex items-center gap-3 rounded-[18px] border border-border p-3 transition-colors hover:bg-surface-muted">
                 <div className="flex -space-x-2">
                   {roommates.slice(0, 2).map((person) => (
-                    <AvatarImage key={person.id} src={person.image} name={person.name} size={32} className="ring-2 ring-white" />
+                    <AvatarImage key={person.id} src={person.image} name={person.name} size={32} className="ring-2 ring-surface" />
                   ))}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11.5px] font-black text-[#111111]">{group.name}</p>
-                  <p className="text-[9.5px] font-medium text-[#6B6F66]">{group.memberIds.length} участника · Краснодар</p>
+                  <p className="truncate text-[11.5px] font-black text-foreground">{group.name}</p>
+                  <p className="text-[9.5px] font-medium text-muted-foreground">{group.memberIds.length} участника · Краснодар</p>
                 </div>
-                <span className="rounded-full bg-[#EBF7B6] px-2 py-0.5 text-[9.5px] font-black text-[#7B9E00]">
+                <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[9.5px] font-black text-accent dark:text-accent-foreground">
                   {group.compatibility}%
                 </span>
               </Link>
@@ -239,7 +239,7 @@ export default async function TenantDashboardPage() {
             )}
           </div>
 
-          <Link href="/app/group/create" className="mt-4 flex h-9.5 w-full items-center justify-center rounded-full bg-[#F4F4F0] text-[11.5px] font-black text-[#111111] transition-colors hover:bg-[#EBF7B6]">
+          <Link href="/app/group/create" className="mt-4 flex h-9.5 w-full items-center justify-center rounded-full bg-surface-muted text-[11.5px] font-black text-foreground transition-colors hover:bg-accent dark:hover:text-foreground">
             Создать группу
           </Link>
         </section>

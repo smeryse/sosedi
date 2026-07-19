@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Roommate, Property, CoLivingGroup, SharedExpense, ChoreTask, ChatMessage, RentalApplication } from '../types';
 import { mockRoommates as initialRoommates, mockProperties as initialProperties, mockGroup as initialGroup, mockExpenses as initialExpenses, mockChores as initialChores, mockChats as initialChats } from './mockData';
+import { PEOPLE_IMAGES } from './peopleAssets';
 
 // Simple pub-sub mechanism for reactive global state
 class GlobalStateStore {
@@ -92,7 +93,7 @@ class GlobalStateStore {
       id: `msg-${Date.now()}`,
       senderId,
       senderName,
-      senderAvatar: isMe ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      senderAvatar: isMe ? PEOPLE_IMAGES.artem : PEOPLE_IMAGES.maria,
       text,
       time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
       isMe,

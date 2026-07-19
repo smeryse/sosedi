@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { CalendarDays, Check, ChevronDown, CreditCard, KeyRound, MapPin, PackageCheck, WalletCards } from 'lucide-react-native';
+import { Alert, ActivityIndicator, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { CalendarDays, Check, ChevronDown, CreditCard, KeyRound, PackageCheck, ShieldAlert, WalletCards } from 'lucide-react-native';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { useGlobalState } from '../data/stateStore';
 import { COLORS, RADIUS } from '../theme/colors';
@@ -30,55 +30,172 @@ export const PaymentScreen: React.FC<PaymentProps> = ({ navigation }) => {
   const [confirmed, setConfirmed] = useState(false);
   const [dateIndex, setDateIndex] = useState(0);
   const [timeIndex, setTimeIndex] = useState(0);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'error'>('idle');
 
-  const servicesTotal = serviceOptions.filter((item) => selectedServices.includes(item.id)).reduce((sum, item) => sum + item.price, 0);
+  const servicesTotal = serviceOptions
+    .filter((item) => selectedServices.includes(item.id))
+    .reduce((sum, item) => sum + item.price, 0);
   const total = property.price + servicesTotal;
 
-  const toggleService = (id: string) => setSelectedServices((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  const toggleService = (id: string) =>
+    setSelectedServices((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+
   const pay = () => {
     if (delivery && (!name.trim() || !email.trim() || !phone.trim() || !address.trim())) {
       Alert.alert('Заполните данные', 'Для доставки ключей нужны имя, контакты и адрес.');
       return;
     }
     if (!confirmed) {
-      Alert.alert('Нужно подтверждение', 'Подтвердите сумму и способ оплаты.');
+      Alert.alert('Нужно подтверждение', 'Подтвердите сумму и согласие с условиями.');
       return;
     }
-    navigation.navigate('PaymentSuccess');
+
+    setPaymentStatus('processing');
+
+    setTimeout(() => {
+      setPaymentStatus('idle');
+      navigation.navigate('PaymentSuccess');
+    }, 1200);
   };
 
   return (
     <View style={styles.container}>
       <ScreenHeader title="Оплата и ключи" onBack={navigation.goBack} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionTitle}>Получение ключей</Text>
-        <View style={styles.choiceGroup}>
-          <TouchableOpacity style={[styles.choice, !delivery && styles.choiceActive]} onPress={() => setDelivery(false)}><View style={styles.choiceIcon}><KeyRound size={19} color={COLORS.text} /></View><View style={{ flex: 1 }}><Text style={styles.choiceTitle}>Получить лично</Text><Text style={styles.choiceSub}>В офисе собственника</Text></View>{!delivery ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}</TouchableOpacity>
-          <TouchableOpacity style={[styles.choice, delivery && styles.choiceActive]} onPress={() => setDelivery(true)}><View style={styles.choiceIcon}><PackageCheck size={19} color={COLORS.text} /></View><View style={{ flex: 1 }}><Text style={styles.choiceTitle}>Заказать доставку</Text><Text style={styles.choiceSub}>Бесплатно в пределах Краснодара</Text></View>{delivery ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}</TouchableOpacity>
+        
+        {/* Sandbox Payment Disclaimer Banner */}
+        <View style={styles.sandboxBanner}>
+          <ShieldAlert size={18} color={COLORS.text} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sandboxTitle}>Sandbox Демо-оплата</Text>
+            <Text style={styles.sandboxText}>
+              Подключение реального платёжного шлюза планируется перед публичным запуском. Реальные списания не производятся.
+            </Text>
+          </View>
         </View>
 
-        {delivery ? <View style={styles.formSection}><Text style={styles.sectionTitle}>Данные для доставки</Text><Field label="Имя" value={name} onChangeText={setName} /><Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" /><Field label="Телефон" value={phone} onChangeText={setPhone} keyboardType="phone-pad" /><Field label="Адрес" value={address} onChangeText={setAddress} /><View style={styles.dateRow}><TouchableOpacity style={styles.dateField} onPress={() => setDateIndex((value) => (value + 1) % deliveryDates.length)}><CalendarDays size={16} color={COLORS.textMuted} /><Text style={styles.dateText}>{deliveryDates[dateIndex]}</Text><ChevronDown size={15} color={COLORS.textMuted} /></TouchableOpacity><TouchableOpacity style={styles.dateField} onPress={() => setTimeIndex((value) => (value + 1) % deliveryTimes.length)}><Text style={styles.dateText}>{deliveryTimes[timeIndex]}</Text><ChevronDown size={15} color={COLORS.textMuted} /></TouchableOpacity></View></View> : null}
+        <Text style={styles.sectionTitle}>Получение ключей</Text>
+        <View style={styles.choiceGroup}>
+          <TouchableOpacity style={[styles.choice, !delivery && styles.choiceActive]} onPress={() => setDelivery(false)}>
+            <View style={styles.choiceIcon}><KeyRound size={19} color={COLORS.text} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.choiceTitle}>Получить лично</Text>
+              <Text style={styles.choiceSub}>В офисе собственника</Text>
+            </View>
+            {!delivery ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.choice, delivery && styles.choiceActive]} onPress={() => setDelivery(true)}>
+            <View style={styles.choiceIcon}><PackageCheck size={19} color={COLORS.text} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.choiceTitle}>Заказать доставку</Text>
+              <Text style={styles.choiceSub}>Бесплатно в пределах Краснодара</Text>
+            </View>
+            {delivery ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}
+          </TouchableOpacity>
+        </View>
 
-        <View style={styles.formSection}><Text style={styles.sectionTitle}>Дополнительные сервисы</Text>{serviceOptions.map((service) => { const enabled = selectedServices.includes(service.id); return <View key={service.id} style={styles.serviceRow}><View style={{ flex: 1 }}><Text style={styles.serviceTitle}>{service.label}</Text><Text style={styles.servicePrice}>+ {service.price} ₽</Text></View><Switch value={enabled} onValueChange={() => toggleService(service.id)} trackColor={{ false: COLORS.border, true: COLORS.accent }} thumbColor={COLORS.surface} /></View>; })}</View>
+        {delivery ? (
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Данные для доставки</Text>
+            <Field label="Имя" value={name} onChangeText={setName} />
+            <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <Field label="Телефон" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+            <Field label="Адрес" value={address} onChangeText={setAddress} />
+            <View style={styles.dateRow}>
+              <TouchableOpacity style={styles.dateField} onPress={() => setDateIndex((value) => (value + 1) % deliveryDates.length)}>
+                <CalendarDays size={16} color={COLORS.textMuted} />
+                <Text style={styles.dateText}>{deliveryDates[dateIndex]}</Text>
+                <ChevronDown size={15} color={COLORS.textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dateField} onPress={() => setTimeIndex((value) => (value + 1) % deliveryTimes.length)}>
+                <Text style={styles.dateText}>{deliveryTimes[timeIndex]}</Text>
+                <ChevronDown size={15} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
-        <View style={styles.formSection}><Text style={styles.sectionTitle}>Способ оплаты</Text><TouchableOpacity style={[styles.method, method === 'sbp' && styles.methodActive]} onPress={() => setMethod('sbp')}><View style={styles.methodIcon}><WalletCards size={19} color={COLORS.text} /></View><Text style={styles.methodText}>СБП</Text>{method === 'sbp' ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}</TouchableOpacity><TouchableOpacity style={[styles.method, method === 'card' && styles.methodActive]} onPress={() => setMethod('card')}><View style={styles.methodIcon}><CreditCard size={19} color={COLORS.text} /></View><Text style={styles.methodText}>Карта •••• 3528</Text>{method === 'card' ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}</TouchableOpacity></View>
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>Дополнительные сервисы</Text>
+          {serviceOptions.map((service) => {
+            const enabled = selectedServices.includes(service.id);
+            return (
+              <View key={service.id} style={styles.serviceRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.serviceTitle}>{service.label}</Text>
+                  <Text style={styles.servicePrice}>+ {service.price} ₽</Text>
+                </View>
+                <Switch value={enabled} onValueChange={() => toggleService(service.id)} trackColor={{ false: COLORS.border, true: COLORS.accent }} thumbColor={COLORS.surface} />
+              </View>
+            );
+          })}
+        </View>
 
-        <TouchableOpacity style={styles.confirmRow} onPress={() => setConfirmed((value) => !value)}><View style={[styles.checkbox, confirmed && styles.checkboxActive]}>{confirmed ? <Check size={13} color={COLORS.text} /> : null}</View><Text style={styles.confirmText}>Подтверждаю сумму платежа и согласен с условиями возврата.</Text></TouchableOpacity>
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>Способ оплаты</Text>
+          <TouchableOpacity style={[styles.method, method === 'sbp' && styles.methodActive]} onPress={() => setMethod('sbp')}>
+            <View style={styles.methodIcon}><WalletCards size={19} color={COLORS.text} /></View>
+            <Text style={styles.methodText}>СБП (Система быстрых платежей)</Text>
+            {method === 'sbp' ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.method, method === 'card' && styles.methodActive]} onPress={() => setMethod('card')}>
+            <View style={styles.methodIcon}><CreditCard size={19} color={COLORS.text} /></View>
+            <Text style={styles.methodText}>Карта •••• 3528</Text>
+            {method === 'card' ? <View style={styles.radioActive}><Check size={12} color={COLORS.text} /></View> : <View style={styles.radio} />}
+          </TouchableOpacity>
+        </View>
 
-        <View style={styles.totalBox}><View><Text style={styles.totalLabel}>Итого к оплате</Text><Text style={styles.totalHint}>Аренда {property.price.toLocaleString('ru-RU')} ₽ + сервисы {servicesTotal.toLocaleString('ru-RU')} ₽</Text></View><Text style={styles.total}>{total.toLocaleString('ru-RU')} ₽</Text></View>
-        <TouchableOpacity style={[styles.payButton, !confirmed && styles.payButtonDisabled]} onPress={pay} activeOpacity={0.85}><Text style={styles.payText}>Оплатить {total.toLocaleString('ru-RU')} ₽</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.confirmRow} onPress={() => setConfirmed((value) => !value)}>
+          <View style={[styles.checkbox, confirmed && styles.checkboxActive]}>
+            {confirmed ? <Check size={13} color={COLORS.text} /> : null}
+          </View>
+          <Text style={styles.confirmText}>Подтверждаю сумму платежа и согласен с условиями демонстрационного сервиса.</Text>
+        </TouchableOpacity>
+
+        <View style={styles.totalBox}>
+          <View>
+            <Text style={styles.totalLabel}>Итого к оплате</Text>
+            <Text style={styles.totalHint}>Аренда {property.price.toLocaleString('ru-RU')} ₽ + сервисы {servicesTotal.toLocaleString('ru-RU')} ₽</Text>
+          </View>
+          <Text style={styles.total}>{total.toLocaleString('ru-RU')} ₽</Text>
+        </View>
+
+        <Text style={styles.demoNotice}>Тестовая обработка транзакции с получением электронного чека.</Text>
+
+        <TouchableOpacity
+          style={[styles.payButton, (!confirmed || paymentStatus === 'processing') && styles.payButtonDisabled]}
+          onPress={pay}
+          disabled={!confirmed || paymentStatus === 'processing'}
+          activeOpacity={0.85}
+        >
+          {paymentStatus === 'processing' ? (
+            <ActivityIndicator color={COLORS.text} size="small" />
+          ) : (
+            <Text style={styles.payText}>Подтвердить в демо · {total.toLocaleString('ru-RU')} ₽</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 };
 
 function Field({ label, value, onChangeText, keyboardType = 'default' }: { label: string; value: string; onChangeText: (value: string) => void; keyboardType?: 'default' | 'email-address' | 'phone-pad' }) {
-  return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput value={value} onChangeText={onChangeText} style={styles.input} keyboardType={keyboardType} placeholderTextColor={COLORS.textMuted} /></View>;
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TextInput value={value} onChangeText={onChangeText} style={styles.input} keyboardType={keyboardType} placeholderTextColor={COLORS.textMuted} />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { padding: 20, paddingBottom: 40 },
+  sandboxBanner: { flexDirection: 'row', gap: 10, padding: 14, borderRadius: RADIUS.md, backgroundColor: COLORS.accentSoft, borderPadding: 1, marginBottom: 20 },
+  sandboxTitle: { fontSize: 13, fontWeight: '900', color: COLORS.text },
+  sandboxText: { marginTop: 2, fontSize: 11, lineHeight: 15, color: COLORS.textSecondary },
   sectionTitle: { fontSize: 17, fontWeight: '900', color: COLORS.text, marginBottom: 12 },
   choiceGroup: { gap: 10 },
   choice: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderRadius: RADIUS.lg, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
@@ -113,4 +230,5 @@ const styles = StyleSheet.create({
   payButton: { minHeight: 54, marginTop: 14, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.accent },
   payButtonDisabled: { opacity: 0.55 },
   payText: { fontSize: 15, fontWeight: '900', color: COLORS.text },
+  demoNotice: { marginTop: 14, fontSize: 11, lineHeight: 16, color: COLORS.textMuted, textAlign: 'center' },
 });

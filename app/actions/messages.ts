@@ -14,9 +14,11 @@ export async function getConversations() {
     .select(`
       conversation_id,
       last_read_at,
+      is_pinned,
       conversations (
         id,
         type,
+        group_id,
         property_id,
         application_id,
         created_by,
@@ -26,9 +28,9 @@ export async function getConversations() {
     `)
     .eq("profile_id", user.id);
 
-  if (error) return [];
+  if (error || !members) return [];
 
-  const conversationIds = members?.map(m => m.conversations.id).filter(Boolean) || [];
+  const conversationIds = members.map((m) => m.conversations?.id).filter(Boolean) as string[];
   if (!conversationIds.length) return [];
 
   const { data: conversations } = await supabase
@@ -38,6 +40,7 @@ export async function getConversations() {
       conversation_members!inner (
         profile_id,
         last_read_at,
+        is_pinned,
         profiles (id, display_name, avatar_path)
       ),
       messages (
@@ -45,7 +48,11 @@ export async function getConversations() {
         sender_id,
         body,
         system_type,
-        sent_at
+        reply_to_id,
+        extra_data,
+        sent_at,
+        edited_at,
+        deleted_at
       )
     `)
     .in("id", conversationIds)
@@ -62,7 +69,7 @@ export async function getConversation(conversationId: string) {
   // Check membership
   const { data: member } = await supabase
     .from("conversation_members")
-    .select("last_read_at")
+    .select("last_read_at, is_pinned")
     .eq("conversation_id", conversationId)
     .eq("profile_id", user.id)
     .single();
@@ -76,6 +83,7 @@ export async function getConversation(conversationId: string) {
       conversation_members (
         profile_id,
         last_read_at,
+        is_pinned,
         profiles (id, display_name, avatar_path)
       ),
       messages (
@@ -83,17 +91,36 @@ export async function getConversation(conversationId: string) {
         sender_id,
         body,
         system_type,
+        reply_to_id,
+        extra_data,
         sent_at,
         edited_at,
         deleted_at,
-        message_attachments (storage_path, mime_type, byte_size)
+        message_attachments (id, storage_path, mime_type, byte_size)
       )
     `)
     .eq("id", conversationId)
     .single();
 
-  if (error) throw new Error("Диалог не найден");
-  return { ...data, currentUserLastRead: member.last_read_at };
+  if (error || !data) throw new Error("Диалог не найден");
+
+  // Fetch reactions for conversation messages
+  const messageIds = data.messages.map((m: any) => m.id);
+  let reactions: any[] = [];
+  if (messageIds.length > 0) {
+    const { data: rxData } = await supabase
+      .from("message_reactions")
+      .select("message_id, profile_id, emoji")
+      .in("message_id", messageIds);
+    reactions = rxData || [];
+  }
+
+  return {
+    ...data,
+    currentUserLastRead: member.last_read_at,
+    isPinned: member.is_pinned,
+    reactions,
+  };
 }
 
 export async function createDirectConversation(otherProfileId: string) {
@@ -103,30 +130,30 @@ export async function createDirectConversation(otherProfileId: string) {
 
   if (user.id === otherProfileId) throw new Error("Нельзя создать диалог с самим собой");
 
-  // Check if conversation already exists
-  const { data: theirConversations } = await supabase
+  // Idempotent Check: Check if direct conversation between these 2 users already exists
+  const { data: existingMembers } = await supabase
     .from("conversation_members")
     .select("conversation_id")
-    .eq("profile_id", otherProfileId);
+    .eq("profile_id", user.id);
 
-  if (!theirConversations || !theirConversations.length) {
-    // Create new conversation
-  } else {
-    const theirConversationIds = theirConversations.map(c => c.conversation_id);
-    
-    const { data: existing } = await supabase
+  if (existingMembers && existingMembers.length > 0) {
+    const myConvIds = existingMembers.map((m) => m.conversation_id);
+
+    const { data: commonMember } = await supabase
       .from("conversation_members")
-      .select("conversation_id")
-      .eq("profile_id", user.id)
-      .in("conversation_id", theirConversationIds)
-      .single();
+      .select("conversation_id, conversations!inner(type)")
+      .eq("profile_id", otherProfileId)
+      .eq("conversations.type", "direct")
+      .in("conversation_id", myConvIds)
+      .limit(1)
+      .maybeSingle();
 
-    if (existing) {
-      redirect(`/app/messages/${existing.conversation_id}`);
+    if (commonMember) {
+      redirect(`/app/messages/${commonMember.conversation_id}`);
     }
   }
 
-  // Create new conversation
+  // Create new direct conversation
   const { data: conversation, error } = await supabase
     .from("conversations")
     .insert({
@@ -136,14 +163,14 @@ export async function createDirectConversation(otherProfileId: string) {
     .select()
     .single();
 
-  if (error) throw new Error("Не удалось создать диалог");
+  if (error || !conversation) throw new Error("Не удалось создать диалог");
 
   await supabase.from("conversation_members").insert([
     { conversation_id: conversation.id, profile_id: user.id, joined_at: new Date().toISOString() },
     { conversation_id: conversation.id, profile_id: otherProfileId, joined_at: new Date().toISOString() },
   ]);
 
-  // Add system message
+  // System notice message
   await supabase.from("messages").insert({
     conversation_id: conversation.id,
     sender_id: user.id,
@@ -161,38 +188,50 @@ export async function createGroupConversation(groupId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Не авторизован");
 
-  // Verify user is admin of group
+  // Idempotent Check: Existing group conversation for this group_id
+  const { data: existingConv } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("type", "group")
+    .maybeSingle();
+
+  if (existingConv) {
+    redirect(`/app/messages/${existingConv.id}`);
+  }
+
+  // Verify user is member or admin of group
   const { data: membership } = await supabase
     .from("group_members")
     .select("role")
     .eq("group_id", groupId)
     .eq("profile_id", user.id)
-    .eq("role", "admin")
     .single();
 
-  if (!membership) throw new Error("Только администратор может создать чат группы");
+  if (!membership) throw new Error("Нет доступа к группе");
 
   const { data: conversation, error } = await supabase
     .from("conversations")
     .insert({
       type: "group",
+      group_id: groupId,
       created_by: user.id,
-    } as const)
+    })
     .select()
     .single();
 
-  if (error) throw new Error("Не удалось создать чат");
+  if (error || !conversation) throw new Error("Не удалось создать чат группы");
 
-  // Add all group members
+  // Add active members
   const { data: members } = await supabase
     .from("group_members")
     .select("profile_id")
     .eq("group_id", groupId)
     .eq("status", "active");
 
-  if (members) {
+  if (members && members.length > 0) {
     await supabase.from("conversation_members").insert(
-      members.map(m => ({
+      members.map((m) => ({
         conversation_id: conversation.id,
         profile_id: m.profile_id,
         joined_at: new Date().toISOString(),
@@ -205,17 +244,13 @@ export async function createGroupConversation(groupId: string) {
   redirect(`/app/messages/${conversation.id}`);
 }
 
-export async function sendMessage(input: {
+export async function sendMessageWithAttachments(input: {
   conversationId: string;
   body: string;
-  type?: "text" | "voice" | "property_card" | "viewing_request" | "poll" | "expense_split";
-  extraData?: {
-    propertyId?: string;
-    viewingData?: any;
-    pollData?: any;
-    expenseData?: any;
-    voiceDuration?: string;
-  };
+  type?: "text" | "voice" | "property_card" | "viewing_request" | "poll" | "expense_split" | "ai_bot" | "system_notice" | "attachment";
+  replyToId?: string;
+  extraData?: any;
+  attachmentIds?: string[];
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -231,6 +266,7 @@ export async function sendMessage(input: {
 
   if (!member) throw new Error("Нет доступа к диалогу");
 
+  // Create message atomically
   const { data: message, error } = await supabase
     .from("messages")
     .insert({
@@ -238,20 +274,36 @@ export async function sendMessage(input: {
       sender_id: user.id,
       body: input.body,
       system_type: input.type !== "text" ? input.type : null,
+      reply_to_id: input.replyToId || null,
+      extra_data: input.extraData || {},
       sent_at: new Date().toISOString(),
     })
     .select()
     .single();
 
-  if (error) throw new Error("Не удалось отправить сообщение");
+  if (error || !message) {
+    // If message creation fails, clean up attachments
+    if (input.attachmentIds?.length) {
+      await supabase.from("message_attachments").delete().in("id", input.attachmentIds);
+    }
+    throw new Error("Не удалось отправить сообщение");
+  }
 
-  // Update conversation updated_at
+  // Link pre-uploaded attachments
+  if (input.attachmentIds?.length) {
+    await supabase
+      .from("message_attachments")
+      .update({ message_id: message.id })
+      .in("id", input.attachmentIds);
+  }
+
+  // Touch conversation updated_at
   await supabase
     .from("conversations")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", input.conversationId);
 
-  // Update last_read_at for sender
+  // Update sender last_read_at
   await supabase
     .from("conversation_members")
     .update({ last_read_at: new Date().toISOString() })
@@ -270,7 +322,6 @@ export async function uploadMessageAttachment(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Не авторизован");
 
-  // Check membership
   const { data: member } = await supabase
     .from("conversation_members")
     .select("conversation_id")
@@ -280,42 +331,30 @@ export async function uploadMessageAttachment(input: {
 
   if (!member) throw new Error("Нет доступа к диалогу");
 
-  // Validate file
-  const MAX_SIZE = 25 * 1024 * 1024; // 25MB
-  if (input.file.size > MAX_SIZE) {
-    throw new Error("Файл слишком большой (макс. 25 МБ)");
-  }
+  const MAX_SIZE = 25 * 1024 * 1024; // 25MB limit
+  if (input.file.size > MAX_SIZE) throw new Error("Файл слишком большой (макс. 25 МБ)");
 
   const allowedTypes = [
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/plain',
+    "image/jpeg", "image/png", "image/gif", "image/webp",
+    "application/pdf", "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
   ];
-  if (!allowedTypes.includes(input.file.type)) {
-    throw new Error("Неподдерживаемый тип файла");
-  }
+  if (!allowedTypes.includes(input.file.type)) throw new Error("Неподдерживаемый тип файла");
 
-  // Generate unique storage path
-  const ext = input.file.name.split('.').pop() || '';
+  const ext = input.file.name.split(".").pop() || "file";
   const storagePath = `${input.conversationId}/${user.id}/${Date.now()}.${ext}`;
 
-  // Upload to storage
   const { error: uploadError } = await supabase.storage
-    .from('message-attachments')
-    .upload(storagePath, input.file, {
-      contentType: input.file.type,
-      upsert: false,
-    });
+    .from("message-attachments")
+    .upload(storagePath, input.file, { contentType: input.file.type, upsert: false });
 
   if (uploadError) throw new Error(`Ошибка загрузки: ${uploadError.message}`);
 
-  // Save attachment record (without message_id initially)
   const { data: attachment, error: attachError } = await supabase
-    .from('message_attachments')
+    .from("message_attachments")
     .insert({
-      message_id: '', // Will be updated after message creation
+      message_id: "", // Will be linked in sendMessageWithAttachments
       storage_path: storagePath,
       mime_type: input.file.type,
       byte_size: input.file.size,
@@ -323,84 +362,12 @@ export async function uploadMessageAttachment(input: {
     .select()
     .single();
 
-  if (attachError) {
-    // Cleanup storage on failure
-    await supabase.storage.from('message-attachments').remove([storagePath]);
+  if (attachError || !attachment) {
+    await supabase.storage.from("message-attachments").remove([storagePath]);
     throw new Error("Не удалось сохранить вложение");
   }
 
   return { attachment, storagePath };
-}
-
-export async function sendMessageWithAttachments(input: {
-  conversationId: string;
-  body: string;
-  type?: "text" | "voice" | "property_card" | "viewing_request" | "poll" | "expense_split" | "ai_bot" | "system_notice" | "attachment" | "chat";
-  extraData?: {
-    propertyId?: string;
-    viewingData?: any;
-    pollData?: any;
-    expenseData?: any;
-    voiceDuration?: string;
-  };
-  attachmentIds?: string[]; // IDs of pre-uploaded attachments
-}) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  // Check membership
-  const { data: member } = await supabase
-    .from("conversation_members")
-    .select("conversation_id")
-    .eq("conversation_id", input.conversationId)
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!member) throw new Error("Нет доступа к диалогу");
-
-  // Create message
-  const { data: message, error } = await supabase
-    .from("messages")
-    .insert({
-      conversation_id: input.conversationId,
-      sender_id: user.id,
-      body: input.body,
-      system_type: input.type !== "text" ? input.type : null,
-      sent_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error("Не удалось отправить сообщение");
-
-  // Link attachments to message
-  if (input.attachmentIds?.length) {
-    const { error: attachError } = await supabase
-      .from('message_attachments')
-      .update({ message_id: message.id })
-      .in('id', input.attachmentIds);
-
-    if (attachError) {
-      console.error('Failed to link attachments:', attachError);
-    }
-  }
-
-  // Update conversation updated_at
-  await supabase
-    .from("conversations")
-    .update({ updated_at: new Date().toISOString() })
-    .eq("id", input.conversationId);
-
-  // Update last_read_at for sender
-  await supabase
-    .from("conversation_members")
-    .update({ last_read_at: new Date().toISOString() })
-    .eq("conversation_id", input.conversationId)
-    .eq("profile_id", user.id);
-
-  revalidatePath(`/app/messages/${input.conversationId}`);
-  return message;
 }
 
 export async function markConversationRead(conversationId: string) {
@@ -418,6 +385,27 @@ export async function markConversationRead(conversationId: string) {
   revalidatePath(`/app/messages/${conversationId}`);
 }
 
+export async function editMessage(messageId: string, newBody: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Не авторизован");
+
+  const trimmed = newBody.trim();
+  if (!trimmed) throw new Error("Сообщение не может быть пустым");
+
+  const { error } = await supabase
+    .from("messages")
+    .update({
+      body: trimmed,
+      edited_at: new Date().toISOString(),
+    })
+    .eq("id", messageId)
+    .eq("sender_id", user.id);
+
+  if (error) throw new Error("Не удалось отредактировать сообщение");
+  revalidatePath("/app/messages");
+}
+
 export async function deleteMessage(messageId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -425,11 +413,46 @@ export async function deleteMessage(messageId: string) {
 
   const { error } = await supabase
     .from("messages")
-    .update({ deleted_at: new Date().toISOString() })
+    .update({
+      body: "Сообщение удалено",
+      deleted_at: new Date().toISOString(),
+    })
     .eq("id", messageId)
     .eq("sender_id", user.id);
 
   if (error) throw new Error("Не удалось удалить сообщение");
+  revalidatePath("/app/messages");
+}
+
+export async function toggleMessageReaction(messageId: string, emoji: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Не авторизован");
+
+  // Check existing reaction
+  const { data: existing } = await supabase
+    .from("message_reactions")
+    .select("*")
+    .eq("message_id", messageId)
+    .eq("profile_id", user.id)
+    .eq("emoji", emoji)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("message_reactions")
+      .delete()
+      .eq("message_id", messageId)
+      .eq("profile_id", user.id)
+      .eq("emoji", emoji);
+  } else {
+    await supabase.from("message_reactions").insert({
+      message_id: messageId,
+      profile_id: user.id,
+      emoji,
+    });
+  }
+
   revalidatePath("/app/messages");
 }
 
@@ -440,14 +463,18 @@ export async function pinConversation(conversationId: string) {
 
   const { data: member } = await supabase
     .from("conversation_members")
-    .select("conversation_id")
+    .select("is_pinned")
     .eq("conversation_id", conversationId)
     .eq("profile_id", user.id)
     .single();
 
   if (!member) throw new Error("Нет доступа к диалогу");
 
-  // This would need a column in conversation_members or a separate table
-  // For now, just revalidate
+  await supabase
+    .from("conversation_members")
+    .update({ is_pinned: !member.is_pinned })
+    .eq("conversation_id", conversationId)
+    .eq("profile_id", user.id);
+
   revalidatePath("/app/messages");
 }

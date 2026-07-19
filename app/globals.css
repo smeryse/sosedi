@@ -75,6 +75,7 @@
 
   * {
     border-color: hsl(var(--border));
+    @apply transition-colors duration-300;
   }
 
   html {

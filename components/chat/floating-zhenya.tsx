@@ -9,7 +9,7 @@ export function FloatingZhenya() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 font-sans">
+    <div className="fixed bottom-[88px] right-4 z-40 flex flex-col items-end gap-3 font-sans sm:right-6 lg:bottom-6 lg:right-6 lg:z-50">
       
       {/* Popover Bubble */}
       {isOpen && (
@@ -23,6 +23,7 @@ export function FloatingZhenya() {
                   src="/demo/people/zhenya.jpg"
                   alt="Zhenya Avatar"
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>
@@ -73,17 +74,20 @@ export function FloatingZhenya() {
       {/* Floating Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Закрыть помощника Женю" : "Открыть помощника Женю"}
+        aria-expanded={isOpen}
         className="group relative flex size-14 items-center justify-center rounded-full bg-[#111111] text-white shadow-[0_10px_25px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-white/10"
       >
         {/* Pulsing visual glow */}
         <span className="absolute inset-0 rounded-full bg-[#B3DB00] opacity-0 group-hover:animate-ping group-hover:opacity-15 duration-1000" />
         
         {/* Avatar Image */}
-        <div className="relative size-12.5 overflow-hidden rounded-full border border-white/20">
+        <div className="relative size-[50px] overflow-hidden rounded-full border border-white/20">
           <Image
             src="/demo/people/zhenya.jpg"
             alt="Zhenya Chat Trigger"
             fill
+            sizes="50px"
             className="object-cover transition-transform group-hover:scale-105"
           />
         </div>

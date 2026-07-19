@@ -1,6 +1,9 @@
-import { demoProperties, demoRoommates } from "../../data/demo";
+import { demoProperties, demoRoommates, type DemoProperty } from "../../data/demo";
 import { compatibilityScore } from "../compatibility/engine";
 import type { CompatibilityProfile } from "../compatibility/types";
+import { defaultAPRImporter } from "../integrations/ap-r/importer";
+import { getAPRDataFreshness } from "../integrations/ap-r/schema";
+import type { NormalizedAPRProperty } from "../integrations/ap-r/types";
 import type {
   ChatMessage,
   ChatMessageType,
@@ -17,6 +20,56 @@ import type {
   Repository,
   ViewingBooking,
 } from "./types";
+
+function mapAPRToDemoProperty(apr: NormalizedAPRProperty): DemoProperty {
+  const freshness = getAPRDataFreshness(apr.lastCheckedAt);
+  const title = `${apr.rooms === 0 ? "Студия" : apr.rooms + "-комн. квартира"}, ${apr.area} м² — ЖК ${apr.complexName}`;
+  const floorStr = apr.floor && apr.totalFloors ? `${apr.floor}/${apr.totalFloors}` : "-";
+
+  return {
+    id: `apr-${apr.externalId}`,
+    title,
+    address: apr.address,
+    district: apr.complexName,
+    city: apr.city,
+    price: apr.price,
+    rooms: apr.rooms,
+    area: apr.area,
+    floor: floorStr,
+    image: apr.images[0] || "/demo/properties/center-loft.jpg",
+    match: 95,
+    photosCount: apr.images.length,
+    tags: [
+      "по данным AP-R",
+      apr.developer,
+      `Срок: ${apr.completionDate}`,
+      apr.finishing,
+      freshness.isStale ? "нужно уточнить" : "актуально",
+    ],
+    source: "ap-r",
+    externalId: apr.externalId,
+    originalUrl: apr.originalUrl,
+    complexName: apr.complexName,
+    developer: apr.developer,
+    completionDate: apr.completionDate,
+    finishing: apr.finishing,
+    lastCheckedAt: apr.lastCheckedAt,
+    isStale: freshness.isStale,
+    propertySnapshot: {
+      externalId: apr.externalId,
+      source: "ap-r",
+      title,
+      price: apr.price,
+      city: apr.city,
+      complexName: apr.complexName,
+      developer: apr.developer,
+      originalUrl: apr.originalUrl,
+      lastCheckedAt: apr.lastCheckedAt,
+      isAvailable: apr.isAvailable,
+      isStale: freshness.isStale,
+    },
+  };
+}
 
 const storageKey = "sosedi-demo-state-v3";
 
@@ -649,20 +702,43 @@ export class DemoRepository implements Repository {
   }
 
   async listProperties(filters: PropertyFilters = {}) {
-    const { query, city, districts, minPrice, maxPrice, rooms, rentalTerm, petsAllowed, furnished, sortBy } = filters;
+    const { query, city, districts, minPrice, maxPrice, rooms, source, completionDate, petsAllowed, furnished, sortBy } = filters;
     const normalized = query?.trim().toLocaleLowerCase("ru") || "";
     const cityFilter = city?.trim().toLocaleLowerCase("ru") || "";
     const districtFilters = districts?.map(d => d.trim().toLocaleLowerCase("ru")) || [];
     const roomFilters = rooms || [];
-    
-    let filtered = demoProperties.filter((property) => {
+
+    // Ensure AP-R seed items are populated if memory store is empty
+    if (defaultAPRImporter.getInMemoryProperties().length === 0) {
+      await defaultAPRImporter.runImport();
+    }
+
+    const aprItems = defaultAPRImporter.getInMemoryProperties()
+      .filter((item) => item.isAvailable)
+      .map(mapAPRToDemoProperty);
+
+    const userItems: DemoProperty[] = demoProperties.map((p) => ({
+      ...p,
+      source: p.source || "user",
+    }));
+
+    let combined: DemoProperty[] = [];
+    if (source === "ap-r") {
+      combined = aprItems;
+    } else if (source === "user") {
+      combined = userItems;
+    } else {
+      combined = [...userItems, ...aprItems];
+    }
+
+    const filtered = combined.filter((property) => {
       // Text search
       if (normalized) {
-        const searchable = [property.title, property.district, property.address].join(" ").toLocaleLowerCase("ru");
+        const searchable = [property.title, property.district, property.address, property.developer || ""].join(" ").toLocaleLowerCase("ru");
         if (!searchable.includes(normalized)) return false;
       }
       
-      // City is a separate property field; an address usually does not repeat it.
+      // City filter
       if (cityFilter && property.city.toLocaleLowerCase("ru") !== cityFilter) return false;
       
       // District filter
@@ -674,6 +750,11 @@ export class DemoRepository implements Repository {
       
       // Rooms filter
       if (roomFilters.length > 0 && !roomFilters.includes(property.rooms)) return false;
+
+      // Completion date filter for AP-R objects
+      if (completionDate && property.completionDate) {
+        if (!property.completionDate.toLowerCase().includes(completionDate.toLowerCase())) return false;
+      }
       
       // Pets filter (check tags)
       if (petsAllowed !== undefined) {
@@ -748,7 +829,7 @@ export class DemoRepository implements Repository {
     return group;
   }
 
-  async submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId">) {
+  async submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId" | "message">) {
     const state = readState();
     const application: DemoApplication = {
       id: `application-${Date.now()}`,
@@ -759,6 +840,27 @@ export class DemoRepository implements Repository {
     state.applications.unshift(application);
     writeState(state);
     return application;
+  }
+
+  async updateApplicationStatus(id: string, status: DemoApplication["status"]): Promise<DemoApplication> {
+    const state = readState();
+    const app = state.applications.find((a) => a.id === id);
+    if (!app) {
+      // If updating a default demo item not in localStorage state array yet
+      const newApp: DemoApplication = {
+        id,
+        propertyId: "center-loft",
+        groupId: "group-demo",
+        status,
+        createdAt: new Date().toISOString(),
+      };
+      state.applications.unshift(newApp);
+      writeState(state);
+      return newApp;
+    }
+    app.status = status;
+    writeState(state);
+    return app;
   }
 
   async getChatThreads() {

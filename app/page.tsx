@@ -183,7 +183,7 @@ export default function LandingPage() {
             </div>
             <div className="grid grid-rows-[1fr_auto] gap-3">
               <div className="group relative overflow-hidden rounded-[26px] sm:rounded-[32px]">
-                <MediaImage src="/demo/people/ekaterina.jpg" alt="Проверенная участница сервиса" sizes="250px" className="object-cover transition duration-700 group-hover:scale-105" />
+                <MediaImage src="/demo/people/ekaterina.jpg" alt="Проверенная участница сервиса" sizes="250px" className="object-cover object-[center_28%] transition duration-700 group-hover:scale-105" />
                 <span className="absolute bottom-3 left-3 right-3 rounded-[14px] bg-black/75 px-3 py-2 text-[10px] font-medium leading-tight text-white backdrop-blur sm:text-xs">Проверенные профили</span>
               </div>
               <div className="rounded-[24px] bg-[#0D0D0C] p-4 text-white sm:rounded-[28px] sm:p-5">
@@ -315,7 +315,7 @@ export default function LandingPage() {
 
               <motion.div whileHover={{ y: -8, rotate: 1 }} transition={{ type: "spring", stiffness: 160, damping: 16 }} className="absolute bottom-0 right-0 w-[43%] min-w-[180px] max-w-[275px] overflow-hidden rounded-[34px] border-[7px] border-black bg-white shadow-[0_35px_70px_rgba(43,52,7,0.28)]">
                 <div className="relative h-52 sm:h-64">
-                  <MediaImage src="/demo/people/maria.jpg" alt="Профиль Марии" sizes="280px" className="object-cover" />
+                  <MediaImage src="/demo/people/maria.jpg" alt="Профиль Марии" sizes="280px" className="object-cover object-[center_28%]" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                   <span className="absolute right-3 top-3 rounded-full bg-[#D6FF3F] px-2.5 py-1 text-[10px] font-bold">90% match</span>
                   <div className="absolute bottom-4 left-4 text-white"><p className="font-heading text-lg font-bold sm:text-xl">Мария, 24</p><p className="text-[10px] text-white/60">маркетолог · центр</p></div>

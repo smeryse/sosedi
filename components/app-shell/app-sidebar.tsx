@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import type { NavItem } from "./navigation";
@@ -52,6 +53,11 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const { theme, setTheme } = useTheme();
+  const [isThemeReady, setIsThemeReady] = useState(false);
+
+  // next-themes reads the saved preference only in the browser. Rendering the
+  // selected state before that makes the server and first client render differ.
+  useEffect(() => setIsThemeReady(true), []);
 
   return (
     <motion.aside
@@ -130,20 +136,20 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
             type="button"
             onClick={() => setTheme("light")}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 transition-colors ${
-              theme === "light" ? "bg-background text-foreground shadow-sm" : "hover:text-foreground"
+              isThemeReady && theme === "light" ? "bg-background text-foreground shadow-sm" : "hover:text-foreground"
             }`}
           >
-            <Sun className={`size-3.5 ${theme === "light" ? "text-accent" : ""}`} />
+            <Sun className={`size-3.5 ${isThemeReady && theme === "light" ? "text-accent" : ""}`} />
             <span>Светлая</span>
           </button>
           <button
             type="button"
             onClick={() => setTheme("dark")}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 transition-colors ${
-              theme === "dark" ? "bg-background text-foreground shadow-sm" : "hover:text-foreground"
+              isThemeReady && theme === "dark" ? "bg-background text-foreground shadow-sm" : "hover:text-foreground"
             }`}
           >
-            <Moon className={`size-3.5 ${theme === "dark" ? "text-accent" : ""}`} />
+            <Moon className={`size-3.5 ${isThemeReady && theme === "dark" ? "text-accent" : ""}`} />
             <span>Тёмная</span>
           </button>
         </div>

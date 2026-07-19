@@ -116,13 +116,23 @@ class ClientActionRepository implements Repository {
     );
   }
 
-  async submitApplication(input: Pick<import("./types").DemoApplication, "propertyId" | "groupId">): Promise<import("./types").DemoApplication> {
+  async submitApplication(input: Pick<import("./types").DemoApplication, "propertyId" | "groupId" | "message">): Promise<import("./types").DemoApplication> {
     return this.callAction(
       async () => {
         const { submitApplication } = await import("@/app/actions/repository");
         return submitApplication(input);
       },
       "Не удалось подать заявку"
+    );
+  }
+
+  async updateApplicationStatus(id: string, status: import("./types").DemoApplication["status"]): Promise<import("./types").DemoApplication> {
+    return this.callAction(
+      async () => {
+        const { updateApplicationStatus } = await import("@/app/actions/repository");
+        return updateApplicationStatus(id, status);
+      },
+      "Не удалось обновить статус заявки"
     );
   }
 

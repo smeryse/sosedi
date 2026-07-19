@@ -17,16 +17,25 @@ import { AppNavigation } from '../types/navigation';
 interface AuthScreenProps { navigation: AppNavigation; }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
-  const [phone, setPhone] = useState('+7 (918) 420-15-99');
-  const [code, setCode] = useState('8842');
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'code'>('phone');
+  const [error, setError] = useState('');
 
   const handleSendPhone = () => {
-    if (!phone) return;
+    if (phone.replace(/\D/g, '').length < 11) {
+      setError('Введите номер в формате +7 900 000-00-00.');
+      return;
+    }
+    setError('');
     setStep('code');
   };
 
   const handleLogin = () => {
+    if (!/^\d{4}$/.test(code)) {
+      setError('Введите любые четыре цифры для входа в демо.');
+      return;
+    }
     navigation.replace('Main');
   };
 
@@ -54,8 +63,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           <View style={styles.formCard}>
             {step === 'phone' ? (
               <>
-                <Text style={styles.formTitle}>Вход или регистрация</Text>
-                <Text style={styles.formSub}>Введите ваш номер телефона для получения SMS-кода</Text>
+                <Text style={styles.formTitle}>Вход в демо</Text>
+                <Text style={styles.formSub}>SMS в демо не отправляем. Номер нужен только для прохождения сценария.</Text>
 
                 <View style={styles.inputBox}>
                   <Phone size={18} color={COLORS.textMuted} />
@@ -66,11 +75,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     keyboardType="phone-pad"
                     placeholder="+7 (900) 000-00-00"
                     placeholderTextColor={COLORS.textMuted}
+                    accessibilityLabel="Номер телефона"
                   />
                 </View>
 
                 <TouchableOpacity style={styles.primaryBtn} onPress={handleSendPhone} activeOpacity={0.85}>
-                  <Text style={styles.primaryBtnText}>Получить SMS-код</Text>
+                  <Text style={styles.primaryBtnText}>Продолжить</Text>
                   <ArrowRight size={18} color={COLORS.text} />
                 </TouchableOpacity>
               </>
@@ -82,7 +92,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     <Text style={styles.changePhoneText}>Изменить номер</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.formSub}>Отправлено на {phone}</Text>
+                <Text style={styles.formSub}>Введите любые четыре цифры — в демо код не проверяется.</Text>
 
                 <View style={styles.inputBox}>
                   <Lock size={18} color={COLORS.textMuted} />
@@ -94,15 +104,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     placeholder="4-значный код"
                     placeholderTextColor={COLORS.textMuted}
                     maxLength={4}
+                    accessibilityLabel="Четырёхзначный код для демо"
                   />
                 </View>
 
                 <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin} activeOpacity={0.85}>
                   <CheckCircle2 size={18} color={COLORS.text} />
-                  <Text style={styles.primaryBtnText}>Войти в сервис</Text>
+                  <Text style={styles.primaryBtnText}>Открыть демо</Text>
                 </TouchableOpacity>
               </>
             )}
+
+            {error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : null}
 
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
@@ -113,13 +126,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             {/* Instant Demo Entrance */}
             <TouchableOpacity style={styles.demoBtn} onPress={handleDemoEntrance} activeOpacity={0.85}>
               <Sparkles size={18} color={COLORS.text} />
-              <Text style={styles.demoBtnText}>Быстрый вход в Демо-режим</Text>
+              <Text style={styles.demoBtnText}>Открыть демо без номера</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <Text style={styles.legalNotice}>
-          Нажимая «Войти», вы принимаете Условия сервиса «Соседи» и Согласие на обработку персональных данных.
+          В демо персональные данные не проверяются и действия не создают настоящих заявок или платежей.
         </Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -218,6 +231,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#B42318',
   },
   primaryBtn: {
     height: 50,

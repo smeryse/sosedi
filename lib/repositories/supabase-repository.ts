@@ -403,13 +403,14 @@ export class SupabaseRepository implements Repository {
         // 4. Applications
         const { data: apps } = await supabase
           .from("applications")
-          .select("id, property_id, group_id, status, created_at")
+          .select("id, property_id, group_id, status, tenant_message, created_at")
           .eq("group_id", g.id);
 
         applications = (apps ?? []).map((a: any) => ({
           id: a.id,
           propertyId: a.property_id,
           groupId: a.group_id,
+          message: a.tenant_message ?? undefined,
           status: a.status as any,
           createdAt: a.created_at,
         }));
@@ -598,7 +599,7 @@ export class SupabaseRepository implements Repository {
     };
   }
 
-  async submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId">): Promise<DemoApplication> {
+  async submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId" | "message">): Promise<DemoApplication> {
     const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) throw new Error("Не авторизован");
@@ -619,8 +620,9 @@ export class SupabaseRepository implements Repository {
         created_by: userId,
         status: "submitted",
         total_budget: rent,
+        tenant_message: input.message?.trim() || null,
       })
-      .select("id, property_id, group_id, status, created_at")
+      .select("id, property_id, group_id, status, tenant_message, created_at")
       .single();
 
     if (error || !app) throw new Error("Не удалось подать заявку.");
@@ -659,9 +661,72 @@ export class SupabaseRepository implements Repository {
       id: app.id,
       propertyId: app.property_id,
       groupId: app.group_id,
+      message: app.tenant_message ?? undefined,
       status: app.status as any,
       createdAt: app.created_at,
     };
+  }
+
+  async updateApplicationStatus(id: string, status: DemoApplication["status"]): Promise<DemoApplication> {
+    const supabase = await createClient();
+    const userId = await this.getUserId();
+    if (!userId) throw new Error("Не авторизован");
+
+    const { data: existingApp } = await supabase
+      .from("applications")
+      .select("status")
+      .eq("id", id)
+      .single();
+
+    const fromStatus = existingApp?.status || "submitted";
+
+    const { data: updated, error } = await supabase
+      .from("applications")
+      .update({ status })
+      .eq("id", id)
+      .select("id, property_id, group_id, status, tenant_message, created_at")
+      .single();
+
+    if (error || !updated) throw new Error("Не удалось обновить статус заявки.");
+
+    await supabase
+      .from("application_events")
+      .insert({
+        application_id: updated.id,
+        actor_id: userId,
+        from_status: fromStatus,
+        to_status: status,
+        note: `Статус заявки изменён на ${status}`,
+      });
+
+    return {
+      id: updated.id,
+      propertyId: updated.property_id,
+      groupId: updated.group_id,
+      message: updated.tenant_message ?? undefined,
+      status: updated.status as any,
+      createdAt: updated.created_at,
+    };
+  }
+
+  private async getOrCreateAiConversationId(supabase: any, userId: string): Promise<string> {
+    const { data: existing } = await supabase
+      .from("ai_conversations")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) return existing.id;
+
+    const { data: created, error } = await supabase
+      .from("ai_conversations")
+      .insert({ user_id: userId, provider: "groq" })
+      .select("id")
+      .single();
+
+    if (error || !created) throw new Error("Не удалось создать сессию AI-чата.");
+    return created.id;
   }
 
   async getChatThreads(): Promise<ChatThread[]> {
@@ -678,48 +743,101 @@ export class SupabaseRepository implements Repository {
     const pinnedByConversation = new Map(
       (memberships ?? []).map((membership) => [membership.conversation_id, membership.is_pinned]),
     );
-    if (convIds.length === 0) return [];
 
-    const { data: conversations, error } = await supabase
-      .from("conversations")
-      .select(`
-        id, type, property_id,
-        conversation_members ( profile_id, profiles ( display_name, avatar_path ) ),
-        messages ( body, sent_at, sender_id )
-      `)
-      .in("id", convIds);
+    let dbThreads: ChatThread[] = [];
 
-    if (error) return [];
+    if (convIds.length > 0) {
+      const { data: conversations } = await supabase
+        .from("conversations")
+        .select(`
+          id, type, property_id,
+          conversation_members ( profile_id, profiles ( display_name, avatar_path ) ),
+          messages ( body, sent_at, sender_id )
+        `)
+        .in("id", convIds);
 
-    return (conversations ?? []).map((c: any): ChatThread => {
-      const otherMembers = c.conversation_members.filter((m: any) => m.profile_id !== userId);
-      const otherUser = otherMembers[0]?.profiles;
+      dbThreads = (conversations ?? []).map((c: any): ChatThread => {
+        const otherMembers = c.conversation_members.filter((m: any) => m.profile_id !== userId);
+        const otherUser = otherMembers[0]?.profiles;
 
-      const msgs = c.messages ?? [];
-      const lastMsg = msgs.length > 0 ? msgs.sort((a: any, b: any) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())[0] : null;
+        const msgs = c.messages ?? [];
+        const lastMsg = msgs.length > 0 ? msgs.sort((a: any, b: any) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())[0] : null;
 
-      const timeStr = lastMsg
-        ? new Date(lastMsg.sent_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
-        : "12:00";
+        const timeStr = lastMsg
+          ? new Date(lastMsg.sent_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
+          : "12:00";
 
-      return {
-        id: c.id,
-        name: c.type === "direct" && otherUser ? otherUser.display_name : "Общий чат группы",
-        type: c.type === "direct" ? "roommate" : c.type === "owner_group" ? "owner" : "group",
-        avatar: otherUser?.avatar_path || "/demo/people/maria.jpg",
-        sublabel: c.type === "direct" ? "Сожитель" : "Чат группы сожителей",
-        propertyId: c.property_id ?? undefined,
-        lastMessage: lastMsg?.body ?? "Диалог открыт",
-        lastMessageTime: timeStr,
-        unreadCount: 0,
-        isPinned: pinnedByConversation.get(c.id) ?? false,
-      };
-    }).sort((left, right) => Number(right.isPinned) - Number(left.isPinned));
+        return {
+          id: c.id,
+          name: c.type === "direct" && otherUser ? otherUser.display_name : "Общий чат группы",
+          type: c.type === "direct" ? "roommate" : c.type === "owner_group" ? "owner" : "group",
+          avatar: otherUser?.avatar_path || "/demo/people/maria.jpg",
+          sublabel: c.type === "direct" ? "Сожитель" : "Чат группы сожителей",
+          propertyId: c.property_id ?? undefined,
+          lastMessage: lastMsg?.body ?? "Диалог открыт",
+          lastMessageTime: timeStr,
+          unreadCount: 0,
+          isPinned: pinnedByConversation.get(c.id) ?? false,
+        };
+      });
+    }
+
+    const aiAssistantThread: ChatThread = {
+      id: "ai-assistant",
+      name: "Соседи AI 🤖",
+      type: "ai_assistant",
+      avatar: "/demo/people/zhenya.jpg",
+      sublabel: "Помощник по совместной аренде",
+      lastMessage: "Здравствуйте! Чем я могу помочь по жилью или сожителям?",
+      lastMessageTime: "Только что",
+      unreadCount: 0,
+      isOnline: true,
+      isPinned: true,
+    };
+
+    return [aiAssistantThread, ...dbThreads].sort((left, right) => Number(right.isPinned) - Number(left.isPinned));
   }
 
   async getMessages(threadId: string): Promise<ChatMessage[]> {
     const supabase = await createClient();
     const userId = await this.getUserId();
+
+    if (threadId === "ai-assistant") {
+      if (!userId) return [];
+      const convId = await this.getOrCreateAiConversationId(supabase, userId);
+      const { data: aiMsgs } = await supabase
+        .from("ai_messages")
+        .select("id, role, body, created_at")
+        .eq("conversation_id", convId)
+        .order("created_at", { ascending: true });
+
+      if (!aiMsgs || aiMsgs.length === 0) {
+        return [
+          {
+            id: "ai-init-1",
+            senderId: "ai-assistant",
+            senderName: "Соседи AI",
+            senderAvatar: "/demo/people/zhenya.jpg",
+            content: "Здравствуйте! Я — AI-ассистент платформы «Соседи». Помогу рассчитать бюджет, составить правила проживания, оценить совместимость сожителей или подготовить заявку собственнику.",
+            timestamp: "Только что",
+            type: "ai_bot",
+            isRead: true,
+          },
+        ];
+      }
+
+      return aiMsgs.map((m: any) => ({
+        id: m.id,
+        senderId: m.role === "user" ? "user" : "ai-assistant",
+        senderName: m.role === "user" ? "Вы" : "Соседи AI",
+        senderAvatar: m.role === "user" ? "/demo/people/maria.jpg" : "/demo/people/zhenya.jpg",
+        content: m.body,
+        timestamp: new Date(m.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
+        type: m.role === "user" ? "text" : "ai_bot",
+        isRead: true,
+      }));
+    }
+
     const { data: msgs, error } = await supabase
       .from("messages")
       .select(`
@@ -787,11 +905,45 @@ export class SupabaseRepository implements Repository {
       pollData?: GroupPoll;
       expenseData?: ExpenseSplit;
       voiceDuration?: string;
+      senderId?: string;
+      senderName?: string;
+      senderAvatar?: string;
     }
   ): Promise<ChatMessage> {
     const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) throw new Error("Не авторизован");
+
+    if (threadId === "ai-assistant") {
+      const convId = await this.getOrCreateAiConversationId(supabase, userId);
+      const isBot = extraData?.senderId === "ai-assistant" || type === "ai_bot";
+      const role: "user" | "assistant" = isBot ? "assistant" : "user";
+
+      const { data: inserted, error } = await supabase
+        .from("ai_messages")
+        .insert({
+          conversation_id: convId,
+          role,
+          body: content,
+        })
+        .select("id, created_at")
+        .single();
+
+      if (error || !inserted) throw new Error("Не удалось сохранить сообщение ИИ-чата.");
+
+      const timeStr = new Date(inserted.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+
+      return {
+        id: inserted.id,
+        senderId: isBot ? "ai-assistant" : "user",
+        senderName: isBot ? "Соседи AI" : (extraData?.senderName || "Вы"),
+        senderAvatar: isBot ? "/demo/people/zhenya.jpg" : (extraData?.senderAvatar || "/demo/people/maria.jpg"),
+        content,
+        timestamp: timeStr,
+        type: isBot ? "ai_bot" : "text",
+        isRead: true,
+      };
+    }
 
     const payload = extraData ? { content, ...extraData } : content;
     const bodyText = typeof payload === "string" ? payload : JSON.stringify(payload);

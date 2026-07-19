@@ -165,10 +165,10 @@ export const ApplicationMemberConfirmSchema = z.object({
 // ============================================
 
 export const MessageSendSchema = z.object({
-  conversationId: z.string().uuid(),
-  content: z.string().min(1).max(4000),
+  conversationId: z.string().min(1),
+  content: z.string().trim().min(1, "Сообщение не может быть пустым").max(4000),
   type: z.enum(["text", "property_card", "viewing_request", "poll", "expense_split", "ai_bot", "system_notice"]).default("text"),
-  propertyId: z.string().uuid().optional(),
+  propertyId: z.string().optional(),
   viewingData: z.object({
     id: z.string(),
     propertyId: z.string().uuid(),
@@ -290,11 +290,13 @@ export const FavoriteToggleSchema = z.object({
 // AI Schema
 // ============================================
 
+export const AIChatMessageSchema = z.object({
+  role: z.enum(["system", "user", "assistant"]),
+  content: z.string().trim().min(1, "Сообщение не может быть пустым").max(4000, "Сообщение слишком длинное (макс. 4000 символов)"),
+});
+
 export const AIChatSchema = z.object({
-  messages: z.array(z.object({
-    role: z.enum(["system", "user", "assistant"]),
-    content: z.string().min(1).max(8000),
-  })).min(1),
+  messages: z.array(AIChatMessageSchema).min(1, "Требуется хотя бы одно сообщение").max(20, "Превышено максимальное число сообщений в истории (макс. 20)"),
   provider: z.enum(["mock", "groq", "openrouter"]).optional(),
 });
 

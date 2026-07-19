@@ -5,6 +5,6 @@ describe("AI provider", () => {
   it("uses the deterministic mock when no provider key is configured", async () => {
     const provider = getAIProvider();
     expect(provider.name).toBe("mock");
-    await expect(provider.complete([{ role: "user", content: "Какой бюджет?" }])).resolves.toContain("90 000");
+    await expect(provider.complete([{ role: "user", content: "Какой бюджет?" }])).resolves.toContain("аренды");
   });
 });

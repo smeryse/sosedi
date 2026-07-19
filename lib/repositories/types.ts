@@ -16,6 +16,7 @@ export type DemoApplication = {
   id: string;
   propertyId: string;
   groupId: string;
+  message?: string;
   status: "draft" | "submitted" | "reviewing" | "needs_response" | "approved";
   createdAt: string;
 };
@@ -87,7 +88,9 @@ export type ChatMessage = {
   senderName: string;
   senderAvatar?: string;
   content: string;
+  body?: string;
   timestamp: string;
+  sentAt?: string;
   type?: ChatMessageType;
   propertyId?: string;
   attachmentUrl?: string;
@@ -146,6 +149,8 @@ export interface PropertyFilters {
   rentalTerm?: string;
   petsAllowed?: boolean;
   furnished?: boolean;
+  source?: "all" | "user" | "ap-r";
+  completionDate?: string;
   sortBy?: "price_asc" | "price_desc" | "newest" | "match";
 }
 
@@ -156,7 +161,8 @@ export interface Repository {
   toggleFavorite(type: "profile" | "property", id: string): Promise<DemoState>;
   saveAnswer(answer: DemoAnswer): Promise<DemoState>;
   createGroup(input: Pick<DemoGroup, "name" | "targetBudget" | "moveInDate">): Promise<DemoGroup>;
-  submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId">): Promise<DemoApplication>;
+  submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId" | "message">): Promise<DemoApplication>;
+  updateApplicationStatus(id: string, status: DemoApplication["status"]): Promise<DemoApplication>;
   getChatThreads(): Promise<ChatThread[]>;
   getMessages(threadId: string): Promise<ChatMessage[]>;
   sendMessage(

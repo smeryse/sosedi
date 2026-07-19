@@ -5,24 +5,33 @@ export interface AIProvider {
   complete(messages: AIMessage[]): Promise<string>;
 }
 
-class MockProvider implements AIProvider {
+export class MockProvider implements AIProvider {
   readonly name = "mock" as const;
-  async complete(messages: AIMessage[]) {
+
+  async complete(messages: AIMessage[]): Promise<string> {
     const prompt = messages.at(-1)?.content.toLocaleLowerCase("ru") ?? "";
-    if (prompt.includes("бюджет")) {
-      return "Для вашей группы закладывайте аренду до 90 000 ₽ и ещё 10% на коммунальные расходы и интернет.";
+
+    if (prompt.includes("бюджет") || prompt.includes("расход") || prompt.includes("деньги") || prompt.includes("залог")) {
+      return "При делении бюджета зафиксируйте общую сумму аренды и коммунальных платежей. Обычный практичный подход: плата за жильё делится поровну или пропорционально площади комнат, а коммунальные услуги и интернет — строго поровну между участниками группы. Обратите внимание: залог платится разово при заселении и возвращается по акту приёма-передачи.";
     }
-    if (prompt.includes("заявк")) {
-      return "Отправьте заявку на два подходящих объекта и договоритесь в чате группы о времени просмотра.";
+
+    if (prompt.includes("собственник") || prompt.includes("сообщени") || prompt.includes("владелец") || prompt.includes("заявк")) {
+      return "Шаблон сообщения собственнику:\n\n«Здравствуйте! Мы ищем квартиру для совместной аренды в вашей локации. Наша группа состоит из ответственных жильцов с постоянным доходом. Подскажите, актуально ли объявление и когда можно договориться о просмотре?»\n\nПеред подписанием обязательно проверьте документы на право собственности и паспорт владельца.";
     }
-    if (prompt.includes("сосед") || prompt.includes("правил")) {
-      return "Начните с трёх тем: режим сна, гости и уборка. Зафиксируйте соглашение в кабинете группы.";
+
+    if (prompt.includes("правил") || prompt.includes("быт") || prompt.includes("уборк") || prompt.includes("сосед")) {
+      return "Рекомендуемый свод правил проживания:\n1. Тихий час: с 22:00 до 08:00 по будням.\n2. Уборка общих зон (кухня, ванна): по очереди раз в неделю.\n3. Гости: предупреждать сожителей в общем чате минимум за 3-4 часа.\n4. Бытовые покупки: туалетная бумага, средства для уборки и пакеты для мусора покупаются из общего фонда.";
     }
-    return "Я помогу сравнить соседей, жильё и правила группы. Спросите про бюджет, заявку или совместимость.";
+
+    if (prompt.includes("просмотр") || prompt.includes("чек-лист") || prompt.includes("осмотр")) {
+      return "Чек-лист перед просмотром жилья:\n1. Проверьте паспорт собственника и выписку из ЕГРН (документы на квартиру).\n2. Проверьте напор воды, работу плиты, розеток и оконных замков.\n3. Зафиксируйте показания всех счетчиков в акте приёма-передачи.\n4. Уточните в договоре условия возврата залога и порядок оплаты коммунальных счетов.";
+    }
+
+    return "Я помогу сравнить варианты жилья, составить сообщение собственнику, рассчитать бюджет группы или подготовить бытовые правила. Уточните ваш вопрос по совместной аренде!";
   }
 }
 
-class SingleAPIProvider {
+export class SingleAPIProvider {
   constructor(
     public readonly name: "groq" | "openrouter",
     private readonly endpoint: string,
@@ -82,7 +91,7 @@ class SingleAPIProvider {
   }
 }
 
-class ResilientMultiProvider implements AIProvider {
+export class ResilientMultiProvider implements AIProvider {
   readonly name = "resilient" as const;
 
   constructor(
@@ -100,7 +109,7 @@ class ResilientMultiProvider implements AIProvider {
       }
     }
 
-    console.warn("All external AI providers failed. Using local MockProvider.");
+    console.warn("All external AI providers failed. Using local MockProvider fallback.");
     return await this.mockFallback.complete(messages);
   }
 }
@@ -111,7 +120,6 @@ export function getAIProvider(): AIProvider {
 
   const providers: SingleAPIProvider[] = [];
 
-  // Prioritize Groq API as primary for speed (75ms response) and zero rate limits
   if (groqKey) {
     const primaryGroqModel = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
     const groqModels = [
@@ -131,7 +139,6 @@ export function getAIProvider(): AIProvider {
     );
   }
 
-  // OpenRouter as high-capability secondary provider
   if (openrouterKey) {
     const primaryOpenRouterModel = process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash";
     const openrouterModels = [

@@ -48,7 +48,7 @@ export function AvatarImage({
       height={size}
       priority={priority}
       onError={() => setFailed(true)}
-      className={cn("shrink-0 rounded-full object-cover", className)}
+      className={cn("shrink-0 rounded-full object-cover aspect-square", className)}
       style={{ width: size, height: size }}
     />
   );

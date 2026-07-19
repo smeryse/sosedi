@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClientRepository } from "@/lib/repositories";
 import type { DemoProperty, DemoRoommate } from "@/data/demo";
 import { useFavorites } from "@/components/favorites-context";
-import { EmptyState } from "./page-frame";
 import { PersonCard } from "./person-card";
 import { PropertyCard } from "./property-card";
 import { Stagger, StaggerItem } from "@/components/ui/motion-primitives";
@@ -65,12 +65,29 @@ export function FavoriteGrid() {
 
   if (!favorites.length || (!people.length && !properties.length)) {
     return (
-      <EmptyState
-        title="Пока ничего не сохранено"
-        description="Нажмите на сердечко на любой карточке жилья или соседа, чтобы добавить вариант сюда."
-        href="/app/housing"
-        action="Найти жильё"
-      />
+      <div className="surface-card flex flex-col items-center justify-center p-10 text-center">
+        <div className="mb-4 grid size-16 place-items-center rounded-full bg-[#EBF7B6] text-[#7B9E00]">
+          <span className="text-2xl font-black">💚</span>
+        </div>
+        <h3 className="text-lg font-black text-[#111111]">Пока ничего не сохранено</h3>
+        <p className="mt-2 max-w-md text-xs font-medium text-[#6B6F66]">
+          Нажмите на сердечко на любой карточке жилья или соседа, чтобы не потерять понравившиеся варианты.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/app/housing"
+            className="lime-button inline-flex h-10 items-center justify-center rounded-full px-5 text-xs font-extrabold text-[#111111]"
+          >
+            Найти жильё
+          </Link>
+          <Link
+            href="/app/roommates"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-[#E5E5E0] bg-white px-5 text-xs font-extrabold text-[#111111] hover:bg-[#F4F4F0]"
+          >
+            Найти соседей
+          </Link>
+        </div>
+      </div>
     );
   }
 

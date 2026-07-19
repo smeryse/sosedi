@@ -79,7 +79,7 @@ export default function RoommateProfilePage({ params }: { params: Promise<{ id: 
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 700px"
-                className="object-cover"
+                className="object-cover object-[center_28%]"
               />
             </div>
             <div className="grid gap-4 p-5 sm:grid-cols-3">

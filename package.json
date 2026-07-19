@@ -10,6 +10,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "seed:users": "tsx scripts/create-demo-users.ts",
+    "import:apr": "tsx scripts/import-apr.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

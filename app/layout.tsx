@@ -43,9 +43,8 @@ export default function RootLayout({
       <body className={`${inter.variable} ${plusJakartaSans.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem={true}
-          disableTransitionOnChange
         >
           <SessionProvider>
             <PageErrorBoundary>

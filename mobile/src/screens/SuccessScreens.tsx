@@ -40,8 +40,8 @@ export const ApplicationSuccessScreen: React.FC<SuccessProps> = ({ navigation })
 export const PaymentSuccessScreen: React.FC<SuccessProps> = ({ navigation }) => (
   <SuccessLayout
     icon="payment"
-    title="Платёж принят"
-    text="Чек сохранён в документах. Мы отправили инструкции по получению ключей на вашу почту."
+    title="Демо-оплата подтверждена"
+    text="Деньги не списывались, чек и доставка ключей не оформлялись."
     action="Вернуться к аренде"
     onPress={() => navigation.replace('Main')}
     secondary="Открыть документы"

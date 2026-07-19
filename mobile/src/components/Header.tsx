@@ -4,6 +4,7 @@ import { Bell, Search } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS } from '../theme/colors';
 import { SafeImage } from './SafeImage';
+import { PEOPLE_IMAGES } from '../data/peopleAssets';
 
 interface HeaderProps {
   title?: string;
@@ -40,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
         </TouchableOpacity>
 
         <SafeImage
-          uri="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200"
+          uri={PEOPLE_IMAGES.artem}
           label="Артём"
           style={styles.avatar}
         />

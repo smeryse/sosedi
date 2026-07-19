@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { DemoRepository } from "./demo-repository";
 
 describe("DemoRepository Messaging", () => {
+  it("keeps the tenant message when an application is submitted", async () => {
+    const repo = new DemoRepository();
+    const application = await repo.submitApplication({
+      propertyId: "center-loft",
+      groupId: "demo-group",
+      message: "Мы готовы приехать на просмотр в удобное для вас время.",
+    });
+
+    expect(application.message).toBe("Мы готовы приехать на просмотр в удобное для вас время.");
+  });
+
   it("fetches default chat threads including AI Assistant", async () => {
     const repo = new DemoRepository();
     const threads = await repo.getChatThreads();

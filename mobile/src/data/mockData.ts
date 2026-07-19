@@ -1,4 +1,5 @@
 import { Roommate, Property, CoLivingGroup, SharedExpense, ChoreTask, ChatMessage } from '../types';
+import { PEOPLE_IMAGES } from './peopleAssets';
 
 export const sharedRoommates = [
   {
@@ -9,7 +10,7 @@ export const sharedRoommates = [
     budget: 25000,
     district: "Центральный район",
     compatibility: 96,
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+    image: PEOPLE_IMAGES.maria,
     traits: ["Спокойная", "Любит порядок"],
   },
   {
@@ -20,7 +21,7 @@ export const sharedRoommates = [
     budget: 28000,
     district: "Прикубанский округ",
     compatibility: 94,
-    image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=400",
+    image: PEOPLE_IMAGES.artem,
     traits: ["Без вечеринок", "Работает из дома"],
   },
   {
@@ -31,7 +32,7 @@ export const sharedRoommates = [
     budget: 30000,
     district: "Западный округ",
     compatibility: 93,
-    image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400",
+    image: PEOPLE_IMAGES.ekaterina,
     traits: ["Не курит", "Ценит тишину"],
   },
   {
@@ -42,7 +43,7 @@ export const sharedRoommates = [
     budget: 27000,
     district: "Карасунский округ",
     compatibility: 91,
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+    image: PEOPLE_IMAGES.ilya,
     traits: ["Работает из дома", "Без гостей"],
   },
 ];
@@ -162,7 +163,7 @@ export const mockGroup: CoLivingGroup = {
     {
       id: 'maria',
       name: 'Мария К.',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      avatar: PEOPLE_IMAGES.maria,
       job: 'Маркетолог',
       role: 'Организатор',
       compatibility: 96,
@@ -170,7 +171,7 @@ export const mockGroup: CoLivingGroup = {
     {
       id: 'artem',
       name: 'Артём С.',
-      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
+      avatar: PEOPLE_IMAGES.artem,
       job: 'Frontend Dev',
       role: 'Участник',
       compatibility: 94,
@@ -178,7 +179,7 @@ export const mockGroup: CoLivingGroup = {
     {
       id: 'ekaterina',
       name: 'Екатерина В.',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+      avatar: PEOPLE_IMAGES.ekaterina,
       job: 'Дизайнер',
       role: 'Участник',
       compatibility: 93,
@@ -504,7 +505,7 @@ export const mockChats: ChatMessage[] = [
     id: 'msg-1',
     senderId: 'maria',
     senderName: 'Мария К.',
-    senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    senderAvatar: PEOPLE_IMAGES.maria,
     text: 'Привет! Я посмотрела квартиру на Северной. Район и бюджет нам идеально подходят, давай обсудим просмотр?',
     time: '12:30',
     isMe: false,
@@ -513,7 +514,7 @@ export const mockChats: ChatMessage[] = [
     id: 'msg-2',
     senderId: 'me',
     senderName: 'Артём С.',
-    senderAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
+    senderAvatar: PEOPLE_IMAGES.artem,
     text: 'Да, четверг после 18:00 подходит! Напишу группе и подтвержу.',
     time: '12:35',
     isMe: true,

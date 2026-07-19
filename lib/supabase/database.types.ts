@@ -583,6 +583,7 @@ export type Database = {
           total_budget: number;
           move_in_date: string | null;
           lease_months: number | null;
+          tenant_message: string | null;
           owner_note: string | null;
           created_at: string;
           updated_at: string;
@@ -596,6 +597,7 @@ export type Database = {
           total_budget: number;
           move_in_date?: string | null;
           lease_months?: number | null;
+          tenant_message?: string | null;
           owner_note?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -609,6 +611,7 @@ export type Database = {
           total_budget?: number;
           move_in_date?: string | null;
           lease_months?: number | null;
+          tenant_message?: string | null;
           owner_note?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -722,6 +725,7 @@ export type Database = {
         Row: {
           id: string;
           type: "direct" | "group" | "owner_group" | "system";
+          group_id: string | null;
           property_id: string | null;
           application_id: string | null;
           created_by: string | null;
@@ -731,6 +735,7 @@ export type Database = {
         Insert: {
           id?: string;
           type: "direct" | "group" | "owner_group" | "system";
+          group_id?: string | null;
           property_id?: string | null;
           application_id?: string | null;
           created_by?: string | null;
@@ -740,6 +745,7 @@ export type Database = {
         Update: {
           id?: string;
           type?: "direct" | "group" | "owner_group" | "system";
+          group_id?: string | null;
           property_id?: string | null;
           application_id?: string | null;
           created_by?: string | null;
@@ -816,6 +822,8 @@ export type Database = {
           sender_id: string;
           body: string;
           system_type: string | null;
+          reply_to_id: string | null;
+          extra_data: Json | null;
           sent_at: string;
           edited_at: string | null;
           deleted_at: string | null;
@@ -826,6 +834,8 @@ export type Database = {
           sender_id: string;
           body: string;
           system_type?: string | null;
+          reply_to_id?: string | null;
+          extra_data?: Json | null;
           sent_at?: string;
           edited_at?: string | null;
           deleted_at?: string | null;
@@ -836,6 +846,8 @@ export type Database = {
           sender_id?: string;
           body?: string;
           system_type?: string | null;
+          reply_to_id?: string | null;
+          extra_data?: Json | null;
           sent_at?: string;
           edited_at?: string | null;
           deleted_at?: string | null;

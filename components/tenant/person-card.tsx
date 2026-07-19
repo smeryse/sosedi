@@ -23,7 +23,7 @@ export function PersonCard({ person }: { person: DemoRoommate; favorite?: boolea
           alt={`${person.name}, ${person.age} лет`}
           fill
           sizes="(max-width: 768px) 100vw, 320px"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover object-[center_28%] transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-x-3 top-3 flex items-center justify-between">
           <span className="inline-flex items-center gap-1 rounded-full bg-[#B3DB00] px-2.5 py-1 text-[10px] font-extrabold text-[#111111] shadow-sm">
@@ -47,8 +47,16 @@ export function PersonCard({ person }: { person: DemoRoommate; favorite?: boolea
           <MapPin className="size-3.5 text-[#7B9E00]" /> {person.district}
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {person.traits.map((trait) => (
-            <span key={trait} className="rounded-full bg-[#F4F4F0] px-2.5 py-1 text-[10px] font-bold text-[#111111]">
+          {person.traits.map((trait, idx) => (
+            <span
+              key={trait}
+              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                idx < 2
+                  ? "bg-[#EBF7B6] text-[#4A6000] border border-[#B3DB00]/40 flex items-center gap-1"
+                  : "bg-[#F4F4F0] text-[#111111]"
+              }`}
+            >
+              {idx < 2 && <span className="font-black text-[#7B9E00]">✓</span>}
               {trait}
             </span>
           ))}

@@ -14,6 +14,7 @@ import { useGlobalState } from '../data/stateStore';
 
 import { AppNavigation } from '../types/navigation';
 import { SafeImage } from '../components/SafeImage';
+import { PEOPLE_IMAGES } from '../data/peopleAssets';
 
 interface MessagesScreenProps { navigation: AppNavigation; }
 
@@ -36,7 +37,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) =>
         </TouchableOpacity>
         <View style={styles.chatAvatarBox}>
           <SafeImage
-            uri="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+            uri={PEOPLE_IMAGES.maria}
             label="Мария"
             style={styles.chatAvatar}
           />
@@ -90,6 +91,31 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) =>
             </View>
           );
         })}
+      </ScrollView>
+
+      {/* Quick Presets Row */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsRow} contentContainerStyle={styles.presetsContainer}>
+        <TouchableOpacity
+          style={styles.presetChip}
+          onPress={() => setInputText('Привет! Ищу соседа с совпадающим бюджетом')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.presetChipText}>👋 Совпали по графику</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.presetChip}
+          onPress={() => setInputText('Здравствуйте! Когда возможен просмотр?')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.presetChipText}>🏠 Запросить просмотр</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.presetChip}
+          onPress={() => setInputText('Привет! Готов обсудить правила проживания')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.presetChipText}>✨ Обсудить быт</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Input Bar */}
@@ -287,5 +313,29 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  presetsRow: {
+    maxHeight: 44,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+  },
+  presetsContainer: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceMuted,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  presetChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 });

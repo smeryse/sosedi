@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ArrowLeft, ChevronRight, Heart, MapPin, MessageCircle, Share2, Wifi, WashingMachine, Wind } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeImage } from '../components/SafeImage';
@@ -17,6 +17,16 @@ export const HousingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { properties, group, toggleFavoriteProperty } = useGlobalState();
   const property = properties.find((item) => item.id === route.params?.id) ?? properties[0];
   const gallery = [property, ...properties.filter((item) => item.id !== property.id)].slice(0, 4);
+  const shareProperty = async () => {
+    try {
+      await Share.share({
+        title: property.title,
+        message: `${property.title} — ${property.price.toLocaleString('ru-RU')} ₽ / мес. ${property.address}`,
+      });
+    } catch {
+      Alert.alert('Не удалось открыть меню', 'Попробуйте ещё раз.');
+    }
+  };
 
   return (
     <ScreenTransition style={styles.screen}>
@@ -27,7 +37,7 @@ export const HousingDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <RoundButton label="Назад" onPress={navigation.goBack}><ArrowLeft size={22} color={COLORS.text} /></RoundButton>
             <View style={styles.heroRight}>
               <RoundButton label="Избранное" onPress={() => toggleFavoriteProperty(property.id)}><Heart size={21} color={COLORS.text} fill={property.isFavorite ? COLORS.accent : 'transparent'} /></RoundButton>
-              <RoundButton label="Поделиться" onPress={() => undefined}><Share2 size={20} color={COLORS.text} /></RoundButton>
+              <RoundButton label="Поделиться" onPress={shareProperty}><Share2 size={20} color={COLORS.text} /></RoundButton>
             </View>
           </View>
         </View>

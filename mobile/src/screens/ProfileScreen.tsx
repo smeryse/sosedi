@@ -6,6 +6,7 @@ import { AnimatedListItem, ScreenTransition } from '../components/ScreenTransiti
 import { SafeImage } from '../components/SafeImage';
 import { AppNavigation } from '../types/navigation';
 import { COLORS } from '../theme/colors';
+import { PEOPLE_IMAGES } from '../data/peopleAssets';
 
 interface Props { navigation: AppNavigation }
 
@@ -25,7 +26,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) }]}><View><Text style={styles.eyebrow}>ЛИЧНЫЙ КАБИНЕТ</Text><Text style={styles.title}>Мой профиль.</Text></View><TouchableOpacity accessibilityLabel="Настройки" style={styles.settings} onPress={() => navigation.navigate('Settings')}><Settings size={21} color={COLORS.text} /></TouchableOpacity></View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <View style={styles.identity}><SafeImage uri="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=400" label="Артём" style={styles.avatar} /><View style={styles.identityCopy}><View style={styles.nameRow}><Text style={styles.name}>Артём Смирнов</Text><ShieldCheck size={17} color={COLORS.text} fill={COLORS.surface} /></View><Text style={styles.meta}>27 лет · Senior Frontend Dev</Text><View style={styles.verified}><Text style={styles.verifiedText}>ПРОФИЛЬ ПОДТВЕРЖДЁН</Text></View></View></View>
+          <View style={styles.identity}><SafeImage uri={PEOPLE_IMAGES.artem} label="Артём" style={styles.avatar} /><View style={styles.identityCopy}><View style={styles.nameRow}><Text style={styles.name}>Артём Смирнов</Text><ShieldCheck size={17} color={COLORS.text} fill={COLORS.surface} /></View><Text style={styles.meta}>27 лет · Senior Frontend Dev</Text><View style={styles.verified}><Text style={styles.verifiedText}>ПРОФИЛЬ ПОДТВЕРЖДЁН</Text></View></View></View>
           <View style={styles.heroBottom}><View><Text style={styles.heroLabel}>Совместимость заполнена</Text><Text style={styles.heroHint}>20 из 20 ответов</Text></View><View style={styles.heroScore}><Text style={styles.heroScoreValue}>100%</Text></View></View>
         </View>
 

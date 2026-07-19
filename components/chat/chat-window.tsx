@@ -135,14 +135,16 @@ export function ChatWindow({
     const sentMsg = await repo.sendMessage(thread.id, text || "Смарт-карточка", type, extraData);
     setMessages((prev) => [...prev, sentMsg]);
 
-    // Real AI Assistant Bot Call via /api/ai/chat
+    // Real AI Assistant Bot Call via canonical /api/ai/chat
     if (thread.id === "ai-assistant") {
       setIsTyping(true);
       try {
-        const history = [...messages, sentMsg].map((m) => ({
-          role: m.senderId === "user" ? ("user" as const) : ("assistant" as const),
-          content: m.content,
-        }));
+        const history = [...messages, sentMsg]
+          .filter((m) => m.type !== "system_notice")
+          .map((m) => ({
+            role: m.senderId === "user" ? ("user" as const) : ("assistant" as const),
+            content: m.content || m.body || "",
+          }));
 
         const res = await fetch("/api/ai/chat", {
           method: "POST",
@@ -150,22 +152,28 @@ export function ChatWindow({
           body: JSON.stringify({ messages: history }),
         });
 
-        let aiResponse = "Я с радостью отвечу на любой вопрос по поиску жилья, соседей и составлению договора!";
-        if (res.ok) {
-          const data = await res.json();
-          if (data.reply) {
-            aiResponse = data.reply;
-          }
-        }
+        const data = await res.json();
+        const aiResponse = res.ok && data.reply
+          ? data.reply
+          : "Сервис ИИ-помощника временно недоступен. Пожалуйста, попробуйте отправить сообщение позже.";
 
-        const botMsg = await repo.sendMessage("ai-assistant", aiResponse, "ai_bot");
+        const botMsg = await repo.sendMessage("ai-assistant", aiResponse, "ai_bot", {
+          senderId: "ai-assistant",
+          senderName: "Соседи AI",
+          senderAvatar: "/demo/people/zhenya.jpg",
+        });
         setMessages((prev) => [...prev, botMsg]);
       } catch (err) {
-        console.warn("AI endpoint notification:", err);
+        console.warn("AI endpoint error:", err);
         const fallbackMsg = await repo.sendMessage(
           "ai-assistant",
-          "Я с удовольствием отвечу на любые вопросы по быту, договорным условиям и совместимости сожителей!",
+          "Сервис ИИ-помощника временно недоступен. Пожалуйста, проверьте подключение к сети и попробуйте позже.",
           "ai_bot",
+          {
+            senderId: "ai-assistant",
+            senderName: "Соседи AI",
+            senderAvatar: "/demo/people/zhenya.jpg",
+          }
         );
         setMessages((prev) => [...prev, fallbackMsg]);
       } finally {
@@ -675,6 +683,14 @@ export function ChatWindow({
         {/* Quick Action Prompt Chips */}
         <div className="px-4 py-2 border-t border-[#E5E5E0]/60 bg-white/40 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
+            {
+              text: "👋 Привет! Ищу соседа с совпадающим бюджетом",
+              action: () => setInput("Привет! Ищу соседа с совпадающим бюджетом и удобным графиком."),
+            },
+            {
+              text: "🏠 Подскажите, когда возможен просмотр?",
+              action: () => setInput("Здравствуйте! Подскажите, когда можно посмотреть вариант квартиры?"),
+            },
             {
               text: "📅 Запросить просмотр",
               action: () => setIsViewingModalOpen(true),
