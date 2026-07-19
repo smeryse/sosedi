@@ -45,4 +45,5 @@ next-env.d.ts
 # temp artifacts
 harmony_workflow.db
 /output
+.playwright-mcp/
 
