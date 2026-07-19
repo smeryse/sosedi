@@ -84,12 +84,12 @@ export async function updateProfilePreferences(userId: string, preferences: Part
   smoking: "no" | "sometimes" | "yes" | "indifferent";
   pets: "no" | "cat" | "dog" | "other" | "indifferent";
   sleep_schedule: "early" | "late" | "flexible";
-  noise_tolerance: number;
-  guests_frequency: "never" | "rarely" | "sometimes" | "often";
-  remote_work: "never" | "sometimes" | "often";
-  cleanliness: number;
-  sociability: number;
-  private_space: number;
+  noise_tolerance: number | null;
+  guests_frequency: "never" | "rarely" | "sometimes" | "often" | null;
+  remote_work: "never" | "sometimes" | "often" | null;
+  cleanliness: number | null;
+  sociability: number | null;
+  private_space: number | null;
 }>) {
   const supabase = await createClient();
   const { data, error } = await supabase

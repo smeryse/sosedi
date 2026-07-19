@@ -17,11 +17,13 @@ import {
 } from "lucide-react";
 import { CityMap } from "@/components/map/city-map";
 import { MediaImage } from "@/components/ui/media-image";
-import { getRepository } from "@/lib/repositories";
+import { createClientRepository } from "@/lib/repositories";
 import { formatRubles, type DemoProperty } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 export function PropertyDirectory() {
+  const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialSearch = searchParams.get("search") || searchParams.get("q") || "";
@@ -46,6 +48,7 @@ export function PropertyDirectory() {
   const [viewMode, setViewMode] = useState<"split" | "list" | "map">("split");
   const [properties, setProperties] = useState<DemoProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [openBudget, setOpenBudget] = useState(false);
   const [openRooms, setOpenRooms] = useState(false);
   const [openRentalTerm, setOpenRentalTerm] = useState(false);
@@ -79,7 +82,7 @@ export function PropertyDirectory() {
     const fetchProperties = async () => {
       setLoading(true);
       try {
-        const repo = getRepository();
+        const repo = createClientRepository();
         const results = await repo.listProperties({
           query,
           city: city !== "Все города" ? city : undefined,
@@ -93,9 +96,11 @@ export function PropertyDirectory() {
         });
         if (active) {
           setProperties(results);
+          setError(null);
         }
       } catch (e) {
         console.error(e);
+        setError(e instanceof Error ? e.message : "Не удалось загрузить квартиры. Пожалуйста, попробуйте позже.");
       } finally {
         if (active) setLoading(false);
       }
@@ -422,6 +427,39 @@ export function PropertyDirectory() {
             </div>
           )}
         </div>
+
+        {/* Filters button with active count badge */}
+        <button
+          type="button"
+          className="relative inline-flex h-[42px] items-center gap-2 rounded-full border border-[#E5E5E0] bg-white px-4 text-[11px] font-extrabold text-[#111111] shadow-sm hover:border-[#111111] cursor-pointer"
+        >
+          <SlidersHorizontal className="size-3.5" /> Фильтры
+          {[
+            query,
+            city !== "Все города",
+            district !== "Любой район",
+            minPrice !== undefined,
+            maxPrice !== undefined,
+            rooms.length > 0,
+            petsAllowed !== undefined,
+            furnished !== undefined,
+            sortBy !== "match",
+          ].filter(Boolean).length > 0 && (
+            <span className="grid size-4 place-items-center rounded-full bg-[#B3DB00] text-[9px] font-black text-[#111111]">
+              {[
+                query,
+                city !== "Все города",
+                district !== "Любой район",
+                minPrice !== undefined,
+                maxPrice !== undefined,
+                rooms.length > 0,
+                petsAllowed !== undefined,
+                furnished !== undefined,
+                sortBy !== "match",
+              ].filter(Boolean).length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Main Split Layout: Left Listing + Right Map */}
@@ -454,14 +492,20 @@ export function PropertyDirectory() {
                   </div>
                 ))}
               </div>
-            ) : properties.map((property) => (
-              <article
+            ) : <AnimatePresence mode="popLayout">
+              {properties.map((property, index) => (
+              <motion.article
+                layout
+                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.42, delay: reduceMotion ? 0 : index * 0.045, ease: [0.22, 1, 0.36, 1] }}
                 key={property.id}
-                className="group flex flex-col gap-4 overflow-hidden rounded-[24px] border border-[#E5E5E0] bg-white p-3.5 shadow-sm transition-all hover:shadow-md sm:flex-row"
+                className="interactive-card group flex flex-col gap-4 overflow-hidden rounded-[24px] border border-[#E5E5E0] bg-white p-3.5 shadow-sm sm:flex-row"
               >
                 {/* Photo container */}
                 <div className="relative h-[170px] shrink-0 overflow-hidden rounded-[18px] sm:w-[220px] md:w-[240px]">
-                  <Link href={`/app/housing/${property.id}`}>
+                  <Link href={`/app/housing/${property.id}`} className="relative block h-full w-full">
                     <MediaImage
                       src={property.image}
                       alt={property.title}
@@ -536,8 +580,9 @@ export function PropertyDirectory() {
                     </div>
                   </div>
                 </div>
-              </article>
+              </motion.article>
             ))}
+            </AnimatePresence>}
           </section>
         )}
 

@@ -3,31 +3,47 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Plus, Receipt, WalletCards, X } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { getRepository } from "@/lib/repositories";
+import { createClientRepository } from "@/lib/repositories";
 import type { ExpenseSplit, ExpenseShare } from "@/lib/repositories/types";
 import { formatRubles } from "@/data/demo";
 
 export default function BudgetPage() {
   const [expenses, setExpenses] = useState<ExpenseSplit[]>([]);
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadExpenses() {
-      const repo = getRepository();
-      const list = await repo.listExpenses();
-      setExpenses(list);
-      setLoading(false);
+    async function loadData() {
+      try {
+        const repo = createClientRepository();
+        const [list, state] = await Promise.all([
+          repo.listExpenses(),
+          repo.getState()
+        ]);
+        setExpenses(list);
+        if (state.group?.members) {
+          setMembers(state.group.members);
+        }
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Не удалось загрузить данные.");
+      } finally {
+        setLoading(false);
+      }
     }
-    loadExpenses();
+    loadData();
   }, []);
 
   const handleTogglePaid = async (expenseId: string) => {
-    const repo = getRepository();
-    const updated = await repo.toggleGlobalExpensePaid(expenseId, "anna");
-    setExpenses(updated);
+    setError("");
+    try {
+      setExpenses(await createClientRepository().toggleGlobalExpensePaid(expenseId, "anna"));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Не удалось обновить оплату.");
+    }
   };
 
   const handleAddExpense = async (e: React.FormEvent) => {
@@ -35,21 +51,26 @@ export default function BudgetPage() {
     const amountVal = parseFloat(newAmount);
     if (!newTitle.trim() || isNaN(amountVal) || amountVal <= 0) return;
 
-    const repo = getRepository();
+    const repo = createClientRepository();
     
-    // Split evenly between Maria, Artem, and Anna (3 people)
-    const splitAmount = Math.round((amountVal / 3) * 100) / 100;
-    const shares: ExpenseShare[] = [
-      { memberId: "maria", memberName: "Мария", amount: splitAmount, isPaid: false },
-      { memberId: "artem", memberName: "Артём", amount: splitAmount, isPaid: false },
-      { memberId: "anna", memberName: "Анна", amount: splitAmount, isPaid: true }, // current user paid initially
-    ];
+    const splitAmount = Math.round((amountVal / Math.max(members.length, 1)) * 100) / 100;
+    const shares: ExpenseShare[] = members.map((m, index) => ({
+      memberId: m.id,
+      memberName: m.name,
+      amount: splitAmount,
+      isPaid: m.id === "anna" || index === 0, // Assume the current user (anna) or first member pays initially
+    }));
 
-    const updated = await repo.createExpense(newTitle, amountVal, shares);
-    setExpenses(updated);
-    setNewTitle("");
-    setNewAmount("");
-    setIsModalOpen(false);
+    setError("");
+    try {
+      const updated = await repo.createExpense(newTitle, amountVal, shares);
+      setExpenses(updated);
+      setNewTitle("");
+      setNewAmount("");
+      setIsModalOpen(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Не удалось создать расход.");
+    }
   };
 
   // Calculations
@@ -80,6 +101,7 @@ export default function BudgetPage() {
         </button>
       }
     >
+      {error ? <div role="alert" className="rounded-[16px] border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div> : null}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[20px] bg-[hsl(var(--accent))] p-5 text-foreground animate-fade-in">
           <WalletCards className="size-5" />
@@ -209,8 +231,8 @@ export default function BudgetPage() {
 
               <div className="rounded-[14px] bg-[#F4F4F0] p-4 text-xs text-muted-foreground space-y-1.5">
                 <p className="font-bold text-[#111111]">Правило деления:</p>
-                <p>Будет автоматически разделено поровну между 3 участниками группы (Мария, Артём, Анна).</p>
-                <p>Ваша доля составит: <span className="font-extrabold text-[#111111]">{newAmount ? formatRubles(Math.round(parseFloat(newAmount) / 3)) : "0 ₽"}</span></p>
+                <p>Будет автоматически разделено поровну между {members.length} участниками группы ({members.map(m => m.name).join(", ")}).</p>
+                <p>Ваша доля составит: <span className="font-extrabold text-[#111111]">{newAmount ? formatRubles(Math.round(parseFloat(newAmount) / Math.max(members.length, 1))) : "0 ₽"}</span></p>
               </div>
 
               <div className="pt-2">

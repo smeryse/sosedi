@@ -127,8 +127,8 @@ export type Database = {
           pets: "no" | "cat" | "dog" | "other" | "indifferent";
           sleep_schedule: "early" | "late" | "flexible";
           noise_tolerance: number | null;
-          guests_frequency: "never" | "rarely" | "sometimes" | "often";
-          remote_work: "never" | "sometimes" | "often";
+          guests_frequency: "never" | "rarely" | "sometimes" | "often" | null;
+          remote_work: "never" | "sometimes" | "often" | null;
           cleanliness: number | null;
           sociability: number | null;
           private_space: number | null;
@@ -141,8 +141,8 @@ export type Database = {
           pets?: "no" | "cat" | "dog" | "other" | "indifferent";
           sleep_schedule?: "early" | "late" | "flexible";
           noise_tolerance?: number | null;
-          guests_frequency?: "never" | "rarely" | "sometimes" | "often";
-          remote_work?: "never" | "sometimes" | "often";
+          guests_frequency?: "never" | "rarely" | "sometimes" | "often" | null;
+          remote_work?: "never" | "sometimes" | "often" | null;
           cleanliness?: number | null;
           sociability?: number | null;
           private_space?: number | null;
@@ -155,8 +155,8 @@ export type Database = {
           pets?: "no" | "cat" | "dog" | "other" | "indifferent";
           sleep_schedule?: "early" | "late" | "flexible";
           noise_tolerance?: number | null;
-          guests_frequency?: "never" | "rarely" | "sometimes" | "often";
-          remote_work?: "never" | "sometimes" | "often";
+          guests_frequency?: "never" | "rarely" | "sometimes" | "often" | null;
+          remote_work?: "never" | "sometimes" | "often" | null;
           cleanliness?: number | null;
           sociability?: number | null;
           private_space?: number | null;
@@ -776,18 +776,21 @@ export type Database = {
           profile_id: string;
           last_read_at: string | null;
           joined_at: string;
+          is_pinned: boolean;
         };
         Insert: {
           conversation_id: string;
           profile_id: string;
           last_read_at?: string | null;
           joined_at?: string;
+          is_pinned?: boolean;
         };
         Update: {
           conversation_id?: string;
           profile_id?: string;
           last_read_at?: string | null;
           joined_at?: string;
+          is_pinned?: boolean;
         };
         Relationships: [
           {
@@ -851,6 +854,42 @@ export type Database = {
             isOneToOne: false,
             referencedRelation: "profiles";
             referencedColumns: ["id"],
+          },
+        ];
+      };
+      message_reactions: {
+        Row: {
+          message_id: string;
+          profile_id: string;
+          emoji: string;
+          created_at: string;
+        };
+        Insert: {
+          message_id: string;
+          profile_id: string;
+          emoji: string;
+          created_at?: string;
+        };
+        Update: {
+          message_id?: string;
+          profile_id?: string;
+          emoji?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_reactions_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
           },
         ];
       };

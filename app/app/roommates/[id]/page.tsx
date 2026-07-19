@@ -1,16 +1,65 @@
+"use client";
+
+import React, { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
-import { getRepository } from "@/lib/repositories";
+import { createClientRepository } from "@/lib/repositories";
+import { roommateProfiles, mapAnswersToProfile } from "@/lib/repositories/demo-repository";
+import { compatibilityScore } from "@/lib/compatibility/engine";
 import { formatRubles } from "@/data/demo";
 import { PageFrame } from "@/components/tenant/page-frame";
 import { notFound } from "next/navigation";
+import type { DemoRoommate } from "@/data/demo";
 
-export default async function RoommateProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const repo = getRepository();
-  const roommates = await repo.listRoommates();
-  const person = roommates.find((item) => item.id === id);
+export default function RoommateProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  
+  const [person, setPerson] = useState<DemoRoommate | null>(null);
+  const [compResult, setCompResult] = useState<any>(null);
+  const [hasAnswers, setHasAnswers] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const repo = createClientRepository();
+        const roommates = await repo.listRoommates();
+        const found = roommates.find((item) => item.id === id);
+        if (found) {
+          setPerson(found);
+          const state = await repo.getState();
+          const userAnswers = state.answers;
+          if (userAnswers && userAnswers.length > 0) {
+            setHasAnswers(true);
+            const uProfile = mapAnswersToProfile(userAnswers);
+            const targetProfile = roommateProfiles[id];
+            if (targetProfile) {
+              const res = compatibilityScore(uProfile, targetProfile);
+              setCompResult(res);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <PageFrame backHref="/app/roommates" backLabel="К поиску соседей" title="Загрузка..." description="Пожалуйста, подождите.">
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+        </div>
+      </PageFrame>
+    );
+  }
+
   if (!person) notFound();
 
   return (
@@ -70,29 +119,70 @@ export default async function RoommateProfilePage({ params }: { params: Promise<
               <Sparkles className="size-5" />
               <span className="text-xs font-extrabold uppercase tracking-[0.1em]">Совместимость</span>
             </div>
-            <p className="mt-3 text-5xl font-extrabold tracking-[-0.06em]">{person.compatibility}%</p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Высокое совпадение по ритму жизни, бюджету и отношению к дому.
+            <p className="mt-3 text-5xl font-extrabold tracking-[-0.06em]">
+              {compResult ? compResult.score : person.compatibility}%
             </p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              {compResult 
+                ? "Расчет выполнен на основе ваших ответов в анкете." 
+                : "Общая оценка совместимости по умолчанию."}
+            </p>
+            
             <div className="mt-5 space-y-3">
-              {[
-                ["Бюджет", 96],
-                ["Режим дня", 93],
-                ["Чистота", 91],
-                ["Общие зоны", 88],
-              ].map(([label, value]) => (
-                <div key={label} className="grid grid-cols-[1fr_42px] items-center gap-3 text-xs">
-                  <span>{label}</span>
-                  <span className="text-right font-extrabold">{value}%</span>
+              {(compResult 
+                ? compResult.breakdown.map((item: any) => [item.label, item.score])
+                : [
+                    ["Бюджет", 96],
+                    ["Режим дня", 93],
+                    ["Чистота", 91],
+                    ["Общие зоны", 88],
+                  ]
+              ).map(([label, value]: [string | unknown, number | unknown]) => (
+                <div key={label as string} className="grid grid-cols-[1fr_42px] items-center gap-3 text-xs">
+                  <span>{label as string}</span>
+                  <span className="text-right font-extrabold">{value as number}%</span>
                   <span className="col-span-2 -mt-2 h-1.5 rounded-full bg-surface-muted">
                     <span
                       className="block h-full rounded-full bg-[hsl(var(--accent))]"
-                      style={{ width: `${value}%` }}
+                      style={{ width: `${value as number}%` }}
                     />
                   </span>
                 </div>
               ))}
             </div>
+
+            {!hasAnswers && (
+              <div className="mt-5 rounded-[12px] bg-surface-muted p-3 text-[11px] leading-4 text-muted-foreground">
+                Чтобы увидеть детальный разбор по привычкам, рискам и темам для разговора, заполните{" "}
+                <Link href="/app/compatibility" className="font-bold text-[#7B9E00] hover:underline">
+                  Анкету совместимости
+                </Link>
+                .
+              </div>
+            )}
+
+            {compResult && compResult.positives && compResult.positives.length > 0 && (
+              <div className="mt-5 border-t pt-4 space-y-2">
+                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">Точки соприкосновения</p>
+                {compResult.positives.map((pos: string) => (
+                  <p key={pos} className="text-xs text-emerald-800 flex items-center gap-1.5 leading-4 font-semibold">
+                    ✓ {pos}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {compResult && compResult.risks && compResult.risks.length > 0 && (
+              <div className="mt-4 border-t pt-4 space-y-2">
+                <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider">Рекомендуем обсудить</p>
+                {compResult.discussionQuestions.map((q: string) => (
+                  <p key={q} className="text-xs text-amber-800 leading-4 font-semibold flex items-start gap-1.5">
+                    <span className="text-amber-600 mt-0.5">•</span>
+                    {q}
+                  </p>
+                ))}
+              </div>
+            )}
           </section>
 
           <Link

@@ -255,7 +255,7 @@ const demoExpenses = [
   }
 ];
 
-const roommateProfiles: Record<string, CompatibilityProfile> = {
+export const roommateProfiles: Record<string, CompatibilityProfile> = {
   maria: {
     budgetMin: 20000,
     budgetMax: 30000,
@@ -346,7 +346,7 @@ const roommateProfiles: Record<string, CompatibilityProfile> = {
   },
 };
 
-function mapAnswersToProfile(answers: DemoAnswer[]): CompatibilityProfile {
+export function mapAnswersToProfile(answers: DemoAnswer[]): CompatibilityProfile {
   const getAnswer = (key: string) => answers.find(a => a.questionKey === key)?.answer || "";
   
   const budgetStr = getAnswer("budget");
@@ -481,6 +481,12 @@ const initialState: DemoState = {
     name: "Квартира в центре",
     status: "ready",
     memberIds: ["maria", "artem", "ekaterina"],
+    members: [
+      { id: "anna", name: "Анна (Вы)" },
+      { id: "maria", name: "Мария" },
+      { id: "artem", name: "Артём" },
+      { id: "ekaterina", name: "Екатерина" }
+    ],
     targetBudget: 90_000,
     moveInDate: "2026-08-15",
     compatibility: 89,
@@ -656,8 +662,8 @@ export class DemoRepository implements Repository {
         if (!searchable.includes(normalized)) return false;
       }
       
-      // City filter (for now all are Krasnodar, but we add the field)
-      if (cityFilter && property.address.toLocaleLowerCase("ru").indexOf(cityFilter) === -1) return false;
+      // City is a separate property field; an address usually does not repeat it.
+      if (cityFilter && property.city.toLocaleLowerCase("ru") !== cityFilter) return false;
       
       // District filter
       if (districtFilters.length > 0 && !districtFilters.some(d => property.district.toLocaleLowerCase("ru").includes(d))) return false;

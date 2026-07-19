@@ -1,6 +1,6 @@
 import type { DemoProperty, DemoRoommate } from "@/data/demo";
-import { getSupabaseClient } from "./index";
-import { compatibilityScore, propertyGroupCompatibility } from "@/lib/compatibility/engine";
+import { createClient } from "@/lib/supabase/server";
+import { compatibilityScore } from "@/lib/compatibility/engine";
 import type { CompatibilityProfile } from "@/lib/compatibility/types";
 import type {
   ChatMessage,
@@ -46,13 +46,13 @@ function mapProfileToCompatibility(profile: any, pref: any): CompatibilityProfil
 
 export class SupabaseRepository implements Repository {
   private async getUserId(): Promise<string | null> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     return user?.id ?? null;
   }
 
   private async ensureProfileExists(userId: string) {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const { data: profile } = await supabase
       .from("profiles")
       .select("id")
@@ -83,8 +83,68 @@ export class SupabaseRepository implements Repository {
     }
   }
 
+  private async getActiveGroupContext(): Promise<{
+    userId: string;
+    groupId: string;
+    members: Array<{ id: string; name: string }>;
+  }> {
+    const supabase = await createClient();
+    const userId = await this.getUserId();
+    if (!userId) throw new Error("Не авторизован");
+
+    const { data: membership, error: membershipError } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("profile_id", userId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    if (membershipError || !membership) {
+      throw new Error("Сначала создайте группу или примите приглашение.");
+    }
+
+    const { data: memberRows, error: membersError } = await supabase
+      .from("group_members")
+      .select("profile_id")
+      .eq("group_id", membership.group_id)
+      .eq("status", "active");
+
+    if (membersError) throw new Error("Не удалось загрузить участников группы.");
+
+    const memberIds = (memberRows ?? []).map((member) => member.profile_id);
+    const { data: profiles, error: profilesError } = memberIds.length
+      ? await supabase.from("profiles").select("id, display_name").in("id", memberIds)
+      : { data: [], error: null };
+
+    if (profilesError) throw new Error("Не удалось загрузить профили участников.");
+
+    return {
+      userId,
+      groupId: membership.group_id,
+      members: (profiles ?? []).map((profile) => ({ id: profile.id, name: profile.display_name })),
+    };
+  }
+
+  private resolveMemberId(
+    memberId: string,
+    context: { userId: string; members: Array<{ id: string; name: string }> },
+  ): string {
+    if (memberId === "anna") return context.userId;
+    if (context.members.some((member) => member.id === memberId)) return memberId;
+
+    const demoNames: Record<string, string> = {
+      maria: "мария",
+      artem: "артём",
+      ekaterina: "екатерина",
+    };
+    const expectedName = demoNames[memberId];
+    return context.members.find((member) => member.name.toLowerCase().startsWith(expectedName ?? ""))?.id
+      ?? context.userId;
+  }
+
   async listRoommates(query = "") {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const currentUserId = await this.getUserId();
 
     let request = supabase
@@ -97,13 +157,12 @@ export class SupabaseRepository implements Repository {
       .is("archived_at", null);
 
     if (currentUserId) {
-      request = request.ne("id", currentUserId);
+      request = request.neq("id", currentUserId);
     }
 
     const { data: profiles, error } = await request.limit(50);
     if (error) throw new Error("Не удалось загрузить каталог соседей.");
 
-    // Fetch current user preference to calculate compatibility
     let currentUserComp: CompatibilityProfile | null = null;
     if (currentUserId) {
       await this.ensureProfileExists(currentUserId);
@@ -163,7 +222,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async listProperties(filters: PropertyFilters = {}) {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const { query, city, districts, minPrice, maxPrice, rooms, petsAllowed, furnished, sortBy } = filters;
     
     let request = supabase
@@ -176,17 +235,14 @@ export class SupabaseRepository implements Repository {
       .is("archived_at", null)
       .limit(100);
 
-    // Apply city filter (search in address)
     if (city) {
       request = request.ilike("address", `%${city}%`);
     }
 
-    // Apply district filter
     if (districts && districts.length > 0) {
       request = request.in("district", districts);
     }
 
-    // Apply price filters
     if (minPrice !== undefined) {
       request = request.gte("monthly_rent", minPrice);
     }
@@ -194,7 +250,6 @@ export class SupabaseRepository implements Repository {
       request = request.lte("monthly_rent", maxPrice);
     }
 
-    // Apply rooms filter
     if (rooms && rooms.length > 0) {
       request = request.in("rooms", rooms);
     }
@@ -211,6 +266,7 @@ export class SupabaseRepository implements Repository {
         title: prop.title,
         address: prop.address ?? `${city || "Краснодар"}, ${prop.district}`,
         district: prop.district,
+        city: prop.city || "Краснодар",
         price: prop.monthly_rent,
         rooms: prop.rooms,
         area: Number(prop.area),
@@ -222,7 +278,6 @@ export class SupabaseRepository implements Repository {
       };
     });
 
-    // Client-side filtering for features that may not be in DB
     const normalizedQuery = query?.trim().toLowerCase() || "";
     mapped = mapped.filter((p) => {
       if (normalizedQuery) {
@@ -245,7 +300,6 @@ export class SupabaseRepository implements Repository {
       return true;
     });
 
-    // Sorting
     switch (sortBy) {
       case "price_asc":
         mapped.sort((a, b) => a.price - b.price);
@@ -266,7 +320,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async getState(): Promise<DemoState> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
 
     if (!userId) {
@@ -328,7 +382,7 @@ export class SupabaseRepository implements Repository {
       if (g) {
         const { data: members } = await supabase
           .from("group_members")
-          .select("profile_id")
+          .select("profile_id, profiles ( id, display_name )")
           .eq("group_id", g.id)
           .eq("status", "active");
 
@@ -337,6 +391,10 @@ export class SupabaseRepository implements Repository {
           name: g.name,
           status: g.status as any,
           memberIds: (members ?? []).map((m: any) => m.profile_id),
+          members: (members ?? []).map((m: any) => ({
+            id: m.profile_id,
+            name: m.profiles?.display_name || "Сожитель"
+          })),
           targetBudget: g.target_budget ?? 90000,
           moveInDate: g.move_in_date ?? "",
           compatibility: 89,
@@ -364,6 +422,11 @@ export class SupabaseRepository implements Repository {
       messages[t.id] = await this.getMessages(t.id);
     }
 
+    const [chores, expenses] = await Promise.all([
+      group ? this.listChores() : Promise.resolve([]),
+      group ? this.listExpenses() : Promise.resolve([]),
+    ]);
+
     return {
       favorites,
       group,
@@ -371,13 +434,13 @@ export class SupabaseRepository implements Repository {
       answers,
       threads,
       messages,
-      chores: [],
-      expenses: [],
+      chores,
+      expenses,
     };
   }
 
   async toggleFavorite(type: "profile" | "property", id: string): Promise<DemoState> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) return this.getState();
 
@@ -408,13 +471,12 @@ export class SupabaseRepository implements Repository {
   }
 
   async saveAnswer(answer: DemoAnswer): Promise<DemoState> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) return this.getState();
 
     await this.ensureProfileExists(userId);
 
-    // Save answer
     await supabase
       .from("lifestyle_answers")
       .upsert({
@@ -424,7 +486,6 @@ export class SupabaseRepository implements Repository {
         importance: answer.importance,
       }, { onConflict: "profile_id, question_key" });
 
-    // Sync to profiles / profile_preferences
     if (answer.questionKey === "budget") {
       let maxBudget = 30000;
       if (answer.answer.includes("20 000–30 000")) maxBudget = 30000;
@@ -498,7 +559,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async createGroup(input: Pick<DemoGroup, "name" | "targetBudget" | "moveInDate">): Promise<DemoGroup> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) throw new Error("Не авторизован");
 
@@ -538,7 +599,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async submitApplication(input: Pick<DemoApplication, "propertyId" | "groupId">): Promise<DemoApplication> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) throw new Error("Не авторизован");
 
@@ -604,16 +665,19 @@ export class SupabaseRepository implements Repository {
   }
 
   async getChatThreads(): Promise<ChatThread[]> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) return [];
 
     const { data: memberships } = await supabase
       .from("conversation_members")
-      .select("conversation_id")
+      .select("conversation_id, is_pinned")
       .eq("profile_id", userId);
 
-    const convIds = (memberships ?? []).map((m: any) => m.conversation_id);
+    const convIds = (memberships ?? []).map((membership) => membership.conversation_id);
+    const pinnedByConversation = new Map(
+      (memberships ?? []).map((membership) => [membership.conversation_id, membership.is_pinned]),
+    );
     if (convIds.length === 0) return [];
 
     const { data: conversations, error } = await supabase
@@ -648,12 +712,14 @@ export class SupabaseRepository implements Repository {
         lastMessage: lastMsg?.body ?? "Диалог открыт",
         lastMessageTime: timeStr,
         unreadCount: 0,
+        isPinned: pinnedByConversation.get(c.id) ?? false,
       };
-    });
+    }).sort((left, right) => Number(right.isPinned) - Number(left.isPinned));
   }
 
   async getMessages(threadId: string): Promise<ChatMessage[]> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
+    const userId = await this.getUserId();
     const { data: msgs, error } = await supabase
       .from("messages")
       .select(`
@@ -664,9 +730,25 @@ export class SupabaseRepository implements Repository {
       .is("deleted_at", null)
       .order("sent_at", { ascending: true });
 
-    if (error) return [];
+    if (error || !msgs) return [];
 
-    return (msgs ?? []).map((m: any): ChatMessage => {
+    const messageIds = msgs.map((message) => message.id);
+    const { data: reactionRows } = messageIds.length
+      ? await supabase
+          .from("message_reactions")
+          .select("message_id, profile_id, emoji")
+          .in("message_id", messageIds)
+      : { data: [] };
+
+    const reactionsByMessage = new Map<string, { counts: Record<string, number>; user: string[] }>();
+    for (const reaction of reactionRows ?? []) {
+      const current = reactionsByMessage.get(reaction.message_id) ?? { counts: {}, user: [] };
+      current.counts[reaction.emoji] = (current.counts[reaction.emoji] ?? 0) + 1;
+      if (reaction.profile_id === userId) current.user.push(reaction.emoji);
+      reactionsByMessage.set(reaction.message_id, current);
+    }
+
+    return msgs.map((m: any): ChatMessage => {
       const timeStr = new Date(m.sent_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
       let parsedBody: any = null;
@@ -689,6 +771,8 @@ export class SupabaseRepository implements Repository {
         pollData: parsedBody?.pollData ?? undefined,
         expenseData: parsedBody?.expenseData ?? undefined,
         viewingData: parsedBody?.viewingData ?? undefined,
+        reactions: reactionsByMessage.get(m.id)?.counts ?? {},
+        userReactions: reactionsByMessage.get(m.id)?.user ?? [],
       };
     });
   }
@@ -705,7 +789,7 @@ export class SupabaseRepository implements Repository {
       voiceDuration?: string;
     }
   ): Promise<ChatMessage> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) throw new Error("Не авторизован");
 
@@ -745,7 +829,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async markThreadAsRead(threadId: string): Promise<void> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) return;
 
@@ -757,7 +841,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async voteInPoll(threadId: string, messageId: string, optionId: string): Promise<ChatMessage> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const userId = await this.getUserId();
     if (!userId) throw new Error("Не авторизован");
 
@@ -792,7 +876,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async updateViewingStatus(threadId: string, messageId: string, status: ViewingBooking["status"]): Promise<ChatMessage> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const { data: msg } = await supabase
       .from("messages")
       .select("body")
@@ -815,7 +899,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async toggleExpensePaid(threadId: string, messageId: string, memberId: string): Promise<ChatMessage> {
-    const supabase = await getSupabaseClient();
+    const supabase = await createClient();
     const { data: msg } = await supabase
       .from("messages")
       .select("body")
@@ -839,47 +923,235 @@ export class SupabaseRepository implements Repository {
   }
 
   async togglePinThread(threadId: string): Promise<ChatThread[]> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _t = threadId;
+    const supabase = await createClient();
+    const userId = await this.getUserId();
+    if (!userId) throw new Error("Не авторизован");
+
+    const { data: membership, error: readError } = await supabase
+      .from("conversation_members")
+      .select("is_pinned")
+      .eq("conversation_id", threadId)
+      .eq("profile_id", userId)
+      .single();
+
+    if (readError || !membership) throw new Error("Диалог не найден.");
+
+    const { error } = await supabase
+      .from("conversation_members")
+      .update({ is_pinned: !membership.is_pinned })
+      .eq("conversation_id", threadId)
+      .eq("profile_id", userId);
+
+    if (error) throw new Error("Не удалось закрепить диалог.");
     return this.getChatThreads();
   }
 
   async toggleMessageReaction(threadId: string, messageId: string, emoji: string): Promise<ChatMessage> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _e = emoji;
+    const supabase = await createClient();
+    const userId = await this.getUserId();
+    if (!userId) throw new Error("Не авторизован");
+
+    const { data: existing, error: readError } = await supabase
+      .from("message_reactions")
+      .select("message_id")
+      .eq("message_id", messageId)
+      .eq("profile_id", userId)
+      .eq("emoji", emoji)
+      .maybeSingle();
+
+    if (readError) throw new Error("Не удалось загрузить реакции.");
+
+    const operation = existing
+      ? supabase
+          .from("message_reactions")
+          .delete()
+          .eq("message_id", messageId)
+          .eq("profile_id", userId)
+          .eq("emoji", emoji)
+      : supabase.from("message_reactions").insert({ message_id: messageId, profile_id: userId, emoji });
+    const { error } = await operation;
+    if (error) throw new Error("Не удалось обновить реакцию.");
+
     const messages = await this.getMessages(threadId);
-    return messages.find((m) => m.id === messageId) ?? messages[0];
+    const message = messages.find((item) => item.id === messageId);
+    if (!message) throw new Error("Сообщение не найдено.");
+    return message;
   }
 
   async listChores(): Promise<DemoChore[]> {
-    return [];
+    const supabase = await createClient();
+    const context = await this.getActiveGroupContext();
+    const { data, error } = await supabase
+      .from("chores")
+      .select("id, title, assignee_id, due_at, status")
+      .eq("group_id", context.groupId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error("Не удалось загрузить задачи.");
+    const names = new Map(context.members.map((member) => [member.id, member.name]));
+
+    return (data ?? []).map((chore) => ({
+      id: chore.id,
+      title: chore.title,
+      assigneeId: chore.assignee_id === context.userId ? "anna" : (chore.assignee_id ?? ""),
+      assigneeName: chore.assignee_id ? (names.get(chore.assignee_id) ?? "Сожитель") : "Не назначено",
+      isDone: chore.status === "done",
+      dueDate: chore.due_at
+        ? new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date(chore.due_at))
+        : "без срока",
+    }));
   }
 
   async createChore(title: string, assigneeId: string, dueDate: string): Promise<DemoChore[]> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _d = [title, assigneeId, dueDate];
-    return [];
+    const supabase = await createClient();
+    const context = await this.getActiveGroupContext();
+    const resolvedAssigneeId = this.resolveMemberId(assigneeId, context);
+    const parsedDueDate = Date.parse(dueDate);
+
+    const { error } = await supabase.from("chores").insert({
+      group_id: context.groupId,
+      created_by: context.userId,
+      assignee_id: resolvedAssigneeId,
+      title: title.trim(),
+      due_at: Number.isNaN(parsedDueDate) ? null : new Date(parsedDueDate).toISOString(),
+      status: "open",
+    });
+
+    if (error) throw new Error("Не удалось создать задачу.");
+    return this.listChores();
   }
 
   async toggleChoreDone(id: string): Promise<DemoChore[]> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _i = id;
-    return [];
+    const supabase = await createClient();
+    const context = await this.getActiveGroupContext();
+    const { data: chore, error: readError } = await supabase
+      .from("chores")
+      .select("status")
+      .eq("id", id)
+      .eq("group_id", context.groupId)
+      .single();
+
+    if (readError || !chore) throw new Error("Задача не найдена.");
+    const nextStatus = chore.status === "done" ? "open" : "done";
+    const { error } = await supabase
+      .from("chores")
+      .update({
+        status: nextStatus,
+        completed_at: nextStatus === "done" ? new Date().toISOString() : null,
+      })
+      .eq("id", id)
+      .eq("group_id", context.groupId);
+
+    if (error) throw new Error("Не удалось обновить задачу.");
+    return this.listChores();
   }
 
   async listExpenses(): Promise<ExpenseSplit[]> {
-    return [];
+    const supabase = await createClient();
+    const context = await this.getActiveGroupContext();
+    const { data: expenses, error } = await supabase
+      .from("expenses")
+      .select("id, description, amount, created_at")
+      .eq("group_id", context.groupId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error("Не удалось загрузить расходы.");
+    const expenseIds = (expenses ?? []).map((expense) => expense.id);
+    const { data: shareRows, error: sharesError } = expenseIds.length
+      ? await supabase
+          .from("expense_members")
+          .select("expense_id, profile_id, share, paid_at")
+          .in("expense_id", expenseIds)
+      : { data: [], error: null };
+
+    if (sharesError) throw new Error("Не удалось загрузить доли расходов.");
+    const names = new Map(context.members.map((member) => [member.id, member.name]));
+
+    return (expenses ?? []).map((expense) => ({
+      id: expense.id,
+      title: expense.description,
+      totalAmount: expense.amount,
+      shares: (shareRows ?? [])
+        .filter((share) => share.expense_id === expense.id)
+        .map((share) => ({
+          memberId: share.profile_id === context.userId ? "anna" : share.profile_id,
+          memberName: names.get(share.profile_id) ?? "Сожитель",
+          amount: share.share,
+          isPaid: Boolean(share.paid_at),
+        })),
+    }));
   }
 
   async createExpense(title: string, totalAmount: number, shares: ExpenseShare[]): Promise<ExpenseSplit[]> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _d = [title, totalAmount, shares];
-    return [];
+    const supabase = await createClient();
+    const context = await this.getActiveGroupContext();
+    const amount = Math.round(totalAmount);
+    const { data: expense, error } = await supabase
+      .from("expenses")
+      .insert({
+        group_id: context.groupId,
+        created_by: context.userId,
+        category: "household",
+        description: title.trim(),
+        amount,
+      })
+      .select("id")
+      .single();
+
+    if (error || !expense) throw new Error("Не удалось создать расход.");
+
+    const resolvedShares = new Map<string, { share: number; paidAt: string | null }>();
+    for (const share of shares) {
+      const profileId = this.resolveMemberId(share.memberId, context);
+      resolvedShares.set(profileId, {
+        share: Math.max(0, Math.round(share.amount)),
+        paidAt: share.isPaid ? new Date().toISOString() : null,
+      });
+    }
+
+    if (resolvedShares.size === 0) {
+      const defaultShare = Math.round(amount / Math.max(context.members.length, 1));
+      for (const member of context.members) {
+        resolvedShares.set(member.id, { share: defaultShare, paidAt: null });
+      }
+    }
+
+    const { error: shareError } = await supabase.from("expense_members").insert(
+      Array.from(resolvedShares, ([profileId, value]) => ({
+        expense_id: expense.id,
+        profile_id: profileId,
+        share: value.share,
+        paid_at: value.paidAt,
+      })),
+    );
+
+    if (shareError) {
+      await supabase.from("expenses").delete().eq("id", expense.id);
+      throw new Error("Не удалось распределить расход между участниками.");
+    }
+
+    return this.listExpenses();
   }
 
   async toggleGlobalExpensePaid(expenseId: string, memberId: string): Promise<ExpenseSplit[]> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _d = [expenseId, memberId];
-    return [];
+    const supabase = await createClient();
+    const context = await this.getActiveGroupContext();
+    const profileId = this.resolveMemberId(memberId, context);
+    const { data: share, error: readError } = await supabase
+      .from("expense_members")
+      .select("paid_at")
+      .eq("expense_id", expenseId)
+      .eq("profile_id", profileId)
+      .single();
+
+    if (readError || !share) throw new Error("Доля расхода не найдена.");
+    const { error } = await supabase
+      .from("expense_members")
+      .update({ paid_at: share.paid_at ? null : new Date().toISOString() })
+      .eq("expense_id", expenseId)
+      .eq("profile_id", profileId);
+
+    if (error) throw new Error("Не удалось обновить оплату.");
+    return this.listExpenses();
   }
 }

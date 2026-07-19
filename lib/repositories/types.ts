@@ -1,10 +1,12 @@
 import type { DemoProperty, DemoRoommate } from "@/data/demo";
+export type { DemoProperty, DemoRoommate } from "@/data/demo";
 
 export type DemoGroup = {
   id: string;
   name: string;
   status: "forming" | "ready" | "application_sent" | "under_review";
   memberIds: string[];
+  members?: { id: string; name: string }[];
   targetBudget: number;
   moveInDate: string;
   compatibility: number;

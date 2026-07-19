@@ -3,41 +3,70 @@
 import { useEffect, useState } from "react";
 import { CalendarCheck2, Check, Clock3, Plus, Sparkles, X } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
-import { getRepository } from "@/lib/repositories";
+import { createClientRepository } from "@/lib/repositories";
 import type { DemoChore } from "@/lib/repositories/types";
+
+function nextSunday(): string {
+  const date = new Date();
+  const daysUntilSunday = (7 - date.getDay()) % 7 || 7;
+  date.setDate(date.getDate() + daysUntilSunday);
+  return date.toISOString().slice(0, 10);
+}
 
 export default function ChoresPage() {
   const [chores, setChores] = useState<DemoChore[]>([]);
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  const [newAssignee, setNewAssignee] = useState("anna");
-  const [newDueDate, setNewDueDate] = useState("до воскресенья");
+  const [newAssignee, setNewAssignee] = useState("");
+  const [newDueDate, setNewDueDate] = useState(nextSunday);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadChores() {
-      const repo = getRepository();
-      const list = await repo.listChores();
-      setChores(list);
-      setLoading(false);
+    async function loadData() {
+      try {
+        const repo = createClientRepository();
+        const [list, state] = await Promise.all([
+          repo.listChores(),
+          repo.getState()
+        ]);
+        setChores(list);
+        if (state.group?.members) {
+          setMembers(state.group.members);
+          if (state.group.members.length > 0) {
+            setNewAssignee(state.group.members[0].id);
+          }
+        }
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Не удалось загрузить данные.");
+      } finally {
+        setLoading(false);
+      }
     }
-    loadChores();
+    loadData();
   }, []);
 
   const handleToggleChore = async (id: string) => {
-    const repo = getRepository();
-    const updated = await repo.toggleChoreDone(id);
-    setChores(updated);
+    setError("");
+    try {
+      setChores(await createClientRepository().toggleChoreDone(id));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Не удалось обновить задачу.");
+    }
   };
 
   const handleAddChore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    const repo = getRepository();
-    const updated = await repo.createChore(newTitle, newAssignee, newDueDate);
-    setChores(updated);
-    setNewTitle("");
-    setIsModalOpen(false);
+    setError("");
+    try {
+      setChores(await createClientRepository().createChore(newTitle, newAssignee, newDueDate));
+      setNewTitle("");
+      setIsModalOpen(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Не удалось создать задачу.");
+    }
   };
 
   const doneCount = chores.filter((c) => c.isDone).length;
@@ -60,6 +89,7 @@ export default function ChoresPage() {
         </button>
       }
     >
+      {error ? <div role="alert" className="rounded-[16px] border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div> : null}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="surface-card p-5">
           <div className="flex items-center justify-between">
@@ -167,10 +197,13 @@ export default function ChoresPage() {
                   onChange={(e) => setNewAssignee(e.target.value)}
                   className="h-11 w-full rounded-[14px] border border-[#E2E2DC] bg-[#F4F4F0] px-4 text-sm outline-none focus:border-[#B3DB00] cursor-pointer text-black"
                 >
-                  <option value="anna">Анна (Вы)</option>
-                  <option value="maria">Мария</option>
-                  <option value="artem">Артём</option>
-                  <option value="ekaterina">Екатерина</option>
+                  {members.length > 0 ? (
+                    members.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))
+                  ) : (
+                    <option value="anna">Загрузка...</option>
+                  )}
                 </select>
               </div>
 
@@ -179,8 +212,7 @@ export default function ChoresPage() {
                   Срок выполнения
                 </label>
                 <input
-                  type="text"
-                  placeholder="до воскресенья"
+                  type="date"
                   value={newDueDate}
                   onChange={(e) => setNewDueDate(e.target.value)}
                   className="h-11 w-full rounded-[14px] border border-[#E2E2DC] bg-[#F4F4F0] px-4 text-sm outline-none focus:border-[#B3DB00] focus:bg-white text-black"
