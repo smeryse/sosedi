@@ -56,7 +56,7 @@ export function AssistantChat() {
         content: m.text,
       }));
 
-      const res = await fetch("/api/ai/chat", {
+      const res = await fetch("/api/chat/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: apiMessages }),
@@ -68,7 +68,8 @@ export function AssistantChat() {
       }
 
       setMessages((prev) => [...prev, { role: "assistant", text: data.reply }]);
-    } catch {
+    } catch (error) {
+      console.error("AI Assistant Error:", error);
       const fallback = generateSmartFallback(textToSend);
       setMessages((prev) => [...prev, { role: "assistant", text: fallback }]);
     } finally {

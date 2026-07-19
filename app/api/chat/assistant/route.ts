@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAIProvider, type AIMessage } from "@/lib/ai/provider";
+import { getRepository } from "@/lib/repositories/server";
 
 const SYSTEM_PROMPT_CONTENT = `Ты — «Соседи AI», умный онлайн-ассистент платформы совместной аренды жилья «Соседи» в Краснодаре.
 
@@ -57,8 +58,41 @@ const SYSTEM_PROMPT_CONTENT = `Ты — «Соседи AI», умный онла
 - Честен и искренен.
 - Быстро переходит к сути.`;
 
+// Basic in-memory rate limiter
+const rateLimit = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 15;
+
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const now = Date.now();
+    const rateData = rateLimit.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
+
+    if (now > rateData.resetTime) {
+      rateData.count = 0;
+      rateData.resetTime = now + RATE_LIMIT_WINDOW;
+    }
+
+    if (rateData.count >= MAX_REQUESTS_PER_WINDOW) {
+      return NextResponse.json(
+        { error: "Слишком много запросов. Пожалуйста, подождите минуту." },
+        { status: 429 }
+      );
+    }
+
+    rateData.count += 1;
+    rateLimit.set(ip, rateData);
+
+    // Clean up old entries periodically to prevent memory leaks (probabilistic)
+    if (Math.random() < 0.05) {
+      for (const [key, data] of rateLimit.entries()) {
+        if (now > data.resetTime) {
+          rateLimit.delete(key);
+        }
+      }
+    }
+
     const body = await req.json();
     const messages: AIMessage[] = body.messages ?? [];
 
@@ -69,9 +103,17 @@ export async function POST(req: Request) {
       );
     }
 
+    const state = await getRepository().getState();
+    const contextPrompt = `\n\n--- ТЕКУЩИЙ КОНТЕКСТ ПОЛЬЗОВАТЕЛЯ ---\n
+- Группа: ${state.group ? `Активная (${state.group.name}, бюджет ${state.group.targetBudget})` : "Нет"}
+- Участники группы: ${state.group?.members ? state.group.members.map(m => m.name).join(", ") : "Нет"}
+- Невыполненные задачи: ${state.chores.filter(c => !c.isDone).length}
+- Последние расходы: ${state.expenses.slice(0, 3).map(e => `${e.title} (${e.totalAmount} ₽)`).join(", ")}
+\nИспользуй эти данные, если пользователь спрашивает про свои дела, бюджет или соседей.`;
+
     const systemPrompt: AIMessage = {
       role: "system",
-      content: SYSTEM_PROMPT_CONTENT,
+      content: SYSTEM_PROMPT_CONTENT + contextPrompt,
     };
 
     const fullMessages = [systemPrompt, ...messages];
