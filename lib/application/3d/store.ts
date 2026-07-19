@@ -58,6 +58,16 @@ export interface Commercial3DDemoStoreState {
   graphicsTier: GraphicsTier;
   setGraphicsTier: (tier: GraphicsTier) => void;
 
+  // Feature Flags & Owner Editor Slice
+  featureFlags: {
+    useSceneRegistry: boolean;
+    useOwnerEditor: boolean;
+    useMapcnUI: boolean;
+    useParametricViewer: boolean;
+  };
+  ownerEditorTool: "select" | "wall" | "door" | "window" | "furniture" | "measure";
+  setOwnerEditorTool: (tool: "select" | "wall" | "door" | "window" | "furniture" | "measure") => void;
+
   // 3-Bedroom Assignment & Rent Calculation Slice
   totalApartmentRent: number;
   rooms3B: RoomEntity[];
@@ -137,6 +147,15 @@ export const useCommercial3DStore = create<Commercial3DDemoStoreState>()(
 
         graphicsTier: "auto",
         setGraphicsTier: (tier) => set({ graphicsTier: tier }),
+
+        featureFlags: {
+          useSceneRegistry: true,
+          useOwnerEditor: true,
+          useMapcnUI: true,
+          useParametricViewer: false,
+        },
+        ownerEditorTool: "select",
+        setOwnerEditorTool: (tool) => set({ ownerEditorTool: tool }),
 
         totalApartmentRent: 40000,
         rooms3B: DEFAULT_ROOMS_3B,

@@ -11,6 +11,7 @@ test.describe("/demo/3d Commercial 3D Co-Living Workflow", () => {
 
     // 2. Click "Смотреть квартиру" to open 3D Tour
     const tourBtn = page.getByRole("button", { name: "Смотреть квартиру" });
+    await expect(tourBtn).toBeVisible({ timeout: 10000 });
     await tourBtn.click();
 
     // 3. Verify 3D Scene Container

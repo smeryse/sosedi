@@ -40,7 +40,7 @@ export function RoomAssignmentScreen({ onBack, onConfirmAssignment }: RoomAssign
             >
               <div className="flex justify-between items-start">
                 <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-white/90 rounded-full text-[10px] sm:text-xs font-bold text-gray-800 shadow-sm border">
-                  1. Спальня Мастер • 22 м²
+                  1. Спальня Мастер • 22 м² (Балкон, Панорама)
                 </span>
                 <span className="text-[10px] sm:text-xs font-extrabold text-emerald-800">
                   {roommates3B.find((r) => r.assignedRoomId === "room-master")?.calculatedPrice.toLocaleString()} ₽
@@ -74,7 +74,7 @@ export function RoomAssignmentScreen({ onBack, onConfirmAssignment }: RoomAssign
             >
               <div className="flex justify-between items-start">
                 <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-white/90 rounded-full text-[10px] sm:text-xs font-bold text-gray-800 shadow-sm border">
-                  2. Вторая спальня • 18 м²
+                  2. Вторая спальня • 18 м² (Рабочее место)
                 </span>
                 <span className="text-[10px] sm:text-xs font-extrabold text-emerald-800">
                   {roommates3B.find((r) => r.assignedRoomId === "room-second")?.calculatedPrice.toLocaleString()} ₽
@@ -108,7 +108,7 @@ export function RoomAssignmentScreen({ onBack, onConfirmAssignment }: RoomAssign
             >
               <div className="flex justify-between items-start">
                 <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-white/90 rounded-full text-[10px] sm:text-xs font-bold text-gray-800 shadow-sm border">
-                  3. Уютная спальня • 14 м²
+                  3. Уютная спальня • 14 м² (Тихий двор)
                 </span>
                 <span className="text-[10px] sm:text-xs font-extrabold text-emerald-800">
                   {roommates3B.find((r) => r.assignedRoomId === "room-third")?.calculatedPrice.toLocaleString()} ₽

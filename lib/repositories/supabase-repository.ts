@@ -18,6 +18,17 @@ import type {
   Repository,
   ViewingBooking,
 } from "./types";
+import { BaseRepository } from "./base-repository";
+import type { Database } from "@/lib/supabase/types";
+
+type DbProfile = Database["public"]["Tables"]["profiles"]["Row"] & { profile_preferences?: any };
+type DbProperty = Database["public"]["Tables"]["properties"]["Row"] & { property_images?: any };
+type DbGroup = Database["public"]["Tables"]["groups"]["Row"];
+type DbApplication = Database["public"]["Tables"]["applications"]["Row"];
+type DbMessage = Database["public"]["Tables"]["messages"]["Row"] & { profiles?: any };
+type DbChore = Database["public"]["Tables"]["chores"]["Row"];
+type DbExpense = Database["public"]["Tables"]["expenses"]["Row"];
+
 
 function mapProfileToCompatibility(
   profile: Record<string, any>,
@@ -47,7 +58,7 @@ function mapProfileToCompatibility(
   };
 }
 
-export class SupabaseRepository implements Repository {
+export class SupabaseRepository extends BaseRepository implements Repository {
   private async getUserId(): Promise<string | null> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -349,7 +360,7 @@ export class SupabaseRepository implements Repository {
 
     const favorites = (favs ?? []).map((f: any) => ({
       type: f.target_type as "profile" | "property",
-      id: f.target_id,
+      id: String(f.target_id),
     }));
 
     // 2. Answers
@@ -359,9 +370,9 @@ export class SupabaseRepository implements Repository {
       .eq("profile_id", userId);
 
     const answers = (ans ?? []).map((a: any) => ({
-      questionKey: a.question_key,
+      questionKey: String(a.question_key),
       answer: String(a.answer),
-      importance: a.importance,
+      importance: a.importance as any,
     }));
 
     // 3. Group
@@ -393,10 +404,10 @@ export class SupabaseRepository implements Repository {
           id: g.id,
           name: g.name,
           status: g.status as any,
-          memberIds: (members ?? []).map((m: any) => m.profile_id),
-          members: (members ?? []).map((m: any) => ({
-            id: m.profile_id,
-            name: m.profiles?.display_name || "Сожитель"
+          memberIds: (members ?? []).map((m: Record<string, unknown>) => m.profile_id as string),
+          members: (members ?? []).map((m: Record<string, unknown>) => ({
+            id: m.profile_id as string,
+            name: (m as any).profiles?.display_name || "Сожитель"
           })),
           targetBudget: g.target_budget ?? 90000,
           moveInDate: g.move_in_date ?? "",
@@ -760,23 +771,23 @@ export class SupabaseRepository implements Repository {
         .in("id", convIds);
 
       dbThreads = (conversations ?? []).map((c: any): ChatThread => {
-        const otherMembers = c.conversation_members.filter((m: any) => m.profile_id !== userId);
+        const otherMembers = (c.conversation_members || []).filter((m: any) => m.profile_id !== userId);
         const otherUser = otherMembers[0]?.profiles;
 
-        const msgs = c.messages ?? [];
-        const lastMsg = msgs.length > 0 ? msgs.sort((a: any, b: any) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())[0] : null;
+        const msgs = (c.messages || []) as any[];
+        const lastMsg = msgs.length > 0 ? [...msgs].sort((a: any, b: any) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())[0] : null;
 
         const timeStr = lastMsg
           ? new Date(lastMsg.sent_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
           : "12:00";
 
         return {
-          id: c.id,
+          id: String(c.id),
           name: c.type === "direct" && otherUser ? otherUser.display_name : "Общий чат группы",
           type: c.type === "direct" ? "roommate" : c.type === "owner_group" ? "owner" : "group",
           avatar: otherUser?.avatar_path || "/demo/people/maria.jpg",
           sublabel: c.type === "direct" ? "Сожитель" : "Чат группы сожителей",
-          propertyId: c.property_id ?? undefined,
+          propertyId: c.property_id ? String(c.property_id) : undefined,
           lastMessage: lastMsg?.body ?? "Диалог открыт",
           lastMessageTime: timeStr,
           unreadCount: 0,
@@ -830,7 +841,7 @@ export class SupabaseRepository implements Repository {
       }
 
       return aiMsgs.map((m: any) => ({
-        id: m.id,
+        id: String(m.id),
         senderId: m.role === "user" ? "user" : "ai-assistant",
         senderName: m.role === "user" ? "Вы" : "Соседи AI",
         senderAvatar: m.role === "user" ? "/demo/people/maria.jpg" : "/demo/people/zhenya.jpg",
@@ -882,8 +893,8 @@ export class SupabaseRepository implements Repository {
       }
 
       return {
-        id: m.id,
-        senderId: m.sender_id,
+        id: String(m.id),
+        senderId: m.sender_id || "system",
         senderName: m.profiles?.display_name ?? "Участник",
         senderAvatar: m.profiles?.avatar_path ?? "/demo/people/maria.jpg",
         content: parsedBody ? parsedBody.content : m.body,
@@ -911,6 +922,8 @@ export class SupabaseRepository implements Repository {
       senderId?: string;
       senderName?: string;
       senderAvatar?: string;
+      attachments?: any[];
+      clientGeneratedId?: string;
     }
   ): Promise<ChatMessage> {
     const supabase = await createClient();

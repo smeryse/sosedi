@@ -6,6 +6,7 @@ import { ChatSidebar } from "./chat-sidebar";
 import { ChatWindow } from "./chat-window";
 import { createClientRepository } from "@/lib/repositories";
 import type { ChatMessage, ChatThread } from "@/lib/repositories/types";
+import { useRealtimeThreads } from "@/hooks/use-realtime-threads";
 
 interface MessengerContainerProps {
   activeThreadId?: string;
@@ -14,28 +15,14 @@ interface MessengerContainerProps {
 
 export function MessengerContainer({ activeThreadId, baseRoute = "/app/messages" }: MessengerContainerProps) {
   const router = useRouter();
-  const [threads, setThreads] = useState<ChatThread[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { threads, loading: threadsLoading, setThreads } = useRealtimeThreads();
   const [selectedThreadId, setSelectedThreadId] = useState(activeThreadId || "maria");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (activeThreadId) {
       setSelectedThreadId(activeThreadId);
     }
   }, [activeThreadId]);
-
-  useEffect(() => {
-    async function load() {
-      const repo = createClientRepository();
-      const loadedThreads = await repo.getChatThreads();
-      const loadedMessages = await repo.getMessages(selectedThreadId);
-      setThreads(loadedThreads);
-      setMessages(loadedMessages);
-      setLoading(false);
-    }
-    load();
-  }, [selectedThreadId]);
 
   const handleSelectThread = (id: string) => {
     setSelectedThreadId(id);
@@ -46,7 +33,7 @@ export function MessengerContainer({ activeThreadId, baseRoute = "/app/messages"
 
   const activeThread = threads.find((t) => t.id === selectedThreadId) || threads[0];
 
-  if (loading || !activeThread) {
+  if (threadsLoading) {
     return (
       <div className="flex h-[calc(100vh-140px)] min-h-[550px] items-center justify-center rounded-[24px] border border-white/60 bg-white/70 backdrop-blur-2xl shadow-xl">
         <div className="size-8 animate-spin rounded-full border-3 border-[#7B9E00] border-t-transparent" />
@@ -54,6 +41,9 @@ export function MessengerContainer({ activeThreadId, baseRoute = "/app/messages"
     );
   }
 
+  // Fallback if no threads exist yet, though realistically there should be at least one or an empty state UI.
+  // But we let ChatWindow handle undefined thread gracefully or avoid rendering it.
+  
   return (
     <div className="overflow-hidden rounded-[28px] border border-white/75 bg-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.06)] backdrop-blur-2xl h-[calc(100vh-150px)] min-h-[600px] grid lg:grid-cols-[340px_1fr]">
       {/* Sidebar */}
@@ -68,14 +58,20 @@ export function MessengerContainer({ activeThreadId, baseRoute = "/app/messages"
 
       {/* Main Chat Window */}
       <div className={`h-full ${!activeThreadId ? "hidden lg:block" : "block"}`}>
-        <ChatWindow
-          thread={activeThread}
-          initialMessages={messages}
-          onBackToList={() => {
-            setSelectedThreadId("");
-            router.push(baseRoute);
-          }}
-        />
+        {activeThread ? (
+          <ChatWindow
+            thread={activeThread}
+            initialMessages={[]}
+            onBackToList={() => {
+              setSelectedThreadId("");
+              router.push(baseRoute);
+            }}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-[#878881]">
+            Выберите диалог
+          </div>
+        )}
       </div>
     </div>
   );

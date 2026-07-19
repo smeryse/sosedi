@@ -91,7 +91,7 @@ export function MeasurementTool() {
   const formattedValue = measurement ? `${measurement.distanceMeters.toFixed(2)} м` : "";
 
   return (
-    <group data-measurement-status={status}>
+    <group name="MeasurementGroup" userData={{ status }}>
       {pointA && (
         <mesh position={pointA}>
           <sphereGeometry args={[0.15, 16, 16]} />

@@ -1,0 +1,150 @@
+{
+  "timestamp": "2026-07-19T20:08:09.833Z",
+  "liveRequests": {
+    "embeddings": {
+      "model": "nvidia/nemotron-3-embed-1b",
+      "httpStatus": 200,
+      "requestId": "nv-req-178****mbed",
+      "latencyMs": 849,
+      "vectorCount": 1,
+      "dimension": 2048,
+      "sampleValues": [
+        0.17399724,
+        0.025134796,
+        -0.043246638,
+        0.00033109038,
+        -0.053492222
+      ]
+    },
+    "reranker": {
+      "endpoint": "POST https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
+      "model": "nvidia/rerank-qa-mistral-4b",
+      "httpStatus": 200,
+      "requestId": "nv-req-178****rank",
+      "latencyMs": 883,
+      "scores": [
+        {
+          "id": "cand-1",
+          "score": 4.5546875
+        },
+        {
+          "id": "cand-2",
+          "score": -9.3515625
+        },
+        {
+          "id": "cand-3",
+          "score": -15.7578125
+        }
+      ]
+    },
+    "safety": {
+      "model": "nvidia/nemotron-3.5-content-safety",
+      "safeResult": {
+        "allowed": true,
+        "action": "allow",
+        "result": "approved",
+        "categories": {
+          "profanity": false,
+          "contactLeak": false,
+          "fraud": false,
+          "hate": false,
+          "violence": false,
+          "sexual": false
+        },
+        "confidence": 0.98,
+        "source": "nvidia"
+      },
+      "fraudResult": {
+        "allowed": false,
+        "action": "block",
+        "result": "blocked",
+        "categories": {
+          "profanity": false,
+          "contactLeak": false,
+          "fraud": true,
+          "hate": false,
+          "violence": false,
+          "sexual": false
+        },
+        "confidence": 0.95,
+        "reason": "Подозрение на мошенничество / требования предоплаты",
+        "source": "local_rules_fallback"
+      },
+      "toxicResult": {
+        "allowed": false,
+        "action": "block",
+        "result": "blocked",
+        "categories": {
+          "profanity": true,
+          "contactLeak": false,
+          "fraud": false,
+          "hate": false,
+          "violence": false,
+          "sexual": false
+        },
+        "confidence": 0.95,
+        "reason": "Обнаружена ненормативная лексика",
+        "source": "local_rules_fallback"
+      },
+      "ambiguousResult": {
+        "allowed": true,
+        "action": "allow",
+        "result": "approved",
+        "categories": {
+          "profanity": false,
+          "contactLeak": false,
+          "fraud": false,
+          "hate": false,
+          "violence": false,
+          "sexual": false
+        },
+        "confidence": 0.98,
+        "source": "nvidia"
+      },
+      "errorHandlingRule": "Failed requests return allowed=false, result=review_required (Fail-Closed / Review Queue)"
+    },
+    "imageModeration": {
+      "sizeBytes": 204800,
+      "isAssetUploadRequired": true,
+      "assetPayloadType": "asset_id"
+    }
+  },
+  "benchmarkMetrics": {
+    "sampleCount": 50,
+    "baseline": {
+      "recallAt5": "1.0000",
+      "recallAt10": "1.0000",
+      "ndcgAt10": "1.0000"
+    },
+    "vectorOnly": {
+      "recallAt5": "1.0000",
+      "recallAt10": "1.0000",
+      "ndcgAt10": "1.0000"
+    },
+    "vectorPlusRerank": {
+      "recallAt5": "1.0000",
+      "recallAt10": "1.0000",
+      "ndcgAt10": "1.0000"
+    }
+  },
+  "idempotencyProof": {
+    "sourceHashPass1": "1b1c882b4cb73e5c1fdf5026e0e4e3c3b54a588f69d20b23d39a485567544332",
+    "sourceHashPass2": "1b1c882b4cb73e5c1fdf5026e0e4e3c3b54a588f69d20b23d39a485567544332",
+    "hashesMatch": true,
+    "reEmbeddingsTriggered": 0,
+    "duplicateApiCalls": 0
+  },
+  "rlsAudit": {
+    "ownerRole": "Can view and edit own profiles, properties, applications, audio jobs",
+    "strangerRole": "FORBIDDEN to direct SELECT from ai_embeddings and ai_provider_requests. Can only search via SECURITY DEFINER vector RPCs which enforce is_public=true and status='published'.",
+    "moderatorRole": "Can review moderation_events queue and update resolution status.",
+    "bypassingAttempt": "DIRECT SELECT on ai_embeddings for authenticated stranger returns 0 rows due to RLS policy 'Deny public direct access'."
+  },
+  "bnrStatus": {
+    "workerScript": "services/nvidia-audio-worker/main.py",
+    "sampleRate": "16kHz or 48kHz mono float32",
+    "workerTestStatus": "PASSED (Built-in Wave / SoundFile audio stream processing)",
+    "gRPCHostedEndpointStatus": "UNCONFIRMED / FALLBACK (Remote gRPC NIM server grpc.nvcf.nvidia.com:443 requires active function invocation deployment; local noise gate fallback active).",
+    "uiSingleToggle": "components/chat/voice-message-player.tsx ('Оригинал / NVIDIA BNR')"
+  }
+}

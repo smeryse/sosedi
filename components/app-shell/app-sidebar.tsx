@@ -28,6 +28,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { AvatarImage } from "@/components/ui/avatar-image";
+import { useSession } from "@/lib/auth/session-context";
 import type { NavItem } from "./navigation";
 import { tenantNavigation } from "./navigation";
 
@@ -53,6 +54,7 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const { theme, setTheme } = useTheme();
+  const { profile } = useSession();
   const [isThemeReady, setIsThemeReady] = useState(false);
 
   // next-themes reads the saved preference only in the browser. Rendering the
@@ -160,13 +162,13 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
         >
           <div className="flex items-center gap-2.5">
             <AvatarImage
-              src="/demo/people/maria.jpg"
-              name="Анна Смирнова"
+              src={profile.avatarPath}
+              name={profile.displayName}
               size={36}
               className="size-[36px]"
             />
             <div className="min-w-0">
-              <p className="truncate text-[12px] font-black text-foreground">Анна</p>
+              <p className="truncate text-[12px] font-black text-foreground">{profile.displayName}</p>
               <p className="text-[10px] text-muted-foreground">Мой профиль</p>
             </div>
           </div>

@@ -8,6 +8,8 @@ import { motion } from "framer-motion";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { createClientRepository } from "@/lib/repositories";
 
+import { useSession } from "@/lib/auth/session-context";
+
 const routeSearchHints: Array<[string, string]> = [
   ["/app/messages", "Поиск по чатам и сообщениям"],
   ["/app/roommates", "Поиск по людям, районам и интересам"],
@@ -19,6 +21,7 @@ const routeSearchHints: Array<[string, string]> = [
 export function AppHeader({ owner = false }: { owner?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { profile } = useSession();
   const [query, setQuery] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(2);
   const placeholder = routeSearchHints.find(([route]) => pathname.startsWith(route))?.[1]
@@ -76,8 +79,8 @@ export function AppHeader({ owner = false }: { owner?: boolean }) {
             <span className="absolute -right-0.5 -top-0.5 grid size-[18px] place-items-center rounded-full bg-accent text-[9px] font-black text-accent-foreground">3</span>
           </Link>
           <Link href={owner ? "/owner/profile" : "/app/profile"} className="flex h-11 items-center gap-2 rounded-full border bg-surface/85 p-1.5 pr-3 transition duration-200 hover:bg-surface hover:shadow-md">
-            <AvatarImage src="/demo/people/maria.jpg" name="Анна Смирнова" size={32} className="size-8" />
-            <span className="hidden text-[12px] font-bold xl:inline">Анна</span>
+            <AvatarImage src={profile.avatarPath} name={profile.displayName} size={32} className="size-8" />
+            <span className="hidden text-[12px] font-bold xl:inline">{profile.displayName}</span>
             <ChevronDown className="size-3.5 text-muted-foreground" />
           </Link>
         </div>

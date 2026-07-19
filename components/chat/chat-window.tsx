@@ -32,6 +32,8 @@ import { ExpenseModal } from "./expense-modal";
 import { demoProperties, formatRubles } from "@/data/demo";
 import { createClientRepository } from "@/lib/repositories";
 import { isDemoMode } from "@/lib/utils";
+import { analyzeChatHarmony } from "@/lib/ai/chat-analysis-service";
+import { createClient } from "@/lib/supabase/client";
 import type {
   ChatMessage,
   ChatThread,
@@ -39,6 +41,7 @@ import type {
   GroupPoll,
   ViewingBooking,
 } from "@/lib/repositories/types";
+import { useRealtimeMessages } from "@/hooks/use-realtime-messages";
 
 interface ChatWindowProps {
   thread: ChatThread;
@@ -53,9 +56,9 @@ export function ChatWindow({
   initialMessages,
   onBackToList,
 }: ChatWindowProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const { messages, setMessages, sendMessage: realSendMessage, typingUsers, setTyping } = useRealtimeMessages(thread.id, initialMessages);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isBotTyping, setIsBotTyping] = useState(false);
   const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
   const [isViewingModalOpen, setIsViewingModalOpen] = useState(false);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
@@ -107,9 +110,15 @@ export function ChatWindow({
     (p) => p.id === (thread.propertyId || "center-loft")
   );
 
+  const harmonyAnalysis = analyzeChatHarmony(thread.id, messages);
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isBotTyping, typingUsers]);
+
+  useEffect(() => {
+    createClientRepository().markThreadAsRead(thread.id);
+  }, [thread.id]);
 
   useEffect(() => {
     createClientRepository().markThreadAsRead(thread.id);
@@ -132,12 +141,11 @@ export function ChatWindow({
     if (!textToSend) setInput("");
 
     const repo = createClientRepository();
-    const sentMsg = await repo.sendMessage(thread.id, text || "Смарт-карточка", type, extraData);
-    setMessages((prev) => [...prev, sentMsg]);
+    const sentMsg = await realSendMessage(text || "Смарт-карточка", type, extraData);
 
     // Real AI Assistant Bot Call via canonical /api/ai/chat
     if (thread.id === "ai-assistant") {
-      setIsTyping(true);
+      setIsBotTyping(true);
       try {
         const history = [...messages, sentMsg]
           .filter((m) => m.type !== "system_notice")
@@ -177,14 +185,14 @@ export function ChatWindow({
         );
         setMessages((prev) => [...prev, fallbackMsg]);
       } finally {
-        setIsTyping(false);
+        setIsBotTyping(false);
       }
       return;
     }
 
     // Simulated Auto-Reply for Roommate / Group / Owner
     if (!isDemoMode()) return;
-    setTimeout(() => setIsTyping(true), 800);
+    setTimeout(() => setIsBotTyping(true), 800);
     setTimeout(async () => {
       let replyContent = "";
       let replySenderId = thread.id;
@@ -237,7 +245,7 @@ export function ChatWindow({
         });
         setMessages((prev) => [...prev, replyMsg]);
       }
-      setIsTyping(false);
+      setIsBotTyping(false);
     }, 2200);
   };
 
@@ -666,13 +674,13 @@ export function ChatWindow({
           })}
 
           {/* Typing indicator */}
-          {isTyping && (
+          {(isBotTyping || typingUsers.length > 0) && (
             <div className="flex items-center gap-2">
               <div className="rounded-2xl bg-white border border-[#E5E5E0] px-4 py-2 shadow-sm text-xs text-[#6B6F66] flex items-center gap-1.5">
                 <span className="size-1.5 animate-bounce rounded-full bg-[#7B9E00]" />
                 <span className="size-1.5 animate-bounce rounded-full bg-[#7B9E00] delay-150" />
                 <span className="size-1.5 animate-bounce rounded-full bg-[#7B9E00] delay-300" />
-                <span className="ml-1 font-semibold">{thread.name} печатает...</span>
+                <span className="ml-1 font-semibold">{isBotTyping ? thread.name : "Кто-то"} печатает...</span>
               </div>
             </div>
           )}
@@ -742,7 +750,12 @@ export function ChatWindow({
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  setTyping(true);
+                  if ((window as any).typingTimeout) clearTimeout((window as any).typingTimeout);
+                  (window as any).typingTimeout = setTimeout(() => setTyping(false), 2000);
+                }}
                 placeholder="Напишите сообщение..."
                 className="h-10 w-full rounded-full border border-[#E5E5E0] bg-[#F4F4F0] pl-4 pr-24 text-[14.5px] text-[#111111] outline-none transition-all focus:border-[#111111] focus:bg-white placeholder:text-[#878881]"
               />
@@ -790,49 +803,73 @@ export function ChatWindow({
           <div className="rounded-[18px] bg-white border border-[#E5E5E0]/70 p-3.5 space-y-3.5 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black text-[#6B6F66] uppercase tracking-wider">Гармония чата</span>
-              <span className="text-[11px] font-black text-[#7B9E00] flex items-center gap-1">
-                <ShieldCheck className="size-3.5" /> 92%
-              </span>
+              {harmonyAnalysis.status === "analyzed" ? (
+                <span className="text-[11px] font-black text-[#7B9E00] flex items-center gap-1">
+                  <ShieldCheck className="size-3.5" /> {harmonyAnalysis.harmonyScore}%
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-[#878881]">Анализ ещё не выполнен</span>
+              )}
             </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px] font-bold text-[#111111]">
-                <span>Угроза трений</span>
-                <span className="text-emerald-600 font-extrabold">Низкая (8%)</span>
+            {harmonyAnalysis.status === "analyzed" ? (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#111111]">
+                  <span>Угроза трений</span>
+                  <span className="text-emerald-600 font-extrabold">{harmonyAnalysis.frictionLabel}</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-[#F4F4F0] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500"
+                    style={{ width: `${harmonyAnalysis.frictionThreatScore ?? 8}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-2 w-full rounded-full bg-[#F4F4F0] overflow-hidden">
-                <div className="h-full rounded-full bg-emerald-500" style={{ width: "8%" }} />
-              </div>
-            </div>
+            ) : (
+              <p className="text-[10.5px] text-[#6B6F66]">
+                Отправьте минимум 2 сообщения для расчёта совместимости и динамического анализа тональности.
+              </p>
+            )}
           </div>
 
           {/* Real-time Mediation Intervention Suggestions */}
           <div className="space-y-2.5">
             <span className="text-[9.5px] font-black text-[#6B6F66] uppercase tracking-wider flex items-center gap-1.5">
-              <Zap className="size-3 text-[#7B9E00]" /> Рекомендации ИИ
+              <Zap className="size-3 text-[#7B9E00]" /> Автоматические рекомендации
             </span>
 
-            <div className="rounded-[18px] border border-[#EBF7B6] bg-[#EBF7B6]/30 p-3 text-[11px] leading-relaxed text-[#111111] space-y-2">
-              <p className="font-semibold">
-                <strong>Тема: Бытовой договор.</strong> ИИ заметил готовность Марии согласовать правила совместной жизни.
-              </p>
-              <button
-                type="button"
-                onClick={() => handleSend("Привет! Давай зафиксируем наше соглашение тихих часов. Отправила ссылку на симулятор быта!", "text")}
-                className="w-full text-left rounded-lg bg-white border border-[#E5E5E0] p-2 hover:border-[#7B9E00] transition-colors text-[9.5px] font-bold text-[#4A4E44]"
-              >
-                📝 Отправить: «Давай зафиксируем наши тихие часы...»
-              </button>
-            </div>
-
-            <div className="rounded-[18px] border border-[#E5E5E0] bg-white p-3 text-[11px] leading-relaxed text-[#111111] space-y-2">
-              <p className="font-semibold text-[#6B6F66]">
-                <strong>Тон сообщений:</strong> Вы общаетесь дружелюбно. Рекомендуемый тон для Марии: структурированный и ясный.
-              </p>
-              <div className="flex items-center gap-1.5 text-[9.5px] text-[#7B9E00] font-black bg-[#F3F9D2] rounded-lg p-1.5 justify-center">
-                <Volume2 className="size-3.5" /> Включена автокоррекция
+            {harmonyAnalysis.recommendations.length > 0 ? (
+              harmonyAnalysis.recommendations.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="rounded-[18px] border border-[#EBF7B6] bg-[#EBF7B6]/30 p-3 text-[11px] leading-relaxed text-[#111111] space-y-2"
+                >
+                  <p className="font-semibold">
+                    <strong>Тема: {rec.topic}.</strong> {rec.title}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleSend(rec.suggestedMessage, "text")}
+                    className="w-full text-left rounded-lg bg-white border border-[#E5E5E0] p-2 hover:border-[#7B9E00] transition-colors text-[9.5px] font-bold text-[#4A4E44] cursor-pointer"
+                  >
+                    📝 Отправить: «{rec.suggestedMessage.slice(0, 42)}...»
+                  </button>
+                  <div className="flex items-center justify-between text-[9px] text-[#6B6F66]">
+                    <span>Источник: {rec.source === "rule_engine" ? "Авто-рекомендация" : "ИИ-анализ"}</span>
+                    <span>{rec.timestamp}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[18px] border border-[#E5E5E0] bg-white p-3 text-[11px] leading-relaxed text-[#111111] space-y-2">
+                <p className="font-semibold text-[#6B6F66]">
+                  <strong>Тон сообщений:</strong> Вы общаетесь дружелюбно. Ожидаются ответы участников.
+                </p>
+                <div className="flex items-center gap-1.5 text-[9.5px] text-[#7B9E00] font-black bg-[#F3F9D2] rounded-lg p-1.5 justify-center">
+                  <Volume2 className="size-3.5" /> Включена автокоррекция
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

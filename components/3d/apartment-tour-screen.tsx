@@ -26,10 +26,9 @@ const ApartmentCanvas = dynamic(
 interface ApartmentTourScreenProps {
   onBack: () => void;
   onSelectApartment: () => void;
-  onSwitchTo2D?: () => void;
 }
 
-export function ApartmentTourScreen({ onBack, onSelectApartment, onSwitchTo2D }: ApartmentTourScreenProps) {
+export function ApartmentTourScreen({ onBack, onSelectApartment }: ApartmentTourScreenProps) {
   const {
     activeRoomId,
     setActiveRoomId,
@@ -145,16 +144,6 @@ export function ApartmentTourScreen({ onBack, onSelectApartment, onSwitchTo2D }:
             {isDay ? <Sun className="size-4 sm:size-5 text-amber-500" /> : <Moon className="size-4 sm:size-5 text-indigo-400" />}
             <span>{isDay ? "День" : "Ночь"}</span>
           </button>
-
-          {onSwitchTo2D && (
-            <button
-              onClick={onSwitchTo2D}
-              className="p-2.5 sm:p-3 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-xl border border-white/60 text-gray-800 shadow-xl flex flex-col items-center gap-1 text-[10px] sm:text-[11px] font-bold transition-all"
-            >
-              <Compass className="size-4 sm:size-5 text-blue-600" />
-              <span>2D План</span>
-            </button>
-          )}
         </div>
 
         {/* Bottom Room Selector Pills */}

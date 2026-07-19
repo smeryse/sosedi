@@ -179,6 +179,7 @@ export interface Repository {
       senderName?: string;
       senderAvatar?: string;
       attachments?: MessageAttachment[];
+      clientGeneratedId?: string;
     }
   ): Promise<ChatMessage>;
   markThreadAsRead(threadId: string): Promise<void>;

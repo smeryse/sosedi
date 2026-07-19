@@ -7,13 +7,17 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:lib": "tsc --noEmit -p tsconfig.lib.json",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.10.1",
+    "@supabase/supabase-js": "^2.110.7",
     "expo": "~54.0.0",
     "expo-status-bar": "~3.0.9",
     "lucide-react-native": "^1.25.0",
@@ -27,8 +31,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
+    "@typescript-eslint/parser": "^8.64.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "babel-preset-expo": "~54.0.10",
-    "typescript": "^5.3.3"
+    "eslint": "^9.39.5",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.9"
   },
   "private": true
 }

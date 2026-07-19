@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, HelpCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, HelpCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { createClient } from "@/lib/supabase/client";
 import { cn, hasEnvVars } from "@/lib/utils";
@@ -342,6 +342,40 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                   <span className="absolute right-2 grid size-10 place-items-center rounded-full bg-black text-white transition-transform group-hover:translate-x-0.5">
                     <ArrowRight className="size-4" />
                   </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setLoading(true);
+                    setError(null);
+                    const demoEmail = process.env.DEMO_ANNA_EMAIL || "anna.demo@sosedi.local";
+                    const demoPassword = process.env.DEMO_USER_PASSWORD || "DemoSosedi2026!";
+
+                    if (!hasEnvVars) {
+                      window.setTimeout(() => router.push("/app"), 350);
+                      return;
+                    }
+
+                    try {
+                      const supabase = createClient();
+                      const { error: authError } = await supabase.auth.signInWithPassword({
+                        email: demoEmail,
+                        password: demoPassword,
+                      });
+                      if (authError) throw authError;
+                      router.push("/app");
+                    } catch {
+                      router.push("/app");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full inline-flex h-12 items-center justify-center gap-2 rounded-[14px] border border-[#7B9E00]/40 bg-[#EBF7B6]/30 text-sm font-bold text-[#111111] transition hover:bg-[#EBF7B6] hover:border-[#7B9E00] cursor-pointer"
+                >
+                  <Sparkles className="size-4 text-[#7B9E00]" />
+                  Войти в демо-аккаунт
                 </button>
               </form>
 

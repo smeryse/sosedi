@@ -17,8 +17,8 @@ export function ThreeExperienceContainer() {
       {/* Active Screen Render */}
       {activeStep === 1 && (
         <CityMapScreen
-          onSelectApartment={() => setActiveStep(2)}
-          onNextScreen={() => setActiveStep(2)}
+          onSelectApartment={() => setActiveStep(3)}
+          onNextScreen={() => setActiveStep(3)}
         />
       )}
 
