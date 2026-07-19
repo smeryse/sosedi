@@ -12,9 +12,9 @@ import { ArrowLeft, Plus, CheckCircle2, Circle, DollarSign, Wallet, X } from 'lu
 import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
 import { useGlobalState } from '../data/stateStore';
 
-interface BudgetScreenProps {
-  navigation: any;
-}
+import { AppNavigation } from '../types/navigation';
+
+interface BudgetScreenProps { navigation: AppNavigation; }
 
 export const BudgetScreen: React.FC<BudgetScreenProps> = ({ navigation }) => {
   const { expenses, addExpense, toggleExpensePaid } = useGlobalState();

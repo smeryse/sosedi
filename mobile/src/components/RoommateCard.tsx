@@ -1,21 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { MapPin, UserPlus, ChevronRight } from 'lucide-react-native';
+import { MapPin, UserPlus, ChevronRight, Heart } from 'lucide-react-native';
 import { Roommate } from '../types';
 import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
+import { SafeImage } from './SafeImage';
 import { CompatibilityBadge } from './CompatibilityBadge';
 
 interface RoommateCardProps {
   roommate: Roommate;
   onPress: () => void;
   onInvitePress?: () => void;
+  onFavoritePress?: () => void;
 }
 
-export const RoommateCard: React.FC<RoommateCardProps> = ({ roommate, onPress, onInvitePress }) => {
+export const RoommateCard: React.FC<RoommateCardProps> = ({ roommate, onPress, onInvitePress, onFavoritePress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.88}>
       <View style={styles.headerRow}>
-        <Image source={{ uri: roommate.image }} style={styles.image} />
+        <SafeImage uri={roommate.image} label={roommate.name} style={styles.image} />
         
         <View style={styles.infoCol}>
           <View style={styles.nameRow}>
@@ -38,9 +40,7 @@ export const RoommateCard: React.FC<RoommateCardProps> = ({ roommate, onPress, o
           </Text>
         </View>
 
-        <View style={styles.badgeWrapper}>
-          <CompatibilityBadge score={roommate.compatibility} size="sm" />
-        </View>
+        <View style={styles.badgeWrapper}><CompatibilityBadge score={roommate.compatibility} size="sm" /></View>
       </View>
 
       {/* Traits Pills */}
@@ -67,6 +67,7 @@ export const RoommateCard: React.FC<RoommateCardProps> = ({ roommate, onPress, o
           <Text style={styles.detailBtnText}>Анкета</Text>
           <ChevronRight size={16} color={COLORS.textMuted} />
         </TouchableOpacity>
+        {onFavoritePress ? <TouchableOpacity style={styles.favoriteBtn} onPress={onFavoritePress} accessibilityLabel={roommate.isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}><Heart size={17} color={roommate.isFavorite ? COLORS.danger : COLORS.textMuted} fill={roommate.isFavorite ? COLORS.danger : 'transparent'} /></TouchableOpacity> : null}
       </View>
     </TouchableOpacity>
   );
@@ -181,4 +182,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textMuted,
   },
+  favoriteBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surfaceMuted },
 });

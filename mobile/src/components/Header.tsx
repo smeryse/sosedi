@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Bell, Search } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS } from '../theme/colors';
+import { SafeImage } from './SafeImage';
 
 interface HeaderProps {
   title?: string;
@@ -16,12 +18,12 @@ export const Header: React.FC<HeaderProps> = ({
   onNotificationPress,
   onSearchPress,
 }) => {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, height: 62 + insets.top }]}>
       {showLogo ? (
         <View style={styles.logoRow}>
-          <Text style={styles.logoText}>Соседи</Text>
-          <View style={styles.logoDot} />
+          <Text style={styles.logoText}>соседи<Text style={styles.logoAccent}>.</Text></Text>
         </View>
       ) : (
         <Text style={styles.titleText}>{title}</Text>
@@ -37,8 +39,9 @@ export const Header: React.FC<HeaderProps> = ({
           <View style={styles.unreadBadge} />
         </TouchableOpacity>
 
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200' }}
+        <SafeImage
+          uri="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200"
+          label="Артём"
           style={styles.avatar}
         />
       </View>
@@ -62,18 +65,12 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   logoText: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
     color: COLORS.text,
     letterSpacing: -0.5,
   },
-  logoDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.accent,
-    marginLeft: 3,
-  },
+  logoAccent: { color: COLORS.accentHover },
   titleText: {
     fontSize: 20,
     fontWeight: '700',

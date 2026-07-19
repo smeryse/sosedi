@@ -13,6 +13,7 @@ export interface Roommate {
   smokingHabit?: string;
   workStyle?: string;
   petsHabit?: string;
+  isFavorite?: boolean;
 }
 
 export interface Property {
@@ -33,6 +34,7 @@ export interface Property {
   ownerName?: string;
   ownerPhone?: string;
   amenities?: string[];
+  isFavorite?: boolean;
 }
 
 export interface GroupMember {
@@ -101,4 +103,13 @@ export interface ChatMessage {
   time: string;
   isMe: boolean;
   type?: 'text' | 'property' | 'system' | 'expense';
+}
+
+export interface RentalApplication {
+  id: string;
+  propertyId: string;
+  groupName: string;
+  status: 'draft' | 'sent' | 'viewing' | 'approved' | 'declined';
+  sentAt: string;
+  viewingSlot?: string;
 }

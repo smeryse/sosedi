@@ -1,22 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { MapPin, Camera, Building2, ChevronRight } from 'lucide-react-native';
+import { MapPin, Camera, Building2, ChevronRight, Heart } from 'lucide-react-native';
 import { Property } from '../types';
 import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
+import { SafeImage } from './SafeImage';
 import { CompatibilityBadge } from './CompatibilityBadge';
 
 interface PropertyCardProps {
   property: Property;
   onPress: () => void;
+  onFavoritePress?: () => void;
 }
 
-export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress }) => {
+export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress, onFavoritePress }) => {
   const pricePerPerson = Math.round(property.price / 2);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: property.image }} style={styles.image} />
+        <SafeImage uri={property.image} label={property.title} style={styles.image} />
         
         <View style={styles.photoBadge}>
           <Camera size={12} color={COLORS.textInverted} />
@@ -26,6 +28,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress })
         <View style={styles.matchBadgePos}>
           <CompatibilityBadge score={property.match} size="sm" />
         </View>
+        {onFavoritePress ? (
+          <TouchableOpacity style={styles.favoriteButton} onPress={onFavoritePress} activeOpacity={0.75} accessibilityLabel={property.isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}>
+            <Heart size={17} color={property.isFavorite ? COLORS.danger : COLORS.text} fill={property.isFavorite ? COLORS.danger : 'transparent'} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <View style={styles.content}>
@@ -118,6 +125,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
   },
   content: {
     padding: 16,

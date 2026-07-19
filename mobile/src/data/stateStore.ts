@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Roommate, Property, CoLivingGroup, SharedExpense, ChoreTask, ChatMessage } from '../types';
+import { Roommate, Property, CoLivingGroup, SharedExpense, ChoreTask, ChatMessage, RentalApplication } from '../types';
 import { mockRoommates as initialRoommates, mockProperties as initialProperties, mockGroup as initialGroup, mockExpenses as initialExpenses, mockChores as initialChores, mockChats as initialChats } from './mockData';
 
 // Simple pub-sub mechanism for reactive global state
@@ -14,6 +14,9 @@ class GlobalStateStore {
   public chats: ChatMessage[] = [...initialChats];
   public answers: Record<string, string> = {};
   public isQuizCompleted: boolean = false;
+  public applications: RentalApplication[] = [
+    { id: '34872', propertyId: 'center-loft', groupName: 'Квартира в центре', status: 'viewing', sentAt: '12 мая 2026' },
+  ];
 
   public subscribe(listener: () => void) {
     this.listeners.add(listener);
@@ -146,6 +149,39 @@ class GlobalStateStore {
       status: 'under_review',
     };
     this.addSystemMessage('Совместная заявка отправлена собственнику квартиры. Ожидайте ответа в чате.');
+    if (!this.applications.some((application) => application.propertyId === this.properties[0]?.id)) {
+      this.applications = [{ id: String(Date.now()).slice(-5), propertyId: this.properties[0]?.id ?? 'center-loft', groupName: this.group.name, status: 'sent', sentAt: 'Сегодня' }, ...this.applications];
+    }
+    this.notify();
+  }
+
+  public createGroup(name: string, targetBudget: number, moveInDate: string) {
+    this.group = { ...this.group, name, targetBudget, moveInDate, status: 'forming' };
+    this.addSystemMessage(`Создана группа «${name}». Можно приглашать участников.`);
+    this.notify();
+  }
+
+  public replaceGroupMember(memberId: string, roommateId: string) {
+    const roommate = this.roommates.find((person) => person.id === roommateId);
+    if (!roommate) return;
+    this.group = {
+      ...this.group,
+      members: this.group.members.map((member) => member.id === memberId ? {
+        id: roommate.id,
+        name: roommate.name,
+        avatar: roommate.image,
+        job: roommate.job,
+        role: 'Участник',
+        compatibility: roommate.compatibility,
+      } : member),
+    };
+    this.addSystemMessage(`${roommate.name} теперь участвует в группе.`);
+    this.notify();
+  }
+
+  public chooseViewing(applicationId: string, slot: string) {
+    this.applications = this.applications.map((application) => application.id === applicationId ? { ...application, status: 'viewing', viewingSlot: slot } : application);
+    this.addSystemMessage(`Просмотр подтверждён: ${slot}.`);
     this.notify();
   }
 
@@ -158,6 +194,24 @@ class GlobalStateStore {
       compatibility: Math.min(100, r.compatibility + Math.round(Math.random() * 4)),
     }));
     this.addSystemMessage('Вы успешно заполнили анкету совместимости. Алгоритм «Соседи» обновил подборку кандидатов.');
+    this.notify();
+  }
+
+  public toggleFavoriteProperty(propertyId: string) {
+    this.properties = this.properties.map((property) =>
+      property.id === propertyId
+        ? { ...property, isFavorite: !property.isFavorite }
+        : property
+    );
+    this.notify();
+  }
+
+  public toggleFavoriteRoommate(roommateId: string) {
+    this.roommates = this.roommates.map((roommate) =>
+      roommate.id === roommateId
+        ? { ...roommate, isFavorite: !roommate.isFavorite }
+        : roommate
+    );
     this.notify();
   }
 }
@@ -173,6 +227,7 @@ export function useGlobalState() {
   const [chores, setChores] = useState(store.chores);
   const [chats, setChats] = useState(store.chats);
   const [isQuizCompleted, setIsQuizCompleted] = useState(store.isQuizCompleted);
+  const [applications, setApplications] = useState(store.applications);
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
@@ -183,6 +238,7 @@ export function useGlobalState() {
       setChores(store.chores);
       setChats(store.chats);
       setIsQuizCompleted(store.isQuizCompleted);
+      setApplications([...store.applications]);
     });
     return unsubscribe;
   }, []);
@@ -195,6 +251,7 @@ export function useGlobalState() {
     chores,
     chats,
     isQuizCompleted,
+    applications,
     addExpense: (title: string, category: 'Аренда' | 'Коммуналка' | 'Продукты' | 'Бытовые мелочи', amount: number, paidBy: string) => store.addExpense(title, category, amount, paidBy),
     toggleExpensePaid: (expenseId: string, memberName: string) => store.toggleExpensePaid(expenseId, memberName),
     addChore: (zone: 'Кухня' | 'Ванная' | 'Гостиная' | 'Мусор & Коридор', assignee: string, frequency: 'Ежедневно' | 'Еженедельно') => store.addChore(zone, assignee, frequency),
@@ -202,6 +259,11 @@ export function useGlobalState() {
     sendChatMessage: (text: string) => store.sendChatMessage(text),
     inviteRoommate: (roommateId: string) => store.inviteRoommate(roommateId),
     submitGroupApplication: () => store.submitGroupApplication(),
+    createGroup: (name: string, targetBudget: number, moveInDate: string) => store.createGroup(name, targetBudget, moveInDate),
+    replaceGroupMember: (memberId: string, roommateId: string) => store.replaceGroupMember(memberId, roommateId),
+    chooseViewing: (applicationId: string, slot: string) => store.chooseViewing(applicationId, slot),
     completeQuiz: (answers: Record<string, string>) => store.completeQuiz(answers),
+    toggleFavoriteProperty: (propertyId: string) => store.toggleFavoriteProperty(propertyId),
+    toggleFavoriteRoommate: (roommateId: string) => store.toggleFavoriteRoommate(roommateId),
   };
 }

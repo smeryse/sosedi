@@ -13,9 +13,11 @@ import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
 
 const { width } = Dimensions.get('window');
 
-interface OnboardingScreenProps {
-  navigation: any;
-}
+import { AppNavigation } from '../types/navigation';
+import { SafeImage } from '../components/SafeImage';
+import { ScreenTransition } from '../components/ScreenTransition';
+
+interface OnboardingScreenProps { navigation: AppNavigation; }
 
 const SLIDES = [
   {
@@ -36,11 +38,19 @@ const SLIDES = [
   },
   {
     id: 3,
-    title: 'Прозрачный сплит расходов и график уборки',
-    subtitle: 'Делите счета за аренду и коммунальные услуги в один клик. Автоматический график дежурств избавит от бытовых споров.',
-    tag: 'Удобный быт',
+    title: 'Оформляйте аренду одной группой',
+    subtitle: 'Соберите документы, отправьте общую заявку собственнику и следите за статусом сделки в приложении.',
+    tag: 'Онлайн-сделка',
     icon: ShieldCheck,
     image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 4,
+    title: 'Живите вместе без бытового хаоса',
+    subtitle: 'Общий бюджет, платежи, график уборки и чат всегда под рукой — у каждого есть понятная зона ответственности.',
+    tag: 'Удобный быт',
+    icon: Check,
+    image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=600',
   },
 ];
 
@@ -80,9 +90,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
       </View>
 
       {/* Main Slide Card */}
-      <View style={styles.slideCardContainer}>
+      <ScreenTransition key={currentIndex} style={styles.slideCardContainer}>
         <View style={styles.imageBox}>
-          <Image source={{ uri: currentSlide.image }} style={styles.slideImg} />
+          <SafeImage uri={currentSlide.image} label="Соседи" style={styles.slideImg} />
           <View style={styles.tagBadge}>
             <IconComponent size={14} color={COLORS.text} />
             <Text style={styles.tagText}>{currentSlide.tag}</Text>
@@ -93,7 +103,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
           <Text style={styles.slideTitle}>{currentSlide.title}</Text>
           <Text style={styles.slideSub}>{currentSlide.subtitle}</Text>
         </View>
-      </View>
+      </ScreenTransition>
 
       {/* Footer Controls */}
       <View style={styles.footer}>

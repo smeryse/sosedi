@@ -8,13 +8,14 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { Send, Bot, CheckCheck, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Send, CheckCheck, Sparkles } from 'lucide-react-native';
 import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
 import { useGlobalState } from '../data/stateStore';
 
-interface MessagesScreenProps {
-  navigation: any;
-}
+import { AppNavigation } from '../types/navigation';
+import { SafeImage } from '../components/SafeImage';
+
+interface MessagesScreenProps { navigation: AppNavigation; }
 
 export const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
   const { chats, sendChatMessage } = useGlobalState();
@@ -30,9 +31,13 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) =>
     <View style={styles.container}>
       {/* Top Header */}
       <View style={styles.topNav}>
+        <TouchableOpacity style={styles.backButton} onPress={navigation.goBack} activeOpacity={0.75}>
+          <ArrowLeft size={19} color={COLORS.text} />
+        </TouchableOpacity>
         <View style={styles.chatAvatarBox}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200' }}
+          <SafeImage
+            uri="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+            label="Мария"
             style={styles.chatAvatar}
           />
           <View style={styles.onlineDot} />
@@ -65,7 +70,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) =>
               style={[styles.messageRow, msg.isMe ? styles.messageRowMe : styles.messageRowOther]}
             >
               {!msg.isMe && (
-                <Image source={{ uri: msg.senderAvatar }} style={styles.senderAvatar} />
+                <SafeImage uri={msg.senderAvatar} label={msg.senderName} style={styles.senderAvatar} />
               )}
 
               <View
@@ -120,6 +125,14 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.borderLight,
     backgroundColor: COLORS.surface,
     gap: 12,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chatAvatarBox: {
     position: 'relative',

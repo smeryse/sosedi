@@ -125,6 +125,7 @@ export const mockRoommates: Roommate[] = sharedRoommates.map((r) => ({
   smokingHabit: 'Не курю',
   workStyle: r.traits.includes('Работает из дома') ? 'Удалёнка (Home Office)' : 'Офис 5/2',
   petsHabit: 'Без животных',
+  isFavorite: r.id === 'maria',
 }));
 
 export const mockProperties: Property[] = sharedProperties.map((p) => ({
@@ -145,6 +146,7 @@ export const mockProperties: Property[] = sharedProperties.map((p) => ({
   ownerName: 'Алексей (Собственник ЦИАН)',
   ownerPhone: '+7 (918) 440-12-34',
   amenities: ['Посудомоечная машина', 'Кондиционер', 'Высокоскоростной Wi-Fi', 'Стиральная машина', 'Балкон'],
+  isFavorite: p.id === 'center-loft',
 }));
 
 export const mockGroup: CoLivingGroup = {

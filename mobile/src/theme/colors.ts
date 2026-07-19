@@ -1,13 +1,13 @@
 export const COLORS = {
   // Main background (Milk White / Light Grey background)
-  background: '#F4F4F0',
+  background: '#F7F7F3',
   // Card and surface backgrounds
-  surface: '#FFFEFB',
-  surfaceMuted: '#F0F1EC',
-  surfaceCard: '#FFFFFF',
+  surface: '#FFFFFC',
+  surfaceMuted: '#EEEFE9',
+  surfaceCard: '#FFFFFC',
   
   // Text colors
-  text: '#11120F',
+  text: '#0D0D0C',
   textMuted: '#6B6F66',
   textSecondary: '#4A4E46',
   textInverted: '#FFFFFF',
@@ -17,10 +17,10 @@ export const COLORS = {
   borderLight: '#F0F0EA',
   
   // Accent colors (Canonical Sosedi Lime Green)
-  accent: '#B3DB00',
-  accentHover: '#9FC400',
-  accentSoft: '#EFF8C6',
-  accentBorder: '#A4CA00',
+  accent: '#D6FF3F',
+  accentHover: '#B9E800',
+  accentSoft: '#F2F8D8',
+  accentBorder: '#B4DD00',
 
   // Status colors
   success: '#4EAD39',
@@ -44,13 +44,13 @@ export const RADIUS = {
 export const SHADOWS = {
   card: {
     shadowColor: '#1A2012',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.045,
+    shadowRadius: 20,
+    elevation: 2,
   },
   glow: {
-    shadowColor: '#B3DB00',
+    shadowColor: '#B9E800',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 12,

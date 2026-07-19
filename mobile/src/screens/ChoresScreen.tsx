@@ -11,9 +11,9 @@ import { ArrowLeft, CheckCircle2, Circle, Sparkles, CalendarCheck, Plus, X } fro
 import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
 import { useGlobalState } from '../data/stateStore';
 
-interface ChoresScreenProps {
-  navigation: any;
-}
+import { AppNavigation } from '../types/navigation';
+
+interface ChoresScreenProps { navigation: AppNavigation; }
 
 export const ChoresScreen: React.FC<ChoresScreenProps> = ({ navigation }) => {
   const { chores, addChore, toggleChoreCompleted } = useGlobalState();

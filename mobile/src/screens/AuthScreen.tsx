@@ -12,9 +12,9 @@ import {
 import { ArrowRight, Phone, Lock, Sparkles, CheckCircle2 } from 'lucide-react-native';
 import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
 
-interface AuthScreenProps {
-  navigation: any;
-}
+import { AppNavigation } from '../types/navigation';
+
+interface AuthScreenProps { navigation: AppNavigation; }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   const [phone, setPhone] = useState('+7 (918) 420-15-99');

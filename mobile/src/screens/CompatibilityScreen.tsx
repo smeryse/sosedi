@@ -12,9 +12,9 @@ import { COLORS, RADIUS, SHADOWS } from '../theme/colors';
 import { mockQuizQuestions } from '../data/mockData';
 import { useGlobalState } from '../data/stateStore';
 
-interface CompatibilityScreenProps {
-  navigation: any;
-}
+import { AppNavigation } from '../types/navigation';
+
+interface CompatibilityScreenProps { navigation: AppNavigation; }
 
 export const CompatibilityScreen: React.FC<CompatibilityScreenProps> = ({ navigation }) => {
   const { completeQuiz } = useGlobalState();
