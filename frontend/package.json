@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "dev": "next dev -H 127.0.0.1 -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -56,8 +56,5 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
-  },
-  "overrides": {
-    "postcss": "$postcss"
   }
 }
