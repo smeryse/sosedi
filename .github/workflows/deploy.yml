@@ -1,0 +1,45 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            cd /opt/sosedi
+            git pull --ff-only origin main
+
+            cd frontend
+            npm ci
+            npm run build
+
+            release_dir=/opt/sosedi-standalone/frontend
+            staging_dir="${release_dir}.new"
+            rm -rf "$staging_dir"
+            cp -a .next/standalone "$staging_dir"
+            mkdir -p "$staging_dir/.next"
+            cp -a .next/static "$staging_dir/.next/static"
+            cp -a public "$staging_dir/public"
+
+            rm -rf "$release_dir"
+            mv "$staging_dir" "$release_dir"
+            systemctl restart sosedi-frontend
+            systemctl is-active --quiet sosedi-frontend
