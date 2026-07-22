@@ -13,7 +13,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: {
-    default: "Соседи — совместная аренда без лишнего риска",
+    default: "Соседи | CI/CD работает",
     template: "%s — Соседи",
   },
   description:
