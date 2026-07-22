@@ -72,11 +72,11 @@ jobs:
             upload_dir=/tmp/sosedi-deploy
             staging_dir=/opt/sosedi-standalone/frontend.new
             release_dir=/opt/sosedi-standalone/frontend
-            test -f "$upload_dir/.next/standalone/server.js"
+            test -f "$upload_dir/.next/standalone/frontend/server.js"
 
             rm -rf "$staging_dir"
             mkdir -p "$staging_dir/.next"
-            cp -a "$upload_dir/.next/standalone/." "$staging_dir"
+            cp -a "$upload_dir/.next/standalone/frontend/." "$staging_dir"
             cp -a "$upload_dir/.next/static" "$staging_dir/.next/static"
             cp -a "$upload_dir/public" "$staging_dir/public"
             rm -rf "$upload_dir"
