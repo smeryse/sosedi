@@ -53,3 +53,4 @@ harmony_workflow.db
 .playwright-mcp/
 .oss-evaluation/
 
+.env.frontend
