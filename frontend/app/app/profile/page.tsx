@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Camera, Check, ShieldCheck, Loader2, Save, AlertCircle, Bell, LockKeyhole, Mail, Smartphone, Trash2, Eye, EyeOff, LogOut, Settings2, UserRound, ArrowLeft } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
 import { createClient } from "@/lib/supabase/client";
-import { updateProfile, uploadAvatar, getProfile, getCurrentUser, getProfilePreferences, updateProfilePreferences, updatePassword, updateEmail, deleteAccount, updateNotificationSettings } from "@/app/actions/settings";
+import { updateProfile, uploadAvatar, updateProfilePreferences, updatePassword, updateEmail, deleteAccount, updateNotificationSettings } from "@/app/actions/settings";
 
 interface Profile {
   id: string;
@@ -157,17 +157,13 @@ export default function TenantProfileSettingsPage() {
 
   async function loadProfile() {
     try {
-      const user = await getCurrentUser();
-      if (user) {
-        const [profileData, preferencesData] = await Promise.all([
-          getProfile(user.id),
-          getProfilePreferences(user.id)
-        ]);
-        if (profileData) {
-          setProfile({ ...profileData, ...preferencesData });
-          setAvatarPreview(profileData.avatar_path);
-        }
+      const response = await fetch("/api/profile", { cache: "no-store" });
+      const body = await response.json() as { profile?: Profile; error?: { message?: string } };
+      if (!response.ok || !body.profile) {
+        throw new Error(body.error?.message || "Не удалось загрузить профиль");
       }
+      setProfile(body.profile);
+      setAvatarPreview(body.profile.avatar_path);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

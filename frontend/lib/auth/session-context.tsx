@@ -5,6 +5,8 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 type BrowserUser = {
   id: string;
   email: string;
+  displayName: string;
+  avatarPath: string | null;
   roles: string[];
   onboardingCompleted: boolean;
 };
@@ -57,8 +59,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSession({ user });
       setProfile({
         id: user.id,
-        displayName: user.email.split("@")[0] || "Пользователь",
-        avatarPath: "/demo/people/anna.jpg",
+        displayName: user.displayName,
+        avatarPath: user.avatarPath || "/demo/people/anna.jpg",
         role: user.roles.includes("landlord") ? "landlord" : "tenant",
       });
     } catch {

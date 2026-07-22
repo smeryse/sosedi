@@ -22,6 +22,8 @@ export type UserRole = (typeof USER_ROLES)[number];
 export type CurrentUser = {
   id: string;
   email: string;
+  displayName: string;
+  avatarPath: string | null;
   emailVerified: boolean;
   roles: UserRole[];
   profileId: string | null;
@@ -36,6 +38,8 @@ export type CreateSessionOptions = {
 type CurrentUserRow = QueryResultRow & {
   id: string;
   email: string;
+  display_name: string | null;
+  avatar_path: string | null;
   email_verified: boolean;
   roles: UserRole[];
   profile_id: string | null;
@@ -168,6 +172,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     `SELECT
        u.id,
        u.email,
+       p.display_name,
+       p.avatar_path,
        u.email_verified_at IS NOT NULL AS email_verified,
        COALESCE(
          ARRAY_AGG(ur.role) FILTER (WHERE ur.role IS NOT NULL),
@@ -209,6 +215,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   return {
     id: row.id,
     email: row.email,
+    displayName: row.display_name || row.email.split("@")[0],
+    avatarPath: row.avatar_path,
     emailVerified: row.email_verified,
     roles: row.roles,
     profileId: row.profile_id,

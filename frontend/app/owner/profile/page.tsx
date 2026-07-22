@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Camera, Check, ShieldCheck, Loader2, AlertCircle, Save, Bell, LockKeyhole, Settings2, UserRound, ArrowLeft, Eye, EyeOff, Mail, Smartphone, Trash2 } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, getProfile, updateProfile, uploadAvatar, updatePassword, updateEmail, deleteAccount } from "@/app/actions/settings";
+import { updateProfile, uploadAvatar, updatePassword, updateEmail, deleteAccount } from "@/app/actions/settings";
 import { Switch } from "@/components/ui/switch";
 
 interface OwnerProfile {
@@ -51,23 +51,23 @@ export default function OwnerProfileSettingsPage() {
 
   async function loadProfile() {
     try {
-      const user = await getCurrentUser();
-      if (user) {
-        const data = await getProfile(user.id);
-        if (data) {
-          setProfile({
-            id: data.id,
-            display_name: data.display_name ?? "",
-            age: data.age ?? 25,
-            job_title: data.job_title ?? "",
-            bio: data.bio ?? "",
-            city: data.city ?? "",
-            is_public: data.is_public ?? true,
-            avatar_path: data.avatar_path,
-          });
-          if (data.avatar_path) setAvatarPreview(data.avatar_path);
-        }
+      const response = await fetch("/api/profile", { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok || !body.profile) {
+        throw new Error(body.error?.message || "Не удалось загрузить профиль");
       }
+      const data = body.profile;
+      setProfile({
+        id: data.id,
+        display_name: data.display_name ?? "",
+        age: data.age ?? 25,
+        job_title: data.job_title ?? "",
+        bio: data.bio ?? "",
+        city: data.city ?? "",
+        is_public: data.is_public ?? true,
+        avatar_path: data.avatar_path,
+      });
+      if (data.avatar_path) setAvatarPreview(data.avatar_path);
     } catch (err) {
       console.error(err);
     } finally {

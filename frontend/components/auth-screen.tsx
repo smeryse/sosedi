@@ -84,15 +84,6 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
 
     setLoading(true);
 
-    if (!hasEnvVars && mode === "login") {
-      window.localStorage.setItem("sosedi-auth-name", name || email.split("@")[0]);
-      const savedRole = window.localStorage.getItem("sosedi-active-mode");
-      const demoRole: AccountRole =
-        mode === "login" && savedRole === "landlord" ? "landlord" : role;
-      window.setTimeout(() => continueAfterAuth(demoRole, mode === "login"), 350);
-      return;
-    }
-
     try {
       if (mode === "login") {
         const response = await fetch("/api/auth/login", {
