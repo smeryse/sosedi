@@ -84,7 +84,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
 
     setLoading(true);
 
-    if (!hasEnvVars) {
+    if (!hasEnvVars && mode === "login") {
       window.localStorage.setItem("sosedi-auth-name", name || email.split("@")[0]);
       const savedRole = window.localStorage.getItem("sosedi-active-mode");
       const demoRole: AccountRole =
@@ -444,8 +444,11 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                       const demoEmail = process.env.DEMO_ANNA_EMAIL || "anna.demo@sosedi.local";
                       const demoPassword = process.env.DEMO_USER_PASSWORD || "DemoSosedi2026!";
 
-                      if (!hasEnvVars) {
-                        window.setTimeout(() => router.push("/app"), 350);
+                       if (!hasEnvVars) {
+                        window.setTimeout(() => {
+                          continueAfterAuth("tenant", true);
+                          setLoading(false);
+                        }, 350);
                         return;
                       }
 
