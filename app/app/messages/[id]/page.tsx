@@ -10,7 +10,6 @@ export default async function ChatPage({
 
   return (
     <PageFrame
-      eyebrow="Общение"
       title="Сообщения"
       description="Переписка с потенциальными соседями, группой и собственниками жилья."
     >

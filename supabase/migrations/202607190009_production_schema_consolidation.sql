@@ -89,6 +89,10 @@ ALTER TABLE public.conversation_members ADD COLUMN IF NOT EXISTS archived_at TIM
 ALTER TABLE public.conversation_members ADD COLUMN IF NOT EXISTS muted_until TIMESTAMPTZ;
 
 -- 6. Notifications
+-- Add user_id and read_at columns to notifications table if it was created in demo migration
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
+
 CREATE TABLE IF NOT EXISTS public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,

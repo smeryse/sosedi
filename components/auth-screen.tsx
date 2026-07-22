@@ -4,14 +4,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, HelpCircle, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  KeyRound,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { AvatarImage } from "@/components/ui/avatar-image";
-import { createClient } from "@/lib/supabase/client";
 import { cn, hasEnvVars } from "@/lib/utils";
 
 interface AuthScreenProps {
   initialMode?: "login" | "signup";
 }
+
+type AccountRole = "tenant" | "landlord";
 
 const inputClass =
   "h-12 w-full rounded-[14px] border border-black/10 bg-white px-4 text-sm font-medium text-[#111] outline-none transition placeholder:text-black/30 hover:border-black/20 focus:border-[#9FC900] focus:ring-4 focus:ring-[#B7EB00]/15 sm:h-[52px]";
@@ -22,6 +32,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+  const [role, setRole] = useState<AccountRole>("tenant");
   const [rememberMe, setRememberMe] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +47,15 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
     setMode(nextMode);
     setError(null);
     router.replace(nextMode === "login" ? "/auth/login" : "/auth/sign-up");
+  };
+
+  const continueAfterAuth = (userRole: AccountRole, onboardingComplete: boolean) => {
+    window.localStorage.setItem("sosedi-active-mode", userRole);
+    if (!onboardingComplete) {
+      router.push(`/onboarding?role=${userRole}`);
+      return;
+    }
+    router.push(userRole === "landlord" ? "/owner" : "/app");
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -65,28 +85,47 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
     setLoading(true);
 
     if (!hasEnvVars) {
-      window.setTimeout(() => router.push("/app"), 350);
+      window.localStorage.setItem("sosedi-auth-name", name || email.split("@")[0]);
+      const savedRole = window.localStorage.getItem("sosedi-active-mode");
+      const demoRole: AccountRole =
+        mode === "login" && savedRole === "landlord" ? "landlord" : role;
+      window.setTimeout(() => continueAfterAuth(demoRole, mode === "login"), 350);
       return;
     }
 
     try {
-      const supabase = createClient();
-
       if (mode === "login") {
-        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-        if (authError) throw authError;
-        router.push("/app");
-      } else {
-        const { error: authError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { display_name: name || email.split("@")[0] },
-            emailRedirectTo: `${window.location.origin}/app`,
-          },
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email, password, rememberMe }),
         });
-        if (authError) throw authError;
-        router.push("/auth/sign-up-success");
+        const body = await response.json() as { user?: { roles: string[]; onboardingCompleted: boolean }; error?: { message?: string } };
+        if (!response.ok || !body.user) throw new Error(body.error?.message ?? "Не удалось войти");
+        const savedRole = window.localStorage.getItem("sosedi-active-mode");
+        const userRole: AccountRole = savedRole === "landlord" && body.user.roles.includes("landlord")
+          ? "landlord"
+          : body.user.roles.includes("tenant")
+            ? "tenant"
+            : "landlord";
+        continueAfterAuth(userRole, body.user.onboardingCompleted);
+      } else {
+        const response = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            displayName: name || email.split("@")[0],
+            role,
+            rememberMe,
+          }),
+        });
+        const body = await response.json() as { user?: { onboardingCompleted: boolean }; error?: { message?: string } };
+        if (!response.ok || !body.user) throw new Error(body.error?.message ?? "Не удалось создать аккаунт");
+        window.localStorage.setItem("sosedi-auth-name", name || email.split("@")[0]);
+        window.localStorage.setItem("sosedi-active-mode", role);
+        continueAfterAuth(role, body.user.onboardingCompleted);
       }
     } catch {
       setError(
@@ -218,6 +257,57 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
 
               <form onSubmit={handleSubmit} className={cn(isLogin ? "mt-5 space-y-4" : "mt-4 space-y-3")}>
                 {!isLogin && (
+                  <fieldset>
+                    <legend className="text-sm font-semibold">Я хочу</legend>
+                    <div className="mt-2 grid grid-cols-2 gap-2.5">
+                      {([
+                        {
+                          value: "tenant" as const,
+                          label: "Ищу жильё",
+                          detail: "Соседей и квартиру",
+                          Icon: KeyRound,
+                        },
+                        {
+                          value: "landlord" as const,
+                          label: "Сдаю жильё",
+                          detail: "Надёжных жильцов",
+                          Icon: Building2,
+                        },
+                      ]).map(({ value, label, detail, Icon }) => {
+                        const active = role === value;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => setRole(value)}
+                            className={cn(
+                              "group flex min-h-[84px] items-center gap-3 rounded-[16px] border p-3 text-left transition",
+                              active
+                                ? "border-[#9FC400] bg-[#F3F9D9] shadow-[inset_0_0_0_1px_#B3DB00]"
+                                : "border-black/10 bg-white hover:border-black/25",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "grid size-10 shrink-0 place-items-center rounded-full",
+                                active ? "bg-[#B7EB00]" : "bg-[#EFEEE9]",
+                              )}
+                            >
+                              <Icon className="size-5" />
+                            </span>
+                            <span>
+                              <strong className="block text-sm">{label}</strong>
+                              <span className="mt-0.5 block text-[11px] leading-tight text-black/45">{detail}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                )}
+
+                {!isLogin && (
                   <label className="block text-sm font-semibold">
                     Имя
                     <input
@@ -311,20 +401,21 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                     </Link>
                   </div>
                 ) : (
-                  <label className="flex cursor-pointer items-start gap-2.5 pt-1 text-xs leading-relaxed text-black/60">
+                  <div className="flex items-start gap-2.5 pt-1 text-xs leading-relaxed text-black/60">
                     <input
+                      id="accept-terms"
                       type="checkbox"
                       checked={acceptTerms}
                       onChange={(event) => setAcceptTerms(event.target.checked)}
                       className="mt-0.5 size-4 shrink-0 accent-[#B7EB00]"
                     />
                     <span>
-                      Я соглашаюсь с{" "}
-                      <Link href="/safety" className="font-semibold text-[#86A900] hover:underline">правилами сервиса</Link>
+                      <label htmlFor="accept-terms" className="cursor-pointer">Я соглашаюсь с </label>
+                      <Link href="/terms" className="font-semibold text-[#86A900] underline-offset-4 hover:underline">правилами сервиса</Link>
                       {" "}и{" "}
-                      <Link href="/safety" className="font-semibold text-[#86A900] hover:underline">политикой конфиденциальности</Link>
+                      <Link href="/privacy" className="font-semibold text-[#86A900] underline-offset-4 hover:underline">политикой конфиденциальности</Link>
                     </span>
-                  </label>
+                  </div>
                 )}
 
                 {error && (
@@ -344,69 +435,44 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
                   </span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setLoading(true);
-                    setError(null);
-                    const demoEmail = process.env.DEMO_ANNA_EMAIL || "anna.demo@sosedi.local";
-                    const demoPassword = process.env.DEMO_USER_PASSWORD || "DemoSosedi2026!";
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setLoading(true);
+                      setError(null);
+                      const demoEmail = process.env.DEMO_ANNA_EMAIL || "anna.demo@sosedi.local";
+                      const demoPassword = process.env.DEMO_USER_PASSWORD || "DemoSosedi2026!";
 
-                    if (!hasEnvVars) {
-                      window.setTimeout(() => router.push("/app"), 350);
-                      return;
-                    }
+                      if (!hasEnvVars) {
+                        window.setTimeout(() => router.push("/app"), 350);
+                        return;
+                      }
 
-                    try {
-                      const supabase = createClient();
-                      const { error: authError } = await supabase.auth.signInWithPassword({
-                        email: demoEmail,
-                        password: demoPassword,
-                      });
-                      if (authError) throw authError;
-                      router.push("/app");
-                    } catch {
-                      router.push("/app");
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className="w-full inline-flex h-12 items-center justify-center gap-2 rounded-[14px] border border-[#7B9E00]/40 bg-[#EBF7B6]/30 text-sm font-bold text-[#111111] transition hover:bg-[#EBF7B6] hover:border-[#7B9E00] cursor-pointer"
-                >
-                  <Sparkles className="size-4 text-[#7B9E00]" />
-                  Войти в демо-аккаунт
-                </button>
+                      try {
+                        const response = await fetch("/api/auth/login", {
+                          method: "POST",
+                          headers: { "content-type": "application/json" },
+                          body: JSON.stringify({ email: demoEmail, password: demoPassword, rememberMe: true }),
+                        });
+                        if (!response.ok) throw new Error("Demo account is unavailable");
+                        router.push("/app");
+                      } catch {
+                        router.push("/app");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-[#7B9E00]/40 bg-[#EBF7B6]/30 text-sm font-bold text-[#111111] transition hover:border-[#7B9E00] hover:bg-[#EBF7B6]"
+                  >
+                    <Sparkles className="size-4 text-[#7B9E00]" />
+                    Войти в демо-аккаунт
+                  </button>
+                )}
               </form>
 
-              <div className={cn("flex items-center gap-4 text-[11px] font-medium text-black/30", isLogin ? "my-4" : "my-3")}>
-                <span className="h-px flex-1 bg-black/10" />
-                или продолжить с
-                <span className="h-px flex-1 bg-black/10" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => router.push("/app")}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] border border-black/10 bg-white text-sm font-semibold transition hover:border-black/20 hover:bg-[#F6F5F1]"
-                >
-                  <svg className="size-5 fill-[#0077FF]" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M15.684 0H8.316C1.592 0 0 1.592 0 8.316v7.368C0 22.408 1.592 24 8.316 24h7.368C22.408 24 24 22.408 24 15.684V8.316C24 1.592 22.408 0 15.684 0zm3.692 17.123h-1.644c-.624 0-.816-.495-1.936-1.616-1.008-.984-1.456-1.112-1.704-1.112-.344 0-.448.096-.448.56v1.448c0 .4-.128.648-1.2.648-1.776 0-3.752-1.08-5.144-3.088-2.104-2.984-2.672-5.224-2.672-5.68 0-.248.096-.48.56-.48h1.644c.416 0 .568.192.728.648.792 2.296 2.128 4.304 2.68 4.304.208 0 .312-.096.312-.624V9.672c-.064-1.128-.656-1.224-.656-1.632 0-.2.168-.4.432-.4h2.712c.36 0 .488.192.488.608v3.272c0 .352.152.48.256.48.208 0 .384-.128.768-.512 1.184-1.328 2.032-3.376 2.032-3.376.112-.248.312-.4.728-.4h1.644c.488 0 .6.248.488.608-.2.92-2.144 3.704-2.144 3.704-.176.272-.248.4 0 .736.176.248.744.728 1.128 1.176.704.792 1.24 1.456 1.384 1.912.136.456-.08.696-.536.696z" />
-                  </svg>
-                  VK ID
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push("/app")}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] border border-black/10 bg-white text-sm font-semibold transition hover:border-black/20 hover:bg-[#F6F5F1]"
-                >
-                  <span className="grid size-5 place-items-center rounded-full bg-[#FC3F1D] text-[11px] font-black text-white">Я</span>
-                  Яндекс ID
-                </button>
-              </div>
-
-              <div className={cn("flex items-center justify-between gap-4 rounded-[16px] bg-[#F1F0EB] px-4 py-3.5", isLogin ? "mt-4" : "mt-3")}>
+              <div className="mt-4 flex items-center justify-between gap-4 rounded-[16px] bg-[#F1F0EB] px-4 py-3.5">
                 <p className="text-sm font-semibold">{isLogin ? "Ещё нет аккаунта?" : "Уже есть аккаунт?"}</p>
                 <button
                   type="button"

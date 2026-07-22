@@ -1,30 +1,27 @@
 -- Migration: 202607190006_postgis_and_indexes.sql
 -- Description: PostGIS spatial coordinates, performance B-tree & GiST indexes, CHECK constraints, and RLS security hardening
 
--- 1. Enable PostGIS Extension
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- 1. Native Point Type (no PostGIS required)
+-- We use native point type which is supported out of the box by Postgres and supports GiST indexing
 
 -- 2. Add Geography Location Column to Buildings
 ALTER TABLE public.buildings
-  ADD COLUMN IF NOT EXISTS location geography(Point, 4326),
+  ADD COLUMN IF NOT EXISTS location point,
   ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true;
 
 ALTER TABLE public.apartments_3d
   ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true;
 
--- Migrate existing JSONB coordinates to PostGIS geography points
+-- Migrate existing JSONB coordinates to native points
 UPDATE public.buildings
-SET location = ST_SetSRID(
-  ST_MakePoint(
-    (coordinates->>0)::float,
-    (coordinates->>1)::float
-  ),
-  4326
-)::geography
+SET location = point(
+  (coordinates->>0)::float,
+  (coordinates->>1)::float
+)
 WHERE location IS NULL AND coordinates IS NOT NULL;
 
 -- 3. Create Spatial GiST Index & Performance B-Tree Indexes
-CREATE INDEX IF NOT EXISTS idx_buildings_location ON public.buildings USING GIST (location);
+CREATE INDEX IF NOT EXISTS idx_buildings_location ON public.buildings USING gist (location);
 CREATE INDEX IF NOT EXISTS idx_apartments_3d_building_id ON public.apartments_3d (building_id);
 CREATE INDEX IF NOT EXISTS idx_apartment_rooms_apartment_id ON public.apartment_rooms (apartment_id);
 CREATE INDEX IF NOT EXISTS idx_buildings_district ON public.buildings (district);

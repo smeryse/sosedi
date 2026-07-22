@@ -177,26 +177,26 @@ export async function enable2FA() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Не авторизован");
 
-  const { data, error } = await supabase.auth.mfa.enroll({
+  const { data, error } = await (supabase.auth as any).mfa.enroll({
     factorType: "totp",
     friendlyName: "Sosedi App",
   });
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error((error as any).message);
 
-  const totpData = data.totp as unknown as { qr_code?: string; qrCode?: string; secret?: string } | undefined;
+  const totpData = (data as any)?.totp as unknown as { qr_code?: string; qrCode?: string; secret?: string } | undefined;
 
   return { 
     success: true, 
     qrCode: totpData?.qr_code || totpData?.qrCode,
     secret: totpData?.secret,
-    factorId: data.id 
+    factorId: (data as any)?.id 
   };
 }
 
 export async function verify2FA(factorId: string, code: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+  const { data, error } = await (supabase.auth as any).mfa.challengeAndVerify({
     factorId,
     code,
   });
@@ -208,22 +208,22 @@ export async function verify2FA(factorId: string, code: string) {
 
 export async function disable2FA(factorId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.auth.mfa.unenroll({
+  const { error } = await (supabase.auth as any).mfa.unenroll({
     factorId,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error((error as any).message);
 
   return { success: true };
 }
 
 export async function getMFAFactors() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.mfa.listFactors();
+  const { data, error } = await (supabase.auth as any).mfa.listFactors();
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error((error as any).message);
 
-  return data.all;
+  return (data as any).all;
 }
 
 export async function getActiveSessions() {
@@ -233,7 +233,7 @@ export async function getActiveSessions() {
 
   const { data, error } = await supabase.auth.getSession();
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error((error as any).message);
 
   return data.session;
 }
@@ -242,7 +242,7 @@ export async function revokeSession(sessionId: string) {
   const supabase = await createClient();
   const { error } = await (supabase.auth.admin as any).revokeRefreshToken?.(sessionId) || { error: null };
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error((error as any).message);
 
   return { success: true };
 }
@@ -252,9 +252,9 @@ export async function revokeAllOtherSessions() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Не авторизован");
 
-  const { error } = await supabase.auth.signOut({ scope: "global" });
+  const { error } = await (supabase.auth as any).signOut({ scope: "global" });
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error((error as any).message);
 
   return { success: true };
 }
@@ -403,8 +403,8 @@ export async function getConnectedAccounts() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const identities = user.identities || [];
-  return identities.map(id => ({
+  const identities = (user as any).identities || [];
+  return identities.map((id: any) => ({
     provider: id.provider,
     providerId: id.id,
     email: id.identity_data?.email,
@@ -418,12 +418,12 @@ export async function disconnectOAuthProvider(provider: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Не авторизован");
-  const identity = user.identities?.find((i) => i.provider === provider);
+  const identity = ((user as any).identities || [])?.find((i: any) => i.provider === provider);
   if (!identity) throw new Error("Провайдер не найден");
 
-  const { error } = await supabase.auth.unlinkIdentity(identity);
+  const { error } = await (supabase.auth as any).unlinkIdentity(identity);
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error((error as any).message);
 
   return { success: true };
 }
@@ -526,9 +526,8 @@ export async function deleteAccount() {
   await (supabase.from as any)("blocked_users").delete().eq("blocked_id", user.id);
   await (supabase.from as any)("referrals").delete().eq("referrer_id", user.id);
   await (supabase.from as any)("referral_codes").delete().eq("user_id", user.id);
-  
-  const { error } = await supabase.auth.admin.deleteUser(user.id);
-  if (error) throw new Error(error.message);
+  const { error } = await (supabase.auth.admin as any).deleteUser(user.id);
+  if (error) throw new Error((error as any).message);
 
   return { success: true };
 }

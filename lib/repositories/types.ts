@@ -4,7 +4,15 @@ export type { DemoProperty, DemoRoommate } from "@/data/demo";
 export type DemoGroup = {
   id: string;
   name: string;
-  status: "forming" | "ready" | "application_sent" | "under_review";
+  status:
+    | "forming"
+    | "ready"
+    | "application_sent"
+    | "under_review"
+    | "needs_response"
+    | "approved"
+    | "rejected"
+    | "settled";
   memberIds: string[];
   members?: { id: string; name: string }[];
   targetBudget: number;
@@ -17,7 +25,16 @@ export type DemoApplication = {
   propertyId: string;
   groupId: string;
   message?: string;
-  status: "draft" | "submitted" | "reviewing" | "needs_response" | "approved";
+  status:
+    | "draft"
+    | "submitted"
+    | "reviewing"
+    | "needs_response"
+    | "approved"
+    | "rejected"
+    | "contract_agreed"
+    | "settled"
+    | "withdrawn";
   createdAt: string;
 };
 

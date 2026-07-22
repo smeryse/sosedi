@@ -12,15 +12,15 @@ const people = ["maria", "artem", "ekaterina", "ilya"];
 const heroVideos = [
   {
     label: "Краснодар",
-    src: "https://videos.pexels.com/video-files/6113728/6113728-hd_1920_1080_30fps.mp4",
+    src: "/videos/hero-1.mp4",
   },
   {
     label: "Олимпийский парк, Сочи",
-    src: "https://videos.pexels.com/video-files/12215893/12215893-uhd_2560_1440_25fps.mp4",
+    src: "/videos/hero-2.mp4",
   },
   {
     label: "Побережье Сочи",
-    src: "https://videos.pexels.com/video-files/10870687/10870687-uhd_2560_1440_25fps.mp4",
+    src: "/videos/hero-3.mp4",
   },
 ];
 

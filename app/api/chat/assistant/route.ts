@@ -1,9 +1,23 @@
-import { POST as mainPostHandler } from "@/app/api/ai/chat/route";
+import { AuthError, requireUser } from "@/lib/auth/session";
+import { handleAuthenticatedAIChat } from "@/lib/ai/chat-handler";
+import { NextResponse } from "next/server";
 
-/**
- * Proxy handler for backward compatibility with legacy /api/chat/assistant calls.
- * All logic is consolidated into /api/ai/chat/route.ts.
- */
-export async function POST(req: Request) {
-  return mainPostHandler(req);
+export async function POST(request: Request) {
+  try {
+    const user = await requireUser();
+    return await handleAuthenticatedAIChat(request, user);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+
+    console.error(
+      "[AI assistant] Authentication failed",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+  }
 }

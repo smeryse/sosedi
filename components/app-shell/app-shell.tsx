@@ -19,7 +19,7 @@ export function AppShell({
   return (
     <FavoritesProvider>
       <div className="min-h-screen bg-background text-foreground">
-        <AppSidebar items={items} />
+        <AppSidebar items={items} owner={owner} />
         <div className="min-w-0 lg:pl-[248px]">
           <AppHeader owner={owner} />
           <AppPageTransition>
@@ -27,7 +27,7 @@ export function AppShell({
               <div className="mx-auto w-full max-w-[1640px]">{children}</div>
             </main>
           </AppPageTransition>
-          <MobileNav />
+          <MobileNav items={items} />
           {!owner && <FloatingZhenya />}
         </div>
       </div>

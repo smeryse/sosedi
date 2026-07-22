@@ -4,7 +4,7 @@
 -- 1. Scene Documents Table
 CREATE TABLE IF NOT EXISTS public.scene_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  apartment_id TEXT NOT NULL REFERENCES public.apartments_3d(id) ON DELETE CASCADE,
+  apartment_id TEXT NOT NULL,
   owner_id UUID NOT NULL,
   name TEXT NOT NULL DEFAULT 'Планировка квартиры',
   schema_version TEXT NOT NULL DEFAULT '1.0.0',

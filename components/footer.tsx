@@ -54,16 +54,6 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#owners" className="text-white/70 hover:text-[#D6FF3F] transition-colors">
-                  Собственникам
-                </a>
-              </li>
-              <li>
-                <a href="#safety" className="text-white/70 hover:text-[#D6FF3F] transition-colors">
-                  Безопасность
-                </a>
-              </li>
-              <li>
                 <Link href="/app/roommates" className="text-white/70 hover:text-[#D6FF3F] transition-colors">
                   Каталог соседей
                 </Link>
@@ -75,7 +65,7 @@ export function Footer() {
           <div className="md:col-span-4">
             <h4 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Регион &amp; Проект</h4>
             <p className="text-xs text-white/60 leading-relaxed mb-4">
-              Разработано в рамках хакатона по треку «Недвижимость» при поддержке Ассоциации застройщиков Краснодарского края и Республики Адыгея.
+              Платформа совместной аренды Sosedi при поддержке Ассоциации застройщиков Краснодарского края и Республики Адыгея.
             </p>
             <div className="text-xs text-white/40">
               Краснодар • MVP 2026
@@ -86,13 +76,16 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/40">
           <div>© 2026 Sosedi. Все права защищены.</div>
-          <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-white transition-colors">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+            <Link href="/safety" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
+              Безопасность
+            </Link>
+            <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
               Политика конфиденциальности
-            </a>
-            <a href="#" className="hover:text-white transition-colors">
+            </Link>
+            <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-white transition-colors">
               Пользовательское соглашение
-            </a>
+            </Link>
           </div>
         </div>
       </div>

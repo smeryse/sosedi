@@ -10,7 +10,6 @@ export default async function OwnerDashboardPage() {
 
   return (
     <PageFrame
-      eyebrow="Кабинет собственника"
       title="Добрый день, Алексей"
       description="Здесь вы видите объекты, отклики и следующие шаги по каждой заявке."
       actions={

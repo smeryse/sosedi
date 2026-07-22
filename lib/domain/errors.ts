@@ -10,10 +10,12 @@ export class AppError extends Error {
   }
 }
 
-export function handleSupabaseError(error: any, fallbackMessage: string): never {
+export function handleSupabaseError(error: unknown, fallbackMessage: string): never {
   console.error(`[Supabase Error] ${fallbackMessage}`, error);
-  if (error?.code) {
-    throw new AppError(fallbackMessage, `DB_${error.code}`, error);
+  const errCode = (error as { code?: string })?.code;
+  if (errCode) {
+    throw new AppError(fallbackMessage, `DB_${errCode}`, error);
   }
   throw new AppError(fallbackMessage, "DB_UNKNOWN", error);
 }
+

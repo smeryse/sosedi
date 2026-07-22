@@ -20,7 +20,6 @@ import {
   Settings,
   Sun,
   UsersRound,
-  Gamepad2,
   Gift,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -39,7 +38,6 @@ const iconMap = {
   calendar: CalendarCheck2,
   user: CircleUserRound,
   file: FileCheck2,
-  gamepad: Gamepad2,
   heart: Heart,
   home: Home,
   dashboard: LayoutDashboard,
@@ -50,7 +48,13 @@ const iconMap = {
   users: UsersRound,
 } as const;
 
-export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) {
+export function AppSidebar({
+  items = tenantNavigation,
+  owner = false,
+}: {
+  items?: NavItem[];
+  owner?: boolean;
+}) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const { theme, setTheme } = useTheme();
@@ -89,7 +93,7 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
               >
                 <Link
                   href={item.href}
-                  className={`group relative flex h-[40px] items-center justify-between overflow-hidden rounded-[14px] px-3 text-[12.5px] font-bold transition-colors ${
+                  className={`group relative flex h-11 items-center justify-between overflow-hidden rounded-[14px] px-3 text-[12.5px] font-bold transition-colors ${
                     isActive ? "text-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
@@ -117,7 +121,7 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
       </div>
 
       <div className="space-y-2.5 border-t p-3 pt-2.5">
-        <motion.div whileHover={reduceMotion ? undefined : { y: -2 }} className="sidebar-promo relative overflow-hidden rounded-[18px] bg-accent/10 p-3.5 dark:bg-accent-soft/30">
+        {!owner ? <motion.div whileHover={reduceMotion ? undefined : { y: -2 }} className="sidebar-promo relative overflow-hidden rounded-[18px] bg-accent/10 p-3.5 dark:bg-accent-soft/30">
           <div className="absolute -right-7 -top-8 size-24 rounded-full border border-background/70 bg-background/30" />
           <div className="absolute -bottom-8 right-6 size-20 rounded-full bg-accent/20 blur-xl dark:bg-accent/10" />
           <p className="text-[12.5px] font-black text-foreground">Пригласите друга</p>
@@ -131,7 +135,7 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
             Пригласить
           </Link>
           <span className="absolute bottom-3 right-3 grid size-9 place-items-center rounded-full bg-background/75 text-accent shadow-sm dark:bg-surface/80"><Gift className="size-4" /></span>
-        </motion.div>
+        </motion.div> : null}
 
         <div className="flex items-center justify-between rounded-full bg-secondary p-1 text-[11px] font-bold text-muted-foreground">
           <button
@@ -157,7 +161,7 @@ export function AppSidebar({ items = tenantNavigation }: { items?: NavItem[] }) 
         </div>
 
         <Link
-          href="/app/profile"
+          href={owner ? "/owner/profile" : "/app/profile"}
           className="flex items-center justify-between rounded-[18px] p-2 transition-colors hover:bg-secondary"
         >
           <div className="flex items-center gap-2.5">

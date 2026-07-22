@@ -1,15 +1,13 @@
-/**
- * Supabase Storage Helpers
- * 
- * Provides type-safe signed URL generation for all storage buckets.
- * Works in both Server Components and Server Actions.
- */
+import { randomUUID } from "node:crypto";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  type S3ClientConfig,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-import { createClient } from "@/lib/supabase/server";
-
-/**
- * Storage bucket names (must match Supabase bucket configuration)
- */
 export const STORAGE_BUCKETS = {
   AVATARS: "avatars",
   PROPERTY_IMAGES: "property-images",
@@ -18,24 +16,26 @@ export const STORAGE_BUCKETS = {
   CONTRACTS: "contracts",
 } as const;
 
-export type StorageBucket = typeof STORAGE_BUCKETS[keyof typeof STORAGE_BUCKETS];
+export type StorageBucket =
+  (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS];
 
-/**
- * File size limits per bucket (in bytes)
- */
-export const FILE_SIZE_LIMITS: Record<StorageBucket, number> = {
-  [STORAGE_BUCKETS.AVATARS]: 5 * 1024 * 1024, // 5MB
-  [STORAGE_BUCKETS.PROPERTY_IMAGES]: 10 * 1024 * 1024, // 10MB
-  [STORAGE_BUCKETS.MESSAGE_ATTACHMENTS]: 10 * 1024 * 1024, // 10MB
-  [STORAGE_BUCKETS.DOCUMENTS]: 20 * 1024 * 1024, // 20MB
-  [STORAGE_BUCKETS.CONTRACTS]: 5 * 1024 * 1024, // 5MB
+const DEFAULT_UPLOAD_TTL_SECONDS = 5 * 60;
+const MAX_UPLOAD_TTL_SECONDS = 10 * 60;
+const DEFAULT_DOWNLOAD_TTL_SECONDS = 10 * 60;
+const MAX_DOWNLOAD_TTL_SECONDS = 60 * 60;
+
+export const FILE_SIZE_LIMITS: Readonly<Record<StorageBucket, number>> = {
+  [STORAGE_BUCKETS.AVATARS]: 5 * 1024 * 1024,
+  [STORAGE_BUCKETS.PROPERTY_IMAGES]: 10 * 1024 * 1024,
+  [STORAGE_BUCKETS.MESSAGE_ATTACHMENTS]: 10 * 1024 * 1024,
+  [STORAGE_BUCKETS.DOCUMENTS]: 20 * 1024 * 1024,
+  [STORAGE_BUCKETS.CONTRACTS]: 5 * 1024 * 1024,
 };
 
-/**
- * Allowed MIME types per bucket
- */
-export const ALLOWED_MIME_TYPES: Record<StorageBucket, string[]> = {
-  [STORAGE_BUCKETS.AVATARS]: ["image/jpeg", "image/png", "image/webp", "image/heic"],
+export const ALLOWED_MIME_TYPES: Readonly<
+  Record<StorageBucket, readonly string[]>
+> = {
+  [STORAGE_BUCKETS.AVATARS]: ["image/jpeg", "image/png", "image/webp"],
   [STORAGE_BUCKETS.PROPERTY_IMAGES]: ["image/jpeg", "image/png", "image/webp"],
   [STORAGE_BUCKETS.MESSAGE_ATTACHMENTS]: [
     "image/jpeg",
@@ -43,9 +43,9 @@ export const ALLOWED_MIME_TYPES: Record<StorageBucket, string[]> = {
     "image/webp",
     "image/gif",
     "application/pdf",
-    "audio/mpeg",
-    "audio/ogg",
-    "audio/wav",
+    "text/plain",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ],
   [STORAGE_BUCKETS.DOCUMENTS]: [
     "application/pdf",
@@ -57,309 +57,360 @@ export const ALLOWED_MIME_TYPES: Record<StorageBucket, string[]> = {
   [STORAGE_BUCKETS.CONTRACTS]: ["application/pdf"],
 };
 
-/**
- * Generate a signed upload URL for direct browser-to-storage upload
- * 
- * @param bucket - Target storage bucket
- * @param objectPath - Object path in bucket (e.g., "user-id/avatar.jpg")
- * @param expiresIn - Expiration in seconds (default: 60 minutes)
- * @returns Signed upload URL and public URL
- */
-export async function getSignedUploadUrl(
-  bucket: StorageBucket,
-  objectPath: string
-): Promise<{ uploadUrl: string; publicUrl: string; path: string }> {
-  const supabase = await createClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUploadUrl(objectPath, {
-      upsert: true,
-    });
+type SignedUploadInput = {
+  bucket: StorageBucket;
+  ownerId: string;
+  scopeId: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  checksumSha256: string;
+  expiresIn?: number;
+};
 
-  if (error || !data) {
-    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
-  }
+type SignedDownloadInput = {
+  bucket: StorageBucket;
+  objectKey: string;
+  fileName?: string | null;
+  expiresIn?: number;
+};
 
-  const { data: publicUrlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(objectPath);
+type InspectObjectInput = {
+  bucket: StorageBucket;
+  objectKey: string;
+};
 
+type StorageConfiguration = {
+  client: S3Client;
+  buckets: Record<StorageBucket, string>;
+};
+
+let cachedConfiguration: StorageConfiguration | null = null;
+let cachedConfigurationKey = "";
+
+function requiredEnvironmentValue(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required for object storage`);
+  return value;
+}
+
+function readBucketConfiguration(): Record<StorageBucket, string> {
   return {
-    uploadUrl: data.signedUrl,
-    publicUrl: publicUrlData.publicUrl,
-    path: objectPath,
+    [STORAGE_BUCKETS.AVATARS]: requiredEnvironmentValue("S3_BUCKET_AVATARS"),
+    [STORAGE_BUCKETS.PROPERTY_IMAGES]: requiredEnvironmentValue(
+      "S3_BUCKET_PROPERTY_IMAGES",
+    ),
+    [STORAGE_BUCKETS.MESSAGE_ATTACHMENTS]: requiredEnvironmentValue(
+      "S3_BUCKET_MESSAGE_ATTACHMENTS",
+    ),
+    [STORAGE_BUCKETS.DOCUMENTS]: requiredEnvironmentValue(
+      "S3_BUCKET_DOCUMENTS",
+    ),
+    [STORAGE_BUCKETS.CONTRACTS]: requiredEnvironmentValue(
+      "S3_BUCKET_CONTRACTS",
+    ),
   };
 }
 
-/**
- * Generate a signed download URL for private buckets
- * 
- * @param bucket - Target storage bucket
- * @param objectPath - Object path in bucket
- * @param expiresIn - Expiration in seconds (default: 1 hour)
- * @returns Signed download URL
- */
-export async function getSignedDownloadUrl(
-  bucket: StorageBucket,
-  objectPath: string,
-  expiresIn = 3600
-): Promise<string> {
-  const supabase = await createClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(objectPath, expiresIn);
+function createStorageConfiguration(): StorageConfiguration {
+  const region = requiredEnvironmentValue("S3_REGION");
+  const endpointValue = process.env.S3_ENDPOINT?.trim();
+  const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY?.trim();
 
-  if (error || !data) {
-    throw new Error(`Failed to create signed download URL: ${error?.message}`);
+  if (Boolean(accessKeyId) !== Boolean(secretAccessKey)) {
+    throw new Error(
+      "S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY must be configured together",
+    );
   }
 
-  return data.signedUrl;
-}
-
-/**
- * Get public URL for public buckets
- */
-export async function getPublicUrl(
-  bucket: StorageBucket,
-  objectPath: string
-): Promise<string> {
-  const supabase = await createClient();
-  
-  const { data } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(objectPath);
-
-  return data.publicUrl;
-}
-
-/**
- * Upload file directly from server (Server Actions only)
- * 
- * @param bucket - Target storage bucket
- * @param objectPath - Object path in bucket
- * @param file - File/Blob to upload
- * @param options - Upload options
- * @returns Public URL of uploaded file
- */
-export async function uploadFile(
-  bucket: StorageBucket,
-  objectPath: string,
-  file: File | Blob,
-  options?: {
-    upsert?: boolean;
-    cacheControl?: string;
-    contentType?: string;
-  }
-): Promise<{ path: string; publicUrl: string }> {
-  const supabase = await createClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(objectPath, file, {
-      upsert: options?.upsert ?? true,
-      cacheControl: options?.cacheControl ?? "3600",
-      contentType: options?.contentType,
-    });
-
-  if (error) {
-    throw new Error(`Upload failed: ${error.message}`);
+  let endpoint: string | undefined;
+  if (endpointValue) {
+    const parsed = new URL(endpointValue);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error("S3_ENDPOINT must use http or https");
+    }
+    if (parsed.username || parsed.password) {
+      throw new Error("S3_ENDPOINT must not contain credentials");
+    }
+    endpoint = parsed.toString().replace(/\/$/, "");
   }
 
-  const { data: publicUrlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(data.path);
+  const clientConfig: S3ClientConfig = {
+    region,
+    ...(endpoint ? { endpoint } : {}),
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+    ...(accessKeyId && secretAccessKey
+      ? { credentials: { accessKeyId, secretAccessKey } }
+      : {}),
+  };
 
   return {
-    path: data.path,
-    publicUrl: publicUrlData.publicUrl,
+    client: new S3Client(clientConfig),
+    buckets: readBucketConfiguration(),
   };
 }
 
-/**
- * Delete file from storage
- */
-export async function deleteFile(
+function getStorageConfiguration(): StorageConfiguration {
+  const configurationKey = [
+    process.env.S3_REGION,
+    process.env.S3_ENDPOINT,
+    process.env.S3_ACCESS_KEY_ID,
+    process.env.S3_SECRET_ACCESS_KEY,
+    process.env.S3_FORCE_PATH_STYLE,
+    process.env.S3_BUCKET_AVATARS,
+    process.env.S3_BUCKET_PROPERTY_IMAGES,
+    process.env.S3_BUCKET_MESSAGE_ATTACHMENTS,
+    process.env.S3_BUCKET_DOCUMENTS,
+    process.env.S3_BUCKET_CONTRACTS,
+  ].join("\u0000");
+
+  if (!cachedConfiguration || cachedConfigurationKey !== configurationKey) {
+    cachedConfiguration?.client.destroy();
+    cachedConfiguration = createStorageConfiguration();
+    cachedConfigurationKey = configurationKey;
+  }
+
+  return cachedConfiguration;
+}
+
+function normalizeIdentifier(value: string, fieldName: string): string {
+  const normalized = value.trim();
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(normalized)) {
+    throw new Error(`${fieldName} contains unsupported characters`);
+  }
+  return normalized;
+}
+
+export function normalizeObjectKey(value: string): string {
+  const normalized = value.trim().normalize("NFKC");
+  if (
+    !normalized ||
+    normalized.startsWith("/") ||
+    normalized.endsWith("/") ||
+    normalized.includes("\\") ||
+    /[\u0000-\u001f\u007f]/.test(normalized) ||
+    /(^|\/)\.\.?($|\/)/.test(normalized) ||
+    /%2e|%2f|%5c/i.test(normalized)
+  ) {
+    throw new Error("Invalid object key");
+  }
+
+  const segments = normalized.split("/");
+  if (segments.some((segment) => !segment || segment.length > 255)) {
+    throw new Error("Invalid object key");
+  }
+
+  return segments.join("/");
+}
+
+function sanitizeFileName(value: string): string {
+  const leafName = value.split(/[\\/]/).at(-1)?.trim() ?? "";
+  const extensionMatch = leafName.match(/\.([a-zA-Z0-9]{1,10})$/);
+  const extension = extensionMatch ? `.${extensionMatch[1].toLowerCase()}` : "";
+  const rawBaseName = extension
+    ? leafName.slice(0, -extension.length)
+    : leafName;
+  const baseName = rawBaseName
+    .normalize("NFKC")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[._-]+|[._-]+$/g, "")
+    .slice(0, 100);
+
+  return `${baseName || "file"}${extension}`;
+}
+
+function validateTtl(
+  value: number | undefined,
+  fallback: number,
+  maximum: number,
+): number {
+  const ttl = value ?? fallback;
+  if (!Number.isSafeInteger(ttl) || ttl < 30 || ttl > maximum) {
+    throw new Error(`Signed URL TTL must be between 30 and ${maximum} seconds`);
+  }
+  return ttl;
+}
+
+export function validateUpload(
   bucket: StorageBucket,
-  objectPath: string
-): Promise<void> {
-  const supabase = await createClient();
-  
-  const { error } = await supabase.storage
-    .from(bucket)
-    .remove([objectPath]);
+  mimeType: string,
+  size: number,
+  checksumSha256?: string,
+): void {
+  if (
+    typeof size !== "number" ||
+    !Number.isSafeInteger(size) ||
+    size <= 0 ||
+    size > FILE_SIZE_LIMITS[bucket]
+  ) {
+    throw new Error(`File exceeds the ${FILE_SIZE_LIMITS[bucket]} byte limit`);
+  }
 
-  if (error) {
-    throw new Error(`Delete failed: ${error.message}`);
+  if (!ALLOWED_MIME_TYPES[bucket].includes(mimeType)) {
+    throw new Error(`MIME type ${mimeType || "(empty)"} is not allowed`);
+  }
+
+  if (
+    checksumSha256 !== undefined &&
+    !/^[A-Za-z0-9+/]{43}=$/.test(checksumSha256)
+  ) {
+    throw new Error("SHA-256 checksum must use standard base64 encoding");
   }
 }
 
-/**
- * List files in a bucket folder
- */
-export async function listFiles(
-  bucket: StorageBucket,
-  folderPath: string,
-  options?: {
-    limit?: number;
-    offset?: number;
-    sortBy?: { column: "name" | "updated_at" | "created_at"; order: "asc" | "desc" };
-  }
-): Promise<Array<{ name: string; id: string | null; updatedAt: string | null; createdAt: string | null; size: number }>> {
-  const supabase = await createClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .list(folderPath, {
-      limit: options?.limit ?? 100,
-      offset: options?.offset ?? 0,
-      sortBy: options?.sortBy,
-    });
+export function createOwnerScopedObjectKey(input: {
+  bucket: StorageBucket;
+  ownerId: string;
+  scopeId: string;
+  fileName: string;
+}): string {
+  const ownerId = normalizeIdentifier(input.ownerId, "ownerId");
+  const scopeId = normalizeIdentifier(input.scopeId, "scopeId");
+  const fileName = sanitizeFileName(input.fileName);
 
-  if (error) {
-    throw new Error(`List failed: ${error.message}`);
-  }
-
-  return (data ?? []).map((file) => ({
-    name: file.name,
-    id: file.id,
-    updatedAt: file.updated_at,
-    createdAt: file.created_at,
-    size: typeof file.metadata?.size === "number" ? file.metadata.size : 0,
-  }));
+  return normalizeObjectKey(
+    `users/${ownerId}/${input.bucket}/${scopeId}/${randomUUID()}-${fileName}`,
+  );
 }
 
-/**
- * Copy file between buckets or within bucket
- */
-export async function copyFile(
-  sourceBucket: StorageBucket,
-  sourcePath: string,
-  destBucket: StorageBucket,
-  destPath: string
-): Promise<{ path: string; publicUrl: string }> {
-  const supabase = await createClient();
-  
-  // Download from source
-  const { data: fileData, error: downloadError } = await supabase.storage
-    .from(sourceBucket)
-    .download(sourcePath);
-
-  if (downloadError || !fileData) {
-    throw new Error(`Download failed: ${downloadError?.message}`);
-  }
-
-  // Upload to destination
-  return uploadFile(destBucket, destPath, fileData);
-}
-
-/**
- * Get file metadata
- */
-export async function getFileMetadata(
-  bucket: StorageBucket,
-  objectPath: string
-): Promise<{ size: number; mimetype: string; etag: string; lastModified: string } | null> {
-  const supabase = await createClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .info(objectPath);
-
-  if (error) {
-    if (error.message.includes("not found")) return null;
-    throw new Error(`Metadata failed: ${error.message}`);
-  }
-
-  return {
-    size: data.size ?? 0,
-    mimetype: data.contentType ?? "application/octet-stream",
-    etag: data.etag ?? "",
-    lastModified: data.lastModified ?? data.updatedAt ?? "",
-  };
-}
-
-/**
- * Generate object path for avatars
- */
-export function getAvatarPath(userId: string, filename: string): string {
-  const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
-  return `${userId}/avatar.${ext}`;
-}
-
-/**
- * Generate object path for property images
- */
-export function getPropertyImagePath(propertyId: string, filename: string, index?: number): string {
-  const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
-  const prefix = index !== undefined ? `${index}-` : "";
-  return `${propertyId}/${prefix}${Date.now()}.${ext}`;
-}
-
-/**
- * Generate object path for message attachments
- */
-export function getMessageAttachmentPath(
-  conversationId: string,
-  userId: string,
-  filename: string
+export function assertOwnerScopedObjectKey(
+  objectKey: string,
+  ownerId: string,
 ): string {
-  const ext = filename.split(".").pop()?.toLowerCase() || "bin";
-  return `${conversationId}/${userId}/${Date.now()}.${ext}`;
+  const normalizedKey = normalizeObjectKey(objectKey);
+  const normalizedOwnerId = normalizeIdentifier(ownerId, "ownerId");
+  const ownerPrefix = `users/${normalizedOwnerId}/`;
+
+  if (!normalizedKey.startsWith(ownerPrefix)) {
+    throw new Error("Object key does not belong to its recorded owner");
+  }
+
+  return normalizedKey;
 }
 
-/**
- * Generate object path for documents
- */
-export function getDocumentPath(
-  subjectType: "profile" | "property",
-  subjectId: string,
-  documentType: string,
-  filename: string
+export function assertScopedObjectKey(
+  objectKey: string,
+  scope: { ownerId: string; bucket: StorageBucket; scopeId: string },
 ): string {
-  const ext = filename.split(".").pop()?.toLowerCase() || "pdf";
-  return `${subjectType}/${subjectId}/${documentType}/${Date.now()}.${ext}`;
-}
+  const normalizedKey = assertOwnerScopedObjectKey(objectKey, scope.ownerId);
+  const normalizedOwnerId = normalizeIdentifier(scope.ownerId, "ownerId");
+  const normalizedScopeId = normalizeIdentifier(scope.scopeId, "scopeId");
+  const expectedPrefix = `users/${normalizedOwnerId}/${scope.bucket}/${normalizedScopeId}/`;
 
-/**
- * Validate file before upload
- */
-export function validateFile(
-  file: File,
-  bucket: StorageBucket
-): { valid: boolean; error?: string } {
-  const maxSize = FILE_SIZE_LIMITS[bucket];
-  const allowedTypes = ALLOWED_MIME_TYPES[bucket];
-
-  if (file.size > maxSize) {
-    return {
-      valid: false,
-      error: `File size ${(file.size / 1024 / 1024).toFixed(1)}MB exceeds limit of ${maxSize / 1024 / 1024}MB`,
-    };
+  if (!normalizedKey.startsWith(expectedPrefix)) {
+    throw new Error("Object key is outside its recorded storage scope");
   }
 
-  if (!allowedTypes.includes(file.type)) {
-    return {
-      valid: false,
-      error: `File type ${file.type} not allowed. Allowed: ${allowedTypes.join(", ")}`,
-    };
-  }
-
-  return { valid: true };
+  return normalizedKey;
 }
 
-/**
- * Create storage buckets (run once during setup)
- * 
- * Run this in Supabase SQL editor or via CLI:
- * 
- * INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
- * VALUES 
- *   ('avatars', 'avatars', true, 5242880, '{"image/jpeg","image/png","image/webp","image/heic"}'),
- *   ('property-images', 'property-images', true, 10485760, '{"image/jpeg","image/png","image/webp"}'),
- *   ('message-attachments', 'message-attachments', false, 10485760, '{"image/jpeg","image/png","image/webp","image/gif","application/pdf","audio/mpeg","audio/ogg","audio/wav"}'),
- *   ('documents', 'documents', false, 20971520, '{"application/pdf","image/jpeg","image/png","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document"}'),
- *   ('contracts', 'contracts', false, 5242880, '{"application/pdf"}')
- * ON CONFLICT (id) DO NOTHING;
- */
+export async function createSignedUploadUrl(input: SignedUploadInput): Promise<{
+  uploadUrl: string;
+  objectKey: string;
+  expiresIn: number;
+  requiredHeaders: Readonly<Record<string, string>>;
+}> {
+  validateUpload(
+    input.bucket,
+    input.mimeType,
+    input.size,
+    input.checksumSha256,
+  );
+
+  const objectKey = createOwnerScopedObjectKey(input);
+  const expiresIn = validateTtl(
+    input.expiresIn,
+    DEFAULT_UPLOAD_TTL_SECONDS,
+    MAX_UPLOAD_TTL_SECONDS,
+  );
+  const { client, buckets } = getStorageConfiguration();
+  const command = new PutObjectCommand({
+    Bucket: buckets[input.bucket],
+    Key: objectKey,
+    ContentType: input.mimeType,
+    ContentLength: input.size,
+    ChecksumSHA256: input.checksumSha256,
+  });
+
+  return {
+    uploadUrl: await getSignedUrl(client, command, {
+      expiresIn,
+      signableHeaders: new Set(["content-type"]),
+      unhoistableHeaders: new Set(["x-amz-checksum-sha256"]),
+    }),
+    objectKey,
+    expiresIn,
+    requiredHeaders: {
+      "content-type": input.mimeType,
+      "x-amz-checksum-sha256": input.checksumSha256,
+    },
+  };
+}
+
+export async function createSignedDownloadUrl(
+  input: SignedDownloadInput,
+): Promise<{
+  downloadUrl: string;
+  expiresIn: number;
+}> {
+  const objectKey = normalizeObjectKey(input.objectKey);
+  const expiresIn = validateTtl(
+    input.expiresIn,
+    DEFAULT_DOWNLOAD_TTL_SECONDS,
+    MAX_DOWNLOAD_TTL_SECONDS,
+  );
+  const { client, buckets } = getStorageConfiguration();
+  const fileName = input.fileName ? sanitizeFileName(input.fileName) : null;
+  const command = new GetObjectCommand({
+    Bucket: buckets[input.bucket],
+    Key: objectKey,
+    ...(fileName
+      ? { ResponseContentDisposition: `attachment; filename="${fileName}"` }
+      : {}),
+  });
+
+  return {
+    downloadUrl: await getSignedUrl(client, command, { expiresIn }),
+    expiresIn,
+  };
+}
+
+export async function inspectStoredObject(input: InspectObjectInput): Promise<{
+  size: number;
+  mimeType: string;
+  checksumSha256: string;
+  etag: string | null;
+}> {
+  const objectKey = normalizeObjectKey(input.objectKey);
+  const { client, buckets } = getStorageConfiguration();
+  const result = await client.send(
+    new HeadObjectCommand({
+      Bucket: buckets[input.bucket],
+      Key: objectKey,
+      ChecksumMode: "ENABLED",
+    }),
+  );
+  const size = result.ContentLength;
+  const mimeType = result.ContentType?.split(";", 1)[0]?.trim().toLowerCase();
+  const checksumSha256 = result.ChecksumSHA256;
+
+  if (
+    typeof size !== "number" ||
+    !Number.isSafeInteger(size) ||
+    typeof mimeType !== "string" ||
+    !mimeType ||
+    typeof checksumSha256 !== "string" ||
+    !/^[A-Za-z0-9+/]{43}=$/.test(checksumSha256)
+  ) {
+    throw new Error("Uploaded object metadata is incomplete");
+  }
+
+  return {
+    size,
+    mimeType,
+    checksumSha256,
+    etag: result.ETag ?? null,
+  };
+}

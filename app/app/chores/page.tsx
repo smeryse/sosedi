@@ -76,7 +76,6 @@ export default function ChoresPage() {
 
   return (
     <PageFrame
-      eyebrow="Дом"
       title="Уборка и задачи"
       description="Распределяйте заботу о доме по очереди, а не по настроению."
       actions={

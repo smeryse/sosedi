@@ -9,7 +9,6 @@ import { demoRoommates } from "@/data/demo";
 export default function RoommatesPage() {
   return (
     <PageFrame
-      eyebrow="Поиск"
       title="Поиск соседей"
       description="Подбираем людей по образу жизни и бюджету для комфортного совместного проживания."
       actions={

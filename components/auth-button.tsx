@@ -37,7 +37,7 @@ export function AuthButton() {
 }
 
 async function signOut() {
-  const res = await fetch("/api/auth/signout", { method: "POST" });
+  const res = await fetch("/api/auth/logout", { method: "POST" });
   if (res.ok) {
     window.location.href = "/";
   }

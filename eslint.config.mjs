@@ -21,7 +21,6 @@ const eslintConfig = [
       "references/**",
       "playwright-report/**",
       "test-results/**",
-      "mobile/**",
       ".oss-evaluation/**",
     ],
   },

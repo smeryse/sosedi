@@ -19,7 +19,7 @@ const features: FeatureCardData[] = [
     description:
       "Умный алгоритм подбирает людей, с которыми комфортно жить вместе. Совпадение по привычкам, бюджету и планам видно ещё до первого знакомства.",
     videoUrl:
-      "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260702_102608_5fa1187d-9ac6-44fb-82ab-54376200abc0.mp4",
+      "/videos/feature-1.mp4",
     posterUrl: "/demo/people/maria.jpg",
   },
   {
@@ -28,7 +28,7 @@ const features: FeatureCardData[] = [
     description:
       "Проверенные квартиры от собственников и партнёров: фотографии, документы, условия и понятная стоимость для каждого участника группы.",
     videoUrl:
-      "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260625_174131_395bc785-bb21-4e65-abf6-27c56f0764b6.mp4",
+      "/videos/feature-2.mp4",
     posterUrl: "/demo/properties/festival-flat.jpg",
   },
   {
@@ -37,7 +37,7 @@ const features: FeatureCardData[] = [
     description:
       "Собирайте группу, подавайте общую заявку и переезжайте без стресса. Чат, бытовые правила, задачи и общий бюджет остаются в одном сервисе.",
     videoUrl:
-      "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260525_052706_d2e390fd-1846-4fe7-a4d8-8d2f1c875358.mp4",
+      "/videos/feature-3.mp4",
     posterUrl: "/demo/properties/park-room.jpg",
   },
 ];

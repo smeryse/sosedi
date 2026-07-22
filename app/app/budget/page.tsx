@@ -88,7 +88,6 @@ export default function BudgetPage() {
 
   return (
     <PageFrame
-      eyebrow="Прозрачно"
       title="Бюджет и расходы"
       description="Понимайте полную стоимость дома до переезда и делите общие расходы без неловкости."
       actions={

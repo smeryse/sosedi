@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Gamepad2, X, Sparkles } from "lucide-react";
+import { HeartHandshake, MessageSquare, X, Sparkles } from "lucide-react";
 
 export function FloatingZhenya() {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,7 +37,8 @@ export function FloatingZhenya() {
             
             <button
               onClick={() => setIsOpen(false)}
-              className="rounded-full p-1 text-[#878881] hover:bg-[#F4F4F0] hover:text-[#111111] transition-colors cursor-pointer"
+              aria-label="Закрыть помощника"
+              className="grid size-11 place-items-center rounded-full text-[#878881] hover:bg-[#F4F4F0] hover:text-[#111111] transition-colors cursor-pointer"
             >
               <X className="size-4" />
             </button>
@@ -45,7 +46,7 @@ export function FloatingZhenya() {
 
           {/* Description */}
           <p className="mt-3 text-[11.5px] leading-relaxed text-[#222222] font-medium">
-            Привет! Я помогу сгладить углы в общении, составить бытовой договор или запустить симуляцию вашей совместной аренды. ✨
+            Привет! Я помогу сгладить углы в общении, проверить совместимость и составить бытовой договор. ✨
           </p>
 
           {/* Action Links */}
@@ -53,19 +54,19 @@ export function FloatingZhenya() {
             <Link
               href="/app/messages/ai-assistant"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 w-full rounded-xl bg-[#111111] hover:bg-black px-3.5 py-2 text-[11px] font-black text-white transition-all shadow-sm group cursor-pointer"
+              className="flex min-h-11 items-center gap-2.5 w-full rounded-xl bg-[#111111] hover:bg-black px-3.5 py-2 text-[11px] font-black text-white transition-all shadow-sm group cursor-pointer"
             >
               <MessageSquare className="size-3.5 text-[#B3DB00]" />
               <span>Задать вопрос Жене</span>
             </Link>
 
             <Link
-              href="/app/simulator"
+              href="/app/compatibility"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 w-full rounded-xl border border-[#E5E5E0] bg-white hover:bg-[#EBF7B6] hover:border-[#B3DB00] px-3.5 py-2 text-[11px] font-black text-[#111111] transition-all cursor-pointer"
+              className="flex min-h-11 items-center gap-2.5 w-full rounded-xl border border-[#E5E5E0] bg-white hover:bg-[#EBF7B6] hover:border-[#B3DB00] px-3.5 py-2 text-[11px] font-black text-[#111111] transition-all cursor-pointer"
             >
-              <Gamepad2 className="size-3.5 text-[#7B9E00]" />
-              <span>Симулятор быта</span>
+              <HeartHandshake className="size-3.5 text-[#7B9E00]" />
+              <span>Проверить совместимость</span>
             </Link>
           </div>
         </div>

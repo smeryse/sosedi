@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Соседи</title>
+  <desc id="desc">Два человека рядом в общем доме.</desc>
+  <rect width="512" height="512" rx="116" fill="#111111"/>
+  <path d="M104 219c0-25 20-45 45-45h72c25 0 45 20 45 45v190H104V219Z" fill="#F5F3EA"/>
+  <path d="M246 219c0-25 20-45 45-45h72c25 0 45 20 45 45v190H246V219Z" fill="#D6FF3F"/>
+  <circle cx="185" cy="134" r="48" fill="#F5F3EA"/>
+  <circle cx="327" cy="134" r="48" fill="#D6FF3F"/>
+  <path d="M221 280h70v129h-70z" fill="#111111"/>
+</svg>

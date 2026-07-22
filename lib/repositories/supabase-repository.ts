@@ -126,7 +126,7 @@ export class SupabaseRepository extends BaseRepository implements Repository {
 
     if (membersError) throw new Error("Не удалось загрузить участников группы.");
 
-    const memberIds = (memberRows ?? []).map((member) => member.profile_id);
+    const memberIds = (memberRows ?? []).map((member: any) => member.profile_id);
     const { data: profiles, error: profilesError } = memberIds.length
       ? await supabase.from("profiles").select("id, display_name").in("id", memberIds)
       : { data: [], error: null };
@@ -136,7 +136,7 @@ export class SupabaseRepository extends BaseRepository implements Repository {
     return {
       userId,
       groupId: membership.group_id,
-      members: (profiles ?? []).map((profile) => ({ id: profile.id, name: profile.display_name })),
+      members: (profiles ?? []).map((profile: any) => ({ id: profile.id, name: profile.display_name })),
     };
   }
 
@@ -242,8 +242,13 @@ export class SupabaseRepository extends BaseRepository implements Repository {
     let request = supabase
       .from("properties")
       .select(`
-        id, title, description, district, address, monthly_rent, rooms, area, floor, total_floors,
-        property_images ( storage_path )
+        id, owner_id, title, description, city, district, address, monthly_rent, deposit,
+        rooms, area, floor, total_floors, available_from, lease_months_min,
+        pets_allowed, smoking_allowed, status, source, source_url, external_id,
+        developer_name, complex_name, completion_date, finishing_type,
+        property_images ( storage_path, sort_order ),
+        property_amenities ( amenity ),
+        property_rules ( rule_key, rule_value )
       `)
       .eq("status", "published")
       .is("archived_at", null)
@@ -273,22 +278,54 @@ export class SupabaseRepository extends BaseRepository implements Repository {
     if (error) throw new Error("Не удалось загрузить каталог жилья.");
 
     let mapped: DemoProperty[] = (properties ?? []).map((prop: any) => {
-      const photos = prop.property_images ?? [];
-      const imagePath = photos.length > 0 ? photos[0].storage_path : "/demo/properties/center-loft.jpg";
+      const photos = [...(prop.property_images ?? [])].sort(
+        (left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0),
+      );
+      const storagePath = photos[0]?.storage_path;
+      const imagePath = storagePath
+        ? supabase.storage.from("property-images").getPublicUrl(storagePath).data.publicUrl
+        : "/demo/properties/center-loft.jpg";
+      const amenities = (prop.property_amenities ?? []).map(
+        (item: { amenity: string }) => item.amenity,
+      );
+      const rules = Object.fromEntries(
+        (prop.property_rules ?? []).map(
+          (item: { rule_key: string; rule_value: string }) => [item.rule_key, item.rule_value],
+        ),
+      );
       return {
         id: prop.id,
         title: prop.title,
+        description: prop.description ?? undefined,
         address: prop.address ?? `${city || "Краснодар"}, ${prop.district}`,
         district: prop.district,
         city: prop.city || "Краснодар",
         price: prop.monthly_rent,
+        deposit: prop.deposit ?? 0,
         rooms: prop.rooms,
         area: Number(prop.area),
         floor: prop.floor ? `${prop.floor}/${prop.total_floors ?? 9}` : "5/12",
+        totalFloors: prop.total_floors ?? undefined,
+        availableFrom: prop.available_from ?? undefined,
+        leaseMonthsMin: prop.lease_months_min ?? undefined,
+        petsAllowed: prop.pets_allowed ?? false,
+        smokingAllowed: prop.smoking_allowed ?? false,
+        furnished: amenities.includes("furniture"),
+        status: prop.status,
+        ownerId: prop.owner_id,
         image: imagePath,
         match: 86,
-        photosCount: photos.length > 0 ? photos.length : 8,
-        tags: ["Проверенное жильё", "Мебель", "Техника"],
+        photosCount: photos.length,
+        tags: amenities,
+        amenities,
+        rules,
+        source: prop.source === "ap-r" ? "ap-r" : "user",
+        externalId: prop.external_id ?? undefined,
+        originalUrl: prop.source_url ?? undefined,
+        developer: prop.developer_name ?? undefined,
+        complexName: prop.complex_name ?? undefined,
+        completionDate: prop.completion_date ?? undefined,
+        finishing: prop.finishing_type ?? undefined,
       };
     });
 
@@ -300,15 +337,11 @@ export class SupabaseRepository extends BaseRepository implements Repository {
       }
       
       if (petsAllowed !== undefined) {
-        const hasPets = p.tags.some(t => t.toLowerCase().includes("животн") || t.toLowerCase().includes("pet"));
-        if (petsAllowed && !hasPets) return false;
-        if (!petsAllowed && hasPets) return false;
+        if (p.petsAllowed !== petsAllowed) return false;
       }
       
       if (furnished !== undefined) {
-        const hasFurnished = p.tags.some(t => t.toLowerCase().includes("мебел") || t.toLowerCase().includes("furnish"));
-        if (furnished && !hasFurnished) return false;
-        if (!furnished && hasFurnished) return false;
+        if (p.furnished !== furnished) return false;
       }
       
       return true;
@@ -753,9 +786,9 @@ export class SupabaseRepository extends BaseRepository implements Repository {
       .select("conversation_id, is_pinned")
       .eq("profile_id", userId);
 
-    const convIds = (memberships ?? []).map((membership) => membership.conversation_id);
+    const convIds = (memberships ?? []).map((membership: any) => membership.conversation_id);
     const pinnedByConversation = new Map(
-      (memberships ?? []).map((membership) => [membership.conversation_id, membership.is_pinned]),
+      (memberships ?? []).map((membership: any) => [membership.conversation_id, membership.is_pinned]),
     );
 
     let dbThreads: ChatThread[] = [];
@@ -791,7 +824,7 @@ export class SupabaseRepository extends BaseRepository implements Repository {
           lastMessage: lastMsg?.body ?? "Диалог открыт",
           lastMessageTime: timeStr,
           unreadCount: 0,
-          isPinned: pinnedByConversation.get(c.id) ?? false,
+          isPinned: (pinnedByConversation.get(c.id) as boolean) ?? false,
         };
       });
     }
@@ -864,7 +897,7 @@ export class SupabaseRepository extends BaseRepository implements Repository {
 
     if (error || !msgs) return [];
 
-    const messageIds = msgs.map((message) => message.id);
+    const messageIds = msgs.map((message: any) => message.id);
     const { data: reactionRows } = messageIds.length
       ? await supabase
           .from("message_reactions")
@@ -1158,7 +1191,7 @@ export class SupabaseRepository extends BaseRepository implements Repository {
     if (error) throw new Error("Не удалось загрузить задачи.");
     const names = new Map(context.members.map((member) => [member.id, member.name]));
 
-    return (data ?? []).map((chore) => ({
+    return (data ?? []).map((chore: any) => ({
       id: chore.id,
       title: chore.title,
       assigneeId: chore.assignee_id === context.userId ? "anna" : (chore.assignee_id ?? ""),
@@ -1224,7 +1257,7 @@ export class SupabaseRepository extends BaseRepository implements Repository {
       .order("created_at", { ascending: false });
 
     if (error) throw new Error("Не удалось загрузить расходы.");
-    const expenseIds = (expenses ?? []).map((expense) => expense.id);
+    const expenseIds = (expenses ?? []).map((expense: any) => expense.id);
     const { data: shareRows, error: sharesError } = expenseIds.length
       ? await supabase
           .from("expense_members")
@@ -1235,13 +1268,13 @@ export class SupabaseRepository extends BaseRepository implements Repository {
     if (sharesError) throw new Error("Не удалось загрузить доли расходов.");
     const names = new Map(context.members.map((member) => [member.id, member.name]));
 
-    return (expenses ?? []).map((expense) => ({
+    return (expenses ?? []).map((expense: any) => ({
       id: expense.id,
       title: expense.description,
       totalAmount: expense.amount,
       shares: (shareRows ?? [])
-        .filter((share) => share.expense_id === expense.id)
-        .map((share) => ({
+        .filter((share: any) => share.expense_id === expense.id)
+        .map((share: any) => ({
           memberId: share.profile_id === context.userId ? "anna" : share.profile_id,
           memberName: names.get(share.profile_id) ?? "Сожитель",
           amount: share.share,

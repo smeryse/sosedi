@@ -1,9 +1,31 @@
 -- Migration: 202607190009_nvidia_vector_and_ai_schema.sql
 -- Enables vector extension and adds AI embeddings, telemetry, moderation events, audio jobs, indexes, RLS and vector RPC functions.
 
-CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
+-- 1. Native Cosine Similarity Function (no vector extension required)
+CREATE OR REPLACE FUNCTION public.cosine_similarity(a float8[], b float8[])
+RETURNS float8 LANGUAGE plpgsql AS $$
+DECLARE
+  dot_product float8 := 0;
+  norm_a float8 := 0;
+  norm_b float8 := 0;
+  i int;
+BEGIN
+  IF a IS NULL OR b IS NULL OR array_length(a, 1) IS NULL OR array_length(b, 1) IS NULL OR array_length(a, 1) != array_length(b, 1) THEN
+    RETURN 0;
+  END IF;
+  FOR i IN 1..array_length(a, 1) LOOP
+    dot_product := dot_product + (a[i] * b[i]);
+    norm_a := norm_a + (a[i] * a[i]);
+    norm_b := norm_b + (b[i] * b[i]);
+  END LOOP;
+  IF norm_a = 0 OR norm_b = 0 THEN
+    RETURN 0;
+  END IF;
+  RETURN dot_product / (||/norm_a * ||/norm_b);
+END;
+$$;
 
--- 1. AI Embeddings Table (2048-dim vectors for nvidia/nemotron-3-embed-1b)
+-- 2. AI Embeddings Table (2048-dim vectors for nvidia/nemotron-3-embed-1b using standard float8[])
 CREATE TABLE IF NOT EXISTS public.ai_embeddings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     entity_type TEXT NOT NULL CHECK (entity_type IN ('profile', 'property', 'group', 'document')),
@@ -15,18 +37,13 @@ CREATE TABLE IF NOT EXISTS public.ai_embeddings (
     source_hash TEXT NOT NULL,
     locale TEXT NOT NULL DEFAULT 'ru',
     source_updated_at TIMESTAMPTZ DEFAULT now(),
-    vector extensions.vector(2048) NOT NULL,
+    vector float8[] NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     CONSTRAINT ai_embeddings_unique_entity_model UNIQUE (entity_type, entity_id, model, embedding_version)
 );
 
--- HNSW Cosine Distance Index on Embeddings Vector
-CREATE INDEX IF NOT EXISTS idx_ai_embeddings_vector_hnsw 
-ON public.ai_embeddings 
-USING hnsw (vector extensions.vector_cosine_ops)
-WITH (m = 16, ef_construction = 64);
-
+-- Index for lookup
 CREATE INDEX IF NOT EXISTS idx_ai_embeddings_entity_lookup 
 ON public.ai_embeddings(entity_type, entity_id);
 
@@ -135,7 +152,7 @@ WITH CHECK (auth.uid() = user_id);
 
 -- Roommate Vector Match Function
 CREATE OR REPLACE FUNCTION public.match_roommates_vector(
-    query_embedding extensions.vector(2048),
+    query_embedding float8[],
     match_threshold DOUBLE PRECISION DEFAULT 0.5,
     match_count INT DEFAULT 30,
     filter_city TEXT DEFAULT NULL,
@@ -158,7 +175,7 @@ BEGIN
     RETURN QUERY
     SELECT 
         p.id AS entity_id,
-        (1 - (e.vector <=> query_embedding))::DOUBLE PRECISION AS similarity,
+        public.cosine_similarity(e.vector, query_embedding)::DOUBLE PRECISION AS similarity,
         p.display_name,
         p.city,
         p.age,
@@ -170,15 +187,15 @@ BEGIN
       AND p.is_public = true
       AND (filter_city IS NULL OR LOWER(p.city) = LOWER(filter_city))
       AND (filter_max_budget IS NULL OR (p.budget_min IS NULL OR p.budget_min <= filter_max_budget))
-      AND (1 - (e.vector <=> query_embedding)) >= match_threshold
-    ORDER BY (1 - (e.vector <=> query_embedding)) DESC
+      AND public.cosine_similarity(e.vector, query_embedding) >= match_threshold
+    ORDER BY public.cosine_similarity(e.vector, query_embedding) DESC
     LIMIT match_count;
 END;
 $$;
 
 -- Property Vector Match Function
 CREATE OR REPLACE FUNCTION public.match_properties_vector(
-    query_embedding extensions.vector(2048),
+    query_embedding float8[],
     match_threshold DOUBLE PRECISION DEFAULT 0.5,
     match_count INT DEFAULT 30,
     filter_city TEXT DEFAULT NULL,
@@ -202,7 +219,7 @@ BEGIN
     RETURN QUERY
     SELECT 
         pr.id AS entity_id,
-        (1 - (e.vector <=> query_embedding))::DOUBLE PRECISION AS similarity,
+        public.cosine_similarity(e.vector, query_embedding)::DOUBLE PRECISION AS similarity,
         pr.title,
         pr.city,
         pr.district,
@@ -216,8 +233,8 @@ BEGIN
       AND pr.archived_at IS NULL
       AND (filter_city IS NULL OR LOWER(pr.city) = LOWER(filter_city))
       AND (filter_max_price IS NULL OR pr.monthly_rent <= filter_max_price)
-      AND (1 - (e.vector <=> query_embedding)) >= match_threshold
-    ORDER BY (1 - (e.vector <=> query_embedding)) DESC
+      AND public.cosine_similarity(e.vector, query_embedding) >= match_threshold
+    ORDER BY public.cosine_similarity(e.vector, query_embedding) DESC
     LIMIT match_count;
 END;
 $$;

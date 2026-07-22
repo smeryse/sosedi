@@ -5,7 +5,6 @@ export type NavIconName =
   | "calendar"
   | "user"
   | "file"
-  | "gamepad"
   | "heart"
   | "home"
   | "dashboard"
@@ -20,30 +19,30 @@ export interface NavItem {
   href: string;
   icon: NavIconName;
   badge?: string;
+  mobile?: boolean;
 }
 
 export type NavigationItem = NavItem;
 
 export const tenantNavigation: NavItem[] = [
-  { label: "Главная", href: "/app", icon: "home" },
-  { label: "Поиск жилья", href: "/app/housing", icon: "building" },
-  { label: "Поиск соседей", href: "/app/roommates", icon: "search" },
+  { label: "Главная", href: "/app", icon: "home", mobile: true },
+  { label: "Поиск жилья", href: "/app/housing", icon: "building", mobile: true },
+  { label: "Поиск соседей", href: "/app/roommates", icon: "search", mobile: true },
   { label: "Моя группа", href: "/app/group", icon: "users" },
-  { label: "Избранное", href: "/app/favorites", icon: "heart" },
-  { label: "Сообщения", href: "/app/messages", icon: "message", badge: "2" },
+  { label: "Избранное", href: "/app/favorites", icon: "heart", mobile: true },
+  { label: "Сообщения", href: "/app/messages", icon: "message", badge: "2", mobile: true },
   { label: "Мои заявки", href: "/app/applications", icon: "file" },
   { label: "Рекомендации", href: "/app/recommendations", icon: "bell" },
   { label: "Расписание дел", href: "/app/chores", icon: "calendar" },
   { label: "Расходы", href: "/app/budget", icon: "wallet" },
-  { label: "Симулятор быта", href: "/app/simulator", icon: "gamepad", badge: "NEW" },
   { label: "Профиль и настройки", href: "/app/profile", icon: "settings" },
 ];
 
 export const ownerNavigation: NavItem[] = [
-  { label: "Главная", href: "/owner", icon: "home" },
-  { label: "Мои объекты", href: "/owner/properties", icon: "building" },
-  { label: "Заявки", href: "/owner/applications", icon: "file" },
-  { label: "Сообщения", href: "/owner/messages", icon: "message", badge: "2" },
-  { label: "Аналитика", href: "/owner/analytics", icon: "dashboard" },
-  { label: "Настройки", href: "/owner/profile", icon: "settings" },
+  { label: "Главная", href: "/owner", icon: "home", mobile: true },
+  { label: "Мои объекты", href: "/owner/properties", icon: "building", mobile: true },
+  { label: "Заявки", href: "/owner/applications", icon: "file", mobile: true },
+  { label: "Сообщения", href: "/owner/messages", icon: "message", badge: "2", mobile: true },
+  { label: "Аналитика", href: "/owner/analytics", icon: "dashboard", mobile: true },
+  { label: "Настройки", href: "/owner/settings", icon: "settings" },
 ];

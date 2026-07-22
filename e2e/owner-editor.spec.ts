@@ -1,25 +1,29 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-test.describe("Owner Property 3D Floorplan Editor", () => {
-  test("should open owner editor in 3D mode, select tools, and save draft", async ({ page }) => {
-    await page.goto("/owner/properties/demo-prop-1/editor");
+const retiredEditorPath = "/owner/properties/demo-prop-1/editor";
+const currentEditorPath = "/owner/properties/demo-prop-1/edit";
 
-    const editorHeader = page.locator("header").filter({ hasText: "Редактор собственника" });
+test.describe("Retired owner property editor", () => {
+  test("redirects the old editor to the standard property form", async ({
+    page,
+    request,
+  }) => {
+    const response = await request.get(retiredEditorPath, {
+      headers: { Cookie: "sosedi_session=retired-route-check" },
+      maxRedirects: 0,
+    });
+    const location = response.headers().location;
 
-    // 1. Verify Header & Title
-    await expect(editorHeader).toContainText("Объект #demo-prop-1");
-    await expect(editorHeader).toContainText("Редактор собственника");
+    expect(response.status()).toBe(308);
+    expect(location).toBeTruthy();
+    expect(new URL(location!).pathname).toBe(currentEditorPath);
 
-    // 2. Verify 3D Canvas is visible
-    await expect(page.locator("canvas")).toBeVisible();
+    await page.goto(retiredEditorPath);
 
-    // 3. Select Wall Tool
-    const wallToolBtn = page.getByRole("button", { name: "Стена" });
-    await wallToolBtn.click();
-
-    // 4. Save Draft
-    const saveBtn = page.getByRole("button", { name: "Черновик" });
-    await saveBtn.click();
-    await expect(editorHeader).toContainText("Сохранение...");
+    const finalUrl = new URL(page.url());
+    expect(finalUrl.pathname).toBe("/auth/login");
+    expect(finalUrl.searchParams.get("redirect")).toBe(retiredEditorPath);
+    await expect(page.getByRole("heading", { name: "Добро пожаловать" })).toBeVisible();
+    await expect(page.locator("canvas")).toHaveCount(0);
   });
 });

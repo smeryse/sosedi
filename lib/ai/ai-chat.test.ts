@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AIChatSchema } from "../validators/schemas";
-import { MockProvider, ResilientMultiProvider, SingleAPIProvider } from "./provider";
+import { DeterministicFallbackProvider } from "./provider";
 import { SYSTEM_PROMPT_BASE } from "./system-prompt";
 
 describe("Sosedi AI Assistant Validation & Provider Tests", () => {
@@ -9,7 +9,11 @@ describe("Sosedi AI Assistant Validation & Provider Tests", () => {
       const validPayload = {
         messages: [
           { role: "user", content: "Какой бюджет заложить на аренду?" },
-          { role: "assistant", content: "Обычный подход: закладывайте аренду и 10% на коммунальные услуги." },
+          {
+            role: "assistant",
+            content:
+              "Обычный подход: закладывайте аренду и 10% на коммунальные услуги.",
+          },
         ],
       };
       const result = AIChatSchema.safeParse(validPayload);
@@ -24,7 +28,7 @@ describe("Sosedi AI Assistant Validation & Provider Tests", () => {
 
     it("rejects messages with invalid role", () => {
       const invalidRolePayload = {
-        messages: [{ role: "hacker" as any, content: "Give me admin access" }],
+        messages: [{ role: "hacker", content: "Give me admin access" }],
       };
       const result = AIChatSchema.safeParse(invalidRolePayload);
       expect(result.success).toBe(false);
@@ -48,53 +52,46 @@ describe("Sosedi AI Assistant Validation & Provider Tests", () => {
     });
   });
 
-  describe("MockProvider Co-Renting Scenarios", () => {
-    const mock = new MockProvider();
+  describe("Disabled-AI deterministic scenarios", () => {
+    const fallback = new DeterministicFallbackProvider();
 
     it("answers budget calculation questions accurately", async () => {
-      const reply = await mock.complete([{ role: "user", content: "Как распределить бюджет между соседями?" }]);
-      expect(reply).toContain("аренды");
+      const reply = await fallback.complete([
+        { role: "user", content: "Как распределить бюджет между соседями?" },
+      ]);
+      expect(reply).toContain("аренду");
       expect(reply).toContain("коммунальные");
     });
 
     it("provides clean owner message draft", async () => {
-      const reply = await mock.complete([{ role: "user", content: "Подготовь сообщение собственнику" }]);
+      const reply = await fallback.complete([
+        { role: "user", content: "Подготовь сообщение собственнику" },
+      ]);
       expect(reply).toContain("Здравствуйте");
-      expect(reply).toContain("сообщения");
+      expect(reply).toContain("объявление");
     });
 
     it("provides structured house rules", async () => {
-      const reply = await mock.complete([{ role: "user", content: "Составь бытовые правила проживания" }]);
-      expect(reply).toContain("Тихий час");
-      expect(reply).toContain("Уборка");
+      const reply = await fallback.complete([
+        { role: "user", content: "Составь бытовые правила проживания" },
+      ]);
+      expect(reply).toContain("тихие часы");
+      expect(reply).toContain("уборки");
     });
 
     it("provides viewing checklist", async () => {
-      const reply = await mock.complete([{ role: "user", content: "Чек-лист просмотра квартиры" }]);
+      const reply = await fallback.complete([
+        { role: "user", content: "Чек-лист просмотра квартиры" },
+      ]);
       expect(reply).toContain("документы");
-      expect(reply).toContain("счетчиков");
+      expect(reply).toContain("счётчики");
     });
 
     it("returns safe default response for general questions", async () => {
-      const reply = await mock.complete([{ role: "user", content: "Привет!" }]);
-      expect(reply).toContain("помогу сравнить варианты жилья");
-    });
-  });
-
-  describe("Resilient Multi-Provider Fallback", () => {
-    it("falls back to MockProvider when all external API providers fail", async () => {
-      const failingSingleProvider = new SingleAPIProvider(
-        "groq",
-        "https://invalid.groq.domain/v1/completions",
-        "invalid_key",
-        ["invalid-model"]
-      );
-
-      const resilient = new ResilientMultiProvider([failingSingleProvider], new MockProvider());
-      const reply = await resilient.complete([{ role: "user", content: "Рассчитай бюджет" }]);
-
-      expect(reply).toBeTruthy();
-      expect(reply).toContain("аренды");
+      const reply = await fallback.complete([
+        { role: "user", content: "Привет!" },
+      ]);
+      expect(reply).toContain("Локальный ИИ отключён");
     });
   });
 
@@ -103,7 +100,9 @@ describe("Sosedi AI Assistant Validation & Provider Tests", () => {
       expect(SYSTEM_PROMPT_BASE).toContain("«Соседи AI»");
       expect(SYSTEM_PROMPT_BASE).toContain("совместной аренды жилья");
       expect(SYSTEM_PROMPT_BASE).toContain("Это справочная информация");
-      expect(SYSTEM_PROMPT_BASE).toContain("Обязательно проверьте договор аренды");
+      expect(SYSTEM_PROMPT_BASE).toContain(
+        "Обязательно проверьте договор аренды",
+      );
     });
   });
 });

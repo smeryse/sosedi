@@ -1,27 +1,23 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-test.describe("/demo/3d Commercial 3D Co-Living Workflow", () => {
-  test("should render 3D experience, select rooms, measure 3D points, and maintain total rent sum", async ({
+test.describe("Retired interactive demo route", () => {
+  test("redirects the old demo URL to the current housing flow", async ({
     page,
+    request,
   }) => {
+    const response = await request.get("/demo/3d", { maxRedirects: 0 });
+    const location = response.headers().location;
+
+    expect(response.status()).toBe(308);
+    expect(location).toBeTruthy();
+    expect(new URL(location!).pathname).toBe("/app/housing");
+
     await page.goto("/demo/3d");
 
-    // 1. Verify Map Screen Loaded
-    await expect(page.locator("h1")).toContainText("Найдите дом");
-
-    // 2. Click "Смотреть квартиру" to open 3D Tour
-    const tourBtn = page.getByRole("button", { name: "Смотреть квартиру" });
-    await expect(tourBtn).toBeVisible({ timeout: 10000 });
-    await tourBtn.click();
-
-    // 3. Verify 3D Scene Container
-    const sceneContainer = page.locator("[data-scene-status]");
-    await expect(sceneContainer).toHaveAttribute("data-scene-status", "ready");
-    await expect(sceneContainer).toHaveAttribute("data-rent-total", "40000");
-
-    // 4. Test Room Selector Pills
-    const masterBtn = page.getByRole("button", { name: "Главная спальня (Мастер)" });
-    await masterBtn.click();
-    await expect(sceneContainer).toHaveAttribute("data-active-room-id", "room-master");
+    const finalUrl = new URL(page.url());
+    expect(finalUrl.pathname).toBe("/auth/login");
+    expect(finalUrl.searchParams.get("redirect")).toBe("/app/housing");
+    await expect(page.getByRole("heading", { name: "Добро пожаловать" })).toBeVisible();
+    await expect(page.locator("canvas")).toHaveCount(0);
   });
 });

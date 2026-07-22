@@ -35,6 +35,18 @@ export type DemoProperty = {
   lastCheckedAt?: string;
   isStale?: boolean;
   propertySnapshot?: Record<string, unknown>;
+  description?: string;
+  deposit?: number;
+  totalFloors?: number;
+  availableFrom?: string;
+  leaseMonthsMin?: number;
+  petsAllowed?: boolean;
+  smokingAllowed?: boolean;
+  furnished?: boolean;
+  status?: "draft" | "pending_review" | "published" | "paused" | "rejected" | "archived";
+  ownerId?: string;
+  amenities?: string[];
+  rules?: Record<string, string>;
 };
 
 export const demoRoommates: DemoRoommate[] = [

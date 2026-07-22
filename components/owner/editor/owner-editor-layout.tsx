@@ -70,14 +70,14 @@ export function OwnerEditorLayout({
                 Редактор собственника
               </span>
             </h1>
-            <span className="text-[11px] text-slate-400">Blueprint3D + WebGL 3D Engine</span>
+            <span className="text-[11px] text-slate-400">Планировка и размеры помещений</span>
           </div>
         </div>
 
-        {/* 3D Mode Status Badge */}
+        {/* Plan mode status */}
         <div className="flex bg-slate-800 p-1 px-3.5 py-1.5 rounded-xl border border-slate-700 text-xs font-extrabold text-[#CCFF00] items-center gap-1.5 shadow-sm">
           <Eye className="size-4 text-[#CCFF00]" />
-          <span>3D Интерактивный режим</span>
+          <span>Планировка 2D</span>
         </div>
 
         {/* Right Actions (Undo/Redo, Save, Publish) */}
@@ -114,7 +114,7 @@ export function OwnerEditorLayout({
             className="px-3.5 py-1.5 rounded-xl bg-[#CCFF00] hover:bg-[#b8e600] text-xs font-extrabold text-gray-900 flex items-center gap-1.5 shadow-md transition-all active:scale-95"
           >
             <Sparkles className="size-3.5" />
-            <span>Опубликовать 3D</span>
+            <span>Сохранить план</span>
           </button>
         </div>
       </header>

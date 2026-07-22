@@ -1,480 +1,322 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/auth/session";
+import { query, withTransaction } from "@/lib/db";
+import { getRepository } from "@/lib/repositories/server";
+
+type MessageType =
+  | "text"
+  | "voice"
+  | "property_card"
+  | "viewing_request"
+  | "poll"
+  | "expense_split"
+  | "ai_bot"
+  | "system_notice"
+  | "attachment";
+
+function refreshMessages(conversationId?: string): void {
+  revalidatePath("/app/messages");
+  revalidatePath("/owner/messages");
+  if (conversationId) revalidatePath(`/app/messages/${conversationId}`);
+}
+
+async function assertConversationMember(conversationId: string, profileId: string): Promise<void> {
+  const access = await query(
+    `select 1 from conversation_members
+      where conversation_id = $1 and profile_id = $2 and archived_at is null`,
+    [conversationId, profileId],
+  );
+  if (!access.rowCount) throw new Error("Нет доступа к диалогу");
+}
 
 export async function getConversations() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: members, error } = await supabase
-    .from("conversation_members")
-    .select(`
-      conversation_id,
-      last_read_at,
-      is_pinned,
-      conversations (
-        id,
-        type,
-        group_id,
-        property_id,
-        application_id,
-        created_by,
-        created_at,
-        updated_at
-      )
-    `)
-    .eq("profile_id", user.id);
-
-  if (error || !members) return [];
-
-  const conversationIds = members.map((m) => m.conversations?.id).filter(Boolean) as string[];
-  if (!conversationIds.length) return [];
-
-  const { data: conversations } = await supabase
-    .from("conversations")
-    .select(`
-      *,
-      conversation_members!inner (
-        profile_id,
-        last_read_at,
-        is_pinned,
-        profiles (id, display_name, avatar_path)
-      ),
-      messages (
-        id,
-        sender_id,
-        body,
-        system_type,
-        reply_to_id,
-        extra_data,
-        sent_at,
-        edited_at,
-        deleted_at
-      )
-    `)
-    .in("id", conversationIds)
-    .order("updated_at", { ascending: false });
-
-  return conversations || [];
+  return getRepository().getChatThreads();
 }
 
 export async function getConversation(conversationId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  // Check membership
-  const { data: member } = await supabase
-    .from("conversation_members")
-    .select("last_read_at, is_pinned")
-    .eq("conversation_id", conversationId)
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!member) throw new Error("Нет доступа к диалогу");
-
-  const { data, error } = await supabase
-    .from("conversations")
-    .select(`
-      *,
-      conversation_members (
-        profile_id,
-        last_read_at,
-        is_pinned,
-        profiles (id, display_name, avatar_path)
-      ),
-      messages (
-        id,
-        sender_id,
-        body,
-        system_type,
-        reply_to_id,
-        extra_data,
-        sent_at,
-        edited_at,
-        deleted_at,
-        message_attachments (id, storage_path, mime_type, byte_size)
-      )
-    `)
-    .eq("id", conversationId)
-    .single();
-
-  if (error || !data) throw new Error("Диалог не найден");
-
-  // Fetch reactions for conversation messages
-  const messageIds = data.messages.map((m: any) => m.id);
-  let reactions: any[] = [];
-  if (messageIds.length > 0) {
-    const { data: rxData } = await supabase
-      .from("message_reactions")
-      .select("message_id, profile_id, emoji")
-      .in("message_id", messageIds);
-    reactions = rxData || [];
-  }
-
-  return {
-    ...data,
-    currentUserLastRead: member.last_read_at,
-    isPinned: member.is_pinned,
-    reactions,
-  };
+  const user = await requireUser();
+  const result = await query(
+    `select c.*,
+            coalesce(members.items, '[]'::jsonb) as conversation_members,
+            mine.last_read_at as current_user_last_read,
+            mine.is_pinned
+       from conversations c
+       join conversation_members mine on mine.conversation_id = c.id
+        and mine.profile_id = $2 and mine.archived_at is null
+       left join lateral (
+         select jsonb_agg(jsonb_build_object(
+           'profile_id', cm.profile_id, 'last_read_at', cm.last_read_at, 'is_pinned', cm.is_pinned,
+           'profiles', jsonb_build_object('id', p.id, 'display_name', p.display_name, 'avatar_path', p.avatar_path)
+         ) order by p.display_name) as items
+         from conversation_members cm join profiles p on p.id = cm.profile_id
+         where cm.conversation_id = c.id and cm.archived_at is null
+       ) members on true
+      where c.id = $1`,
+    [conversationId, user.id],
+  );
+  if (!result.rows[0]) throw new Error("Диалог не найден или у вас нет доступа");
+  return { ...result.rows[0], messages: await getRepository().getMessages(conversationId) };
 }
 
 export async function createDirectConversation(otherProfileId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
+  const user = await requireUser();
   if (user.id === otherProfileId) throw new Error("Нельзя создать диалог с самим собой");
-
-  // Idempotent Check: Check if direct conversation between these 2 users already exists
-  const { data: existingMembers } = await supabase
-    .from("conversation_members")
-    .select("conversation_id")
-    .eq("profile_id", user.id);
-
-  if (existingMembers && existingMembers.length > 0) {
-    const myConvIds = existingMembers.map((m) => m.conversation_id);
-
-    const { data: commonMember } = await supabase
-      .from("conversation_members")
-      .select("conversation_id, conversations!inner(type)")
-      .eq("profile_id", otherProfileId)
-      .eq("conversations.type", "direct")
-      .in("conversation_id", myConvIds)
-      .limit(1)
-      .maybeSingle();
-
-    if (commonMember) {
-      redirect(`/app/messages/${commonMember.conversation_id}`);
+  const conversationId = await withTransaction(async (client) => {
+    const target = await client.query<{
+      id: string;
+      message_privacy: "everyone" | "verified" | "none";
+      email_verified: boolean;
+    }>(
+      `select p.id, coalesce(s.message_privacy, 'everyone') as message_privacy,
+              (u.email_verified_at is not null) as email_verified
+         from profiles p join users u on u.id = p.id
+         left join user_settings s on s.user_id = p.id
+        where p.id = $1 and p.is_public = true and u.disabled_at is null`,
+      [otherProfileId],
+    );
+    if (!target.rows[0]) throw new Error("Профиль недоступен");
+    const blocked = await client.query(
+      `select 1 from blocked_users where (blocker_id = $1 and blocked_id = $2) or (blocker_id = $2 and blocked_id = $1)`,
+      [user.id, otherProfileId],
+    );
+    if (blocked.rowCount) throw new Error("Нельзя начать диалог с этим пользователем");
+    if (target.rows[0].message_privacy === "none") throw new Error("Пользователь запретил новые сообщения");
+    if (target.rows[0].message_privacy === "verified" && !user.emailVerified) {
+      throw new Error("Для первого сообщения подтвердите email");
     }
-  }
 
-  // Create new direct conversation
-  const { data: conversation, error } = await supabase
-    .from("conversations")
-    .insert({
-      type: "direct",
-      created_by: user.id,
-    })
-    .select()
-    .single();
-
-  if (error || !conversation) throw new Error("Не удалось создать диалог");
-
-  await supabase.from("conversation_members").insert([
-    { conversation_id: conversation.id, profile_id: user.id, joined_at: new Date().toISOString() },
-    { conversation_id: conversation.id, profile_id: otherProfileId, joined_at: new Date().toISOString() },
-  ]);
-
-  // System notice message
-  await supabase.from("messages").insert({
-    conversation_id: conversation.id,
-    sender_id: user.id,
-    body: "Диалог создан",
-    system_type: "system_notice",
-    sent_at: new Date().toISOString(),
+    const existing = await client.query<{ id: string }>(
+      `select c.id from conversations c
+       join conversation_members me on me.conversation_id = c.id and me.profile_id = $1
+       join conversation_members them on them.conversation_id = c.id and them.profile_id = $2
+       where c.type = 'direct' and (
+         select count(*) from conversation_members all_members
+         where all_members.conversation_id = c.id and all_members.archived_at is null
+       ) = 2 limit 1`,
+      [user.id, otherProfileId],
+    );
+    if (existing.rows[0]) {
+      await client.query(
+        `update conversation_members set archived_at = null where conversation_id = $1 and profile_id = $2`,
+        [existing.rows[0].id, user.id],
+      );
+      return existing.rows[0].id;
+    }
+    const created = await client.query<{ id: string }>(
+      `insert into conversations (type, created_by) values ('direct', $1) returning id`,
+      [user.id],
+    );
+    await client.query(
+      `insert into conversation_members (conversation_id, profile_id) values ($1, $2), ($1, $3)`,
+      [created.rows[0].id, user.id, otherProfileId],
+    );
+    return created.rows[0].id;
   });
-
-  revalidatePath("/app/messages");
-  redirect(`/app/messages/${conversation.id}`);
+  refreshMessages(conversationId);
+  return { conversationId };
 }
 
 export async function createGroupConversation(groupId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  // Idempotent Check: Existing group conversation for this group_id
-  const { data: existingConv } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("group_id", groupId)
-    .eq("type", "group")
-    .maybeSingle();
-
-  if (existingConv) {
-    redirect(`/app/messages/${existingConv.id}`);
-  }
-
-  // Verify user is member or admin of group
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("role")
-    .eq("group_id", groupId)
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!membership) throw new Error("Нет доступа к группе");
-
-  const { data: conversation, error } = await supabase
-    .from("conversations")
-    .insert({
-      type: "group",
-      group_id: groupId,
-      created_by: user.id,
-    })
-    .select()
-    .single();
-
-  if (error || !conversation) throw new Error("Не удалось создать чат группы");
-
-  // Add active members
-  const { data: members } = await supabase
-    .from("group_members")
-    .select("profile_id")
-    .eq("group_id", groupId)
-    .eq("status", "active");
-
-  if (members && members.length > 0) {
-    await supabase.from("conversation_members").insert(
-      members.map((m) => ({
-        conversation_id: conversation.id,
-        profile_id: m.profile_id,
-        joined_at: new Date().toISOString(),
-      }))
+  const user = await requireUser();
+  const conversationId = await withTransaction(async (client) => {
+    const member = await client.query(
+      `select 1 from group_members where group_id = $1 and profile_id = $2 and status = 'active'`,
+      [groupId, user.id],
     );
-  }
-
-  revalidatePath("/app/messages");
-  revalidatePath(`/app/group/${groupId}`);
-  redirect(`/app/messages/${conversation.id}`);
+    if (!member.rowCount) throw new Error("Нет доступа к группе");
+    const existing = await client.query<{ id: string }>(
+      `select id from conversations where group_id = $1 and type = 'group' limit 1`,
+      [groupId],
+    );
+    if (existing.rows[0]) {
+      await client.query(
+        `insert into conversation_members (conversation_id, profile_id)
+         values ($1, $2) on conflict (conversation_id, profile_id)
+         do update set archived_at = null, joined_at = now()`,
+        [existing.rows[0].id, user.id],
+      );
+      return existing.rows[0].id;
+    }
+    const created = await client.query<{ id: string }>(
+      `insert into conversations (type, group_id, created_by) values ('group', $1, $2) returning id`,
+      [groupId, user.id],
+    );
+    await client.query(
+      `insert into conversation_members (conversation_id, profile_id)
+       select $1, profile_id from group_members where group_id = $2 and status = 'active'`,
+      [created.rows[0].id, groupId],
+    );
+    await client.query(
+      `insert into messages (conversation_id, sender_id, body, system_type)
+       values ($1, $2, 'Чат группы создан', 'system_notice')`,
+      [created.rows[0].id, user.id],
+    );
+    return created.rows[0].id;
+  });
+  refreshMessages(conversationId);
+  return { conversationId };
 }
 
 export async function sendMessageWithAttachments(input: {
   conversationId: string;
   body: string;
-  type?: "text" | "voice" | "property_card" | "viewing_request" | "poll" | "expense_split" | "ai_bot" | "system_notice" | "attachment";
+  type?: MessageType;
   replyToId?: string;
-  extraData?: any;
+  extraData?: Record<string, unknown>;
   attachmentIds?: string[];
+  clientGeneratedId?: string;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  // Check membership
-  const { data: member } = await supabase
-    .from("conversation_members")
-    .select("conversation_id")
-    .eq("conversation_id", input.conversationId)
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!member) throw new Error("Нет доступа к диалогу");
-
-  // Create message atomically
-  const { data: message, error } = await supabase
-    .from("messages")
-    .insert({
-      conversation_id: input.conversationId,
-      sender_id: user.id,
-      body: input.body,
-      system_type: input.type !== "text" ? input.type : null,
-      reply_to_id: input.replyToId || null,
-      extra_data: input.extraData || {},
-      sent_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (error || !message) {
-    // If message creation fails, clean up attachments
-    if (input.attachmentIds?.length) {
-      await supabase.from("message_attachments").delete().in("id", input.attachmentIds);
+  const user = await requireUser();
+  const body = input.body.trim();
+  const attachmentIds = Array.from(new Set(input.attachmentIds ?? [])).slice(0, 10);
+  if (!body && !attachmentIds.length) throw new Error("Сообщение не может быть пустым");
+  if (body.length > 10_000) throw new Error("Сообщение слишком длинное");
+  const message = await withTransaction(async (client) => {
+    const membership = await client.query(
+      `select 1 from conversation_members where conversation_id = $1 and profile_id = $2 and archived_at is null`,
+      [input.conversationId, user.id],
+    );
+    if (!membership.rowCount) throw new Error("Нет доступа к диалогу");
+    if (input.replyToId) {
+      const reply = await client.query(
+        `select 1 from messages where id = $1 and conversation_id = $2 and deleted_at is null`,
+        [input.replyToId, input.conversationId],
+      );
+      if (!reply.rowCount) throw new Error("Исходное сообщение не найдено");
     }
-    throw new Error("Не удалось отправить сообщение");
-  }
-
-  // Link pre-uploaded attachments
-  if (input.attachmentIds?.length) {
-    await supabase
-      .from("message_attachments")
-      .update({ message_id: message.id })
-      .in("id", input.attachmentIds);
-  }
-
-  // Touch conversation updated_at
-  await supabase
-    .from("conversations")
-    .update({ updated_at: new Date().toISOString() })
-    .eq("id", input.conversationId);
-
-  // Update sender last_read_at
-  await supabase
-    .from("conversation_members")
-    .update({ last_read_at: new Date().toISOString() })
-    .eq("conversation_id", input.conversationId)
-    .eq("profile_id", user.id);
-
-  revalidatePath(`/app/messages/${input.conversationId}`);
+    if (attachmentIds.length) {
+      const attachments = await client.query<{ id: string }>(
+        `select id from message_attachments
+          where id = any($1::uuid[]) and uploaded_by = $2 and message_id is null
+            and status = 'ready' and created_at > now() - interval '1 hour' for update`,
+        [attachmentIds, user.id],
+      );
+      if (attachments.rowCount !== attachmentIds.length) throw new Error("Одно или несколько вложений недоступны");
+    }
+    const inserted = await client.query(
+      `insert into messages
+        (conversation_id, sender_id, body, system_type, reply_to_id, extra_data, client_generated_id)
+       values ($1, $2, $3, $4, $5, $6::jsonb, $7)
+       on conflict (client_generated_id) do update set client_generated_id = excluded.client_generated_id
+       returning *`,
+      [
+        input.conversationId,
+        user.id,
+        body,
+        input.type ?? (attachmentIds.length ? "attachment" : "text"),
+        input.replyToId ?? null,
+        JSON.stringify(input.extraData ?? {}),
+        input.clientGeneratedId ?? null,
+      ],
+    );
+    if (attachmentIds.length) {
+      await client.query(
+        `update message_attachments set message_id = $1
+          where id = any($2::uuid[]) and uploaded_by = $3 and message_id is null`,
+        [inserted.rows[0].id, attachmentIds, user.id],
+      );
+    }
+    await client.query(`update conversations set updated_at = now() where id = $1`, [input.conversationId]);
+    await client.query(
+      `update conversation_members set last_read_at = now(), last_read_message_id = $3
+        where conversation_id = $1 and profile_id = $2`,
+      [input.conversationId, user.id, inserted.rows[0].id],
+    );
+    return inserted.rows[0];
+  });
+  refreshMessages(input.conversationId);
   return message;
 }
 
-export async function uploadMessageAttachment(input: {
-  conversationId: string;
-  file: File;
-}) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  const { data: member } = await supabase
-    .from("conversation_members")
-    .select("conversation_id")
-    .eq("conversation_id", input.conversationId)
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!member) throw new Error("Нет доступа к диалогу");
-
-  const MAX_SIZE = 25 * 1024 * 1024; // 25MB limit
-  if (input.file.size > MAX_SIZE) throw new Error("Файл слишком большой (макс. 25 МБ)");
-
-  const allowedTypes = [
-    "image/jpeg", "image/png", "image/gif", "image/webp",
-    "application/pdf", "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "text/plain",
-  ];
-  if (!allowedTypes.includes(input.file.type)) throw new Error("Неподдерживаемый тип файла");
-
-  const ext = input.file.name.split(".").pop() || "file";
-  const storagePath = `${input.conversationId}/${user.id}/${Date.now()}.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("message-attachments")
-    .upload(storagePath, input.file, { contentType: input.file.type, upsert: false });
-
-  if (uploadError) throw new Error(`Ошибка загрузки: ${uploadError.message}`);
-
-  const { data: attachment, error: attachError } = await supabase
-    .from("message_attachments")
-    .insert({
-      message_id: "", // Will be linked in sendMessageWithAttachments
-      storage_path: storagePath,
-      mime_type: input.file.type,
-      byte_size: input.file.size,
-    })
-    .select()
-    .single();
-
-  if (attachError || !attachment) {
-    await supabase.storage.from("message-attachments").remove([storagePath]);
-    throw new Error("Не удалось сохранить вложение");
-  }
-
-  return { attachment, storagePath };
+export async function uploadMessageAttachment(_input: { conversationId: string; file: File }) {
+  throw new Error("Вложения загружаются напрямую в защищённое хранилище через API /api/attachments");
 }
 
 export async function markConversationRead(conversationId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
-  await supabase
-    .from("conversation_members")
-    .update({ last_read_at: new Date().toISOString() })
-    .eq("conversation_id", conversationId)
-    .eq("profile_id", user.id);
-
-  revalidatePath("/app/messages");
-  revalidatePath(`/app/messages/${conversationId}`);
+  const user = await requireUser();
+  const result = await query(
+    `update conversation_members set last_read_at = now(), last_read_message_id = (
+       select id from messages where conversation_id = $1 and deleted_at is null order by sent_at desc limit 1
+     ) where conversation_id = $1 and profile_id = $2 and archived_at is null`,
+    [conversationId, user.id],
+  );
+  if (!result.rowCount) throw new Error("Нет доступа к диалогу");
+  refreshMessages(conversationId);
 }
 
 export async function editMessage(messageId: string, newBody: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  const trimmed = newBody.trim();
-  if (!trimmed) throw new Error("Сообщение не может быть пустым");
-
-  const { error } = await supabase
-    .from("messages")
-    .update({
-      body: trimmed,
-      edited_at: new Date().toISOString(),
-    })
-    .eq("id", messageId)
-    .eq("sender_id", user.id);
-
-  if (error) throw new Error("Не удалось отредактировать сообщение");
-  revalidatePath("/app/messages");
+  const user = await requireUser();
+  const body = newBody.trim();
+  if (!body || body.length > 10_000) throw new Error("Введите сообщение длиной до 10 000 символов");
+  const result = await withTransaction(async (client) => {
+    const current = await client.query<{ body: string; conversation_id: string }>(
+      `select body, conversation_id from messages
+        where id = $1 and sender_id = $2 and deleted_at is null
+          and sent_at > now() - interval '24 hours' for update`,
+      [messageId, user.id],
+    );
+    if (!current.rows[0]) throw new Error("Сообщение нельзя отредактировать");
+    await client.query(
+      `insert into message_edits (message_id, previous_body, edited_by) values ($1, $2, $3)`,
+      [messageId, current.rows[0].body, user.id],
+    );
+    await client.query(`update messages set body = $2, edited_at = now() where id = $1`, [messageId, body]);
+    return current.rows[0].conversation_id;
+  });
+  refreshMessages(result);
 }
 
 export async function deleteMessage(messageId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  const { error } = await supabase
-    .from("messages")
-    .update({
-      body: "Сообщение удалено",
-      deleted_at: new Date().toISOString(),
-    })
-    .eq("id", messageId)
-    .eq("sender_id", user.id);
-
-  if (error) throw new Error("Не удалось удалить сообщение");
-  revalidatePath("/app/messages");
+  const user = await requireUser();
+  const result = await query<{ conversation_id: string }>(
+    `update messages set body = '', deleted_at = now()
+      where id = $1 and sender_id = $2 and deleted_at is null returning conversation_id`,
+    [messageId, user.id],
+  );
+  if (!result.rows[0]) throw new Error("Сообщение не найдено");
+  refreshMessages(result.rows[0].conversation_id);
 }
 
 export async function toggleMessageReaction(messageId: string, emoji: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  // Check existing reaction
-  const { data: existing } = await supabase
-    .from("message_reactions")
-    .select("*")
-    .eq("message_id", messageId)
-    .eq("profile_id", user.id)
-    .eq("emoji", emoji)
-    .maybeSingle();
-
-  if (existing) {
-    await supabase
-      .from("message_reactions")
-      .delete()
-      .eq("message_id", messageId)
-      .eq("profile_id", user.id)
-      .eq("emoji", emoji);
-  } else {
-    await supabase.from("message_reactions").insert({
-      message_id: messageId,
-      profile_id: user.id,
-      emoji,
-    });
-  }
-
-  revalidatePath("/app/messages");
+  const user = await requireUser();
+  if (!emoji.trim() || emoji.length > 16) throw new Error("Некорректная реакция");
+  const conversationId = await withTransaction(async (client) => {
+    const message = await client.query<{ conversation_id: string }>(
+      `select m.conversation_id from messages m join conversation_members cm
+        on cm.conversation_id = m.conversation_id and cm.profile_id = $2 and cm.archived_at is null
+        where m.id = $1 and m.deleted_at is null`,
+      [messageId, user.id],
+    );
+    if (!message.rows[0]) throw new Error("Сообщение не найдено");
+    const existing = await client.query(
+      `select 1 from message_reactions where message_id = $1 and profile_id = $2 and emoji = $3`,
+      [messageId, user.id, emoji],
+    );
+    if (existing.rowCount) {
+      await client.query(
+        `delete from message_reactions where message_id = $1 and profile_id = $2 and emoji = $3`,
+        [messageId, user.id, emoji],
+      );
+    } else {
+      await client.query(
+        `insert into message_reactions (message_id, profile_id, emoji) values ($1, $2, $3)`,
+        [messageId, user.id, emoji],
+      );
+    }
+    return message.rows[0].conversation_id;
+  });
+  refreshMessages(conversationId);
 }
 
 export async function pinConversation(conversationId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
-
-  const { data: member } = await supabase
-    .from("conversation_members")
-    .select("is_pinned")
-    .eq("conversation_id", conversationId)
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!member) throw new Error("Нет доступа к диалогу");
-
-  await supabase
-    .from("conversation_members")
-    .update({ is_pinned: !member.is_pinned })
-    .eq("conversation_id", conversationId)
-    .eq("profile_id", user.id);
-
-  revalidatePath("/app/messages");
+  const user = await requireUser();
+  await assertConversationMember(conversationId, user.id);
+  await query(
+    `update conversation_members set is_pinned = not is_pinned
+      where conversation_id = $1 and profile_id = $2`,
+    [conversationId, user.id],
+  );
+  refreshMessages(conversationId);
 }

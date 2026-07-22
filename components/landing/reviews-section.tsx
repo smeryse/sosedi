@@ -32,12 +32,12 @@ export function ReviewsSection() {
   return (
     <section
       id="reviews"
-      className="overflow-hidden bg-[#F4F4F0] px-5 py-24 text-black sm:px-10 md:py-36 lg:px-16"
+      className="overflow-hidden bg-[#F4F4F0] dark:bg-[#131514] px-5 py-24 text-black dark:text-white sm:px-10 md:py-36 lg:px-16"
     >
       <div className="mx-auto max-w-7xl">
         <Reveal className="flex items-end justify-between gap-8">
           <div>
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-black/45">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-black/45 dark:text-white/55">
               <span className="size-2 rounded-full bg-[#A8CE00]" /> Отзывы
             </p>
             <h2 className="mt-5 font-heading text-4xl font-bold leading-[0.98] tracking-tight sm:text-5xl md:text-6xl">

@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, Instrument_Serif } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "@/lib/auth/session-context";
 import { PageErrorBoundary } from "@/components/error-boundary/ErrorBoundary";
+import { PwaManager } from "@/components/pwa/pwa-manager";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -17,7 +18,31 @@ export const metadata: Metadata = {
   },
   description:
     "Найдите совместимых соседей, соберите группу и арендуйте подходящее жильё вместе.",
-  icons: { icon: "/brand/sosedi-symbol-v2.svg" },
+  applicationName: "Соседи",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Соседи",
+  },
+  formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: "/brand/sosedi-symbol-v2.svg", type: "image/svg+xml" },
+      { url: "/pwa-icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/pwa-icon/180",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F5F3EA" },
+    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+  ],
 };
 
 const inter = Inter({
@@ -58,6 +83,7 @@ export default function RootLayout({
             <PageErrorBoundary>
               {children}
             </PageErrorBoundary>
+            <PwaManager />
           </SessionProvider>
         </ThemeProvider>
       </body>

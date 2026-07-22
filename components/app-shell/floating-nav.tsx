@@ -11,25 +11,21 @@ import {
   ChevronRight,
   CircleUserRound,
   FileCheck2,
-  Gamepad2,
   Heart,
   Home,
   LayoutDashboard,
   LayoutGrid,
   MessageCircle,
-  Moon,
   ReceiptRussianRuble,
   Search,
   Settings,
-  Sun,
   UsersRound,
   X,
-  Sparkles,
   Zap,
 } from "lucide-react";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import type { NavItem } from "./navigation";
-import { tenantNavigation, ownerNavigation } from "./navigation";
+import { tenantNavigation } from "./navigation";
 
 const iconMap = {
   bell: Bell,
@@ -38,7 +34,6 @@ const iconMap = {
   calendar: CalendarCheck2,
   user: CircleUserRound,
   file: FileCheck2,
-  gamepad: Gamepad2,
   heart: Heart,
   home: Home,
   dashboard: LayoutDashboard,
@@ -84,7 +79,7 @@ export function FloatingNav({
   // Primary dock items
   const primaryHrefs = owner
     ? ["/owner", "/owner/properties", "/owner/applications", "/owner/messages"]
-    : ["/app", "/app/roommates", "/app/housing", "/app/simulator", "/app/favorites", "/app/messages", "/app/assistant"];
+    : ["/app", "/app/roommates", "/app/housing", "/app/favorites", "/app/messages", "/app/assistant"];
 
   const primaryItems = items.filter((item) => primaryHrefs.includes(item.href));
   const extraItems = items.filter((item) => !primaryHrefs.includes(item.href));

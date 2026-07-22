@@ -1,8 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+
+type BrowserUser = {
+  id: string;
+  email: string;
+  roles: string[];
+  onboardingCompleted: boolean;
+};
 
 export interface UserProfile {
   id: string;
@@ -13,120 +18,76 @@ export interface UserProfile {
 }
 
 interface SessionContextType {
-  session: { user: User } | null;
-  user: User | null;
+  session: { user: BrowserUser } | null;
+  user: BrowserUser | null;
   profile: UserProfile;
   loading: boolean;
   refreshSession: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
-const defaultAnnaProfile: UserProfile = {
-  id: "anna-default-id",
-  displayName: "Анна",
-  avatarPath: "/demo/people/anna.svg",
-  jobTitle: "Product Designer",
-  role: "tenant",
+const emptyProfile: UserProfile = {
+  id: "",
+  displayName: "Пользователь",
+  avatarPath: "/demo/people/anna.jpg",
 };
 
 const SessionContext = createContext<SessionContextType | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<{ user: User } | null>(null);
-  const [profile, setProfile] = useState<UserProfile>(defaultAnnaProfile);
+  const [session, setSession] = useState<{ user: BrowserUser } | null>(null);
+  const [profile, setProfile] = useState<UserProfile>(emptyProfile);
   const [loading, setLoading] = useState(true);
-
-  const supabase = createClient();
-
-  const loadProfile = useCallback(async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_path, job_title")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (data) {
-        setProfile({
-          id: data.id,
-          displayName: data.display_name || "Анна",
-          avatarPath: data.avatar_path || "/demo/people/anna.svg",
-          jobTitle: data.job_title || "Product Designer",
-          role: "tenant",
-        });
-      }
-    } catch {
-      // Keep fallback
-    }
-  }, [supabase]);
 
   const refreshSession = useCallback(async () => {
     try {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        setSession({ user: data.session.user });
-        await loadProfile(data.session.user.id);
-      } else {
+      const response = await fetch("/api/auth/session", { cache: "no-store" });
+      if (!response.ok) {
         setSession(null);
-        setProfile(defaultAnnaProfile);
+        setProfile(emptyProfile);
+        return;
       }
+      const body = await response.json() as { user?: BrowserUser };
+      const user = body.user;
+      if (!user) {
+        setSession(null);
+        setProfile(emptyProfile);
+        return;
+      }
+      setSession({ user });
+      setProfile({
+        id: user.id,
+        displayName: user.email.split("@")[0] || "Пользователь",
+        avatarPath: "/demo/people/anna.jpg",
+        role: user.roles.includes("landlord") ? "landlord" : "tenant",
+      });
     } catch {
       setSession(null);
+      setProfile(emptyProfile);
     } finally {
       setLoading(false);
     }
-  }, [supabase.auth, loadProfile]);
+  }, []);
 
   const signOut = useCallback(async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // ignore
-    } finally {
-      setSession(null);
-      setProfile(defaultAnnaProfile);
-    }
-  }, [supabase.auth]);
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    setSession(null);
+    setProfile(emptyProfile);
+  }, []);
 
   useEffect(() => {
-    refreshSession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setSession({ user: session.user });
-        loadProfile(session.user.id);
-      } else {
-        setSession(null);
-        setProfile(defaultAnnaProfile);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, [supabase.auth, refreshSession, loadProfile]);
+    void refreshSession();
+  }, [refreshSession]);
 
   return (
-    <SessionContext.Provider
-      value={{
-        session,
-        user: session?.user ?? null,
-        profile,
-        loading,
-        refreshSession,
-        signOut,
-      }}
-    >
+    <SessionContext.Provider value={{ session, user: session?.user ?? null, profile, loading, refreshSession, signOut }}>
       {children}
     </SessionContext.Provider>
   );
 }
 
-export function useSession() {
+export function useSession(): SessionContextType {
   const context = useContext(SessionContext);
-  if (!context) {
-    throw new Error("useSession must be used within a SessionProvider");
-  }
+  if (!context) throw new Error("useSession must be used within a SessionProvider");
   return context;
 }

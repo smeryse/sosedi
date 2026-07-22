@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 
 const links = [
-  ["3D-Демо", "/demo/3d"],
+  ["Безопасность", "/safety"],
   ["О проекте", "#about"],
   ["Как это работает", "#how"],
   ["Возможности", "#product"],

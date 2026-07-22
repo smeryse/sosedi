@@ -360,7 +360,7 @@ export default function TenantProfileSettingsPage() {
 
   if (loading) {
     return (
-      <PageFrame eyebrow="Профиль и настройки" title="Загрузка..." description="Пожалуйста, подождите.">
+      <PageFrame title="Загрузка..." description="Пожалуйста, подождите.">
         <div className="flex justify-center py-12">
           <Loader2 className="size-8 animate-spin text-accent" />
         </div>
@@ -370,7 +370,6 @@ export default function TenantProfileSettingsPage() {
 
   return (
     <PageFrame
-      eyebrow="Профиль и настройки"
       title={activeTab === "profile" ? (profile?.display_name || "Профиль") : (tabs.find(t => t.id === activeTab)?.label || "Настройки")}
       description={activeTab === "profile" 
         ? "Так вас видят потенциальные соседи. Личные контакты остаются скрытыми до взаимного согласия."

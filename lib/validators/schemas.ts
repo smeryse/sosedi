@@ -12,7 +12,10 @@ import { z } from "zod";
 export const SignUpSchema = z.object({
   email: z.string().email("Неверный формат email"),
   password: z.string().min(8, "Пароль должен содержать минимум 8 символов"),
-  displayName: z.string().min(2, "Имя должно содержать минимум 2 символа").max(80),
+  displayName: z
+    .string()
+    .min(2, "Имя должно содержать минимум 2 символа")
+    .max(80),
   role: z.enum(["tenant", "owner"]).default("tenant"),
 });
 
@@ -25,13 +28,15 @@ export const ForgotPasswordSchema = z.object({
   email: z.string().email("Неверный формат email"),
 });
 
-export const UpdatePasswordSchema = z.object({
-  password: z.string().min(8, "Пароль должен содержать минимум 8 символов"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Пароли не совпадают",
-  path: ["confirmPassword"],
-});
+export const UpdatePasswordSchema = z
+  .object({
+    password: z.string().min(8, "Пароль должен содержать минимум 8 символов"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Пароли не совпадают",
+    path: ["confirmPassword"],
+  });
 
 export const ProfileUpdateSchema = z.object({
   display_name: z.string().min(2).max(80).optional(),
@@ -50,10 +55,14 @@ export const ProfileUpdateSchema = z.object({
 export const ProfilePreferencesSchema = z.object({
   districts: z.array(z.string()).default([]),
   smoking: z.enum(["no", "sometimes", "yes", "indifferent"]).default("no"),
-  pets: z.enum(["no", "cat", "dog", "other", "indifferent"]).default("indifferent"),
+  pets: z
+    .enum(["no", "cat", "dog", "other", "indifferent"])
+    .default("indifferent"),
   sleep_schedule: z.enum(["early", "late", "flexible"]).default("flexible"),
   noise_tolerance: z.number().int().min(1).max(5).optional().nullable(),
-  guests_frequency: z.enum(["never", "rarely", "sometimes", "often"]).default("sometimes"),
+  guests_frequency: z
+    .enum(["never", "rarely", "sometimes", "often"])
+    .default("sometimes"),
   remote_work: z.enum(["never", "sometimes", "often"]).default("sometimes"),
   cleanliness: z.number().int().min(1).max(5).optional().nullable(),
   sociability: z.number().int().min(1).max(5).optional().nullable(),
@@ -133,7 +142,9 @@ export const GroupMemberUpdateSchema = z.object({
   groupId: z.string().uuid(),
   profileId: z.string().uuid(),
   role: z.enum(["admin", "member"]).optional(),
-  status: z.enum(["invited", "active", "declined", "left", "removed"]).optional(),
+  status: z
+    .enum(["invited", "active", "declined", "left", "removed"])
+    .optional(),
 });
 
 // ============================================
@@ -150,7 +161,16 @@ export const ApplicationCreateSchema = z.object({
 
 export const ApplicationStatusSchema = z.object({
   applicationId: z.string().uuid(),
-  status: z.enum(["draft", "submitted", "reviewing", "needs_response", "approved", "rejected", "contract_agreed", "settled"]),
+  status: z.enum([
+    "draft",
+    "submitted",
+    "reviewing",
+    "needs_response",
+    "approved",
+    "rejected",
+    "contract_agreed",
+    "settled",
+  ]),
   ownerNote: z.string().optional(),
 });
 
@@ -167,44 +187,68 @@ export const ApplicationMemberConfirmSchema = z.object({
 export const MessageSendSchema = z.object({
   conversationId: z.string().min(1),
   content: z.string().trim().min(1, "Сообщение не может быть пустым").max(4000),
-  type: z.enum(["text", "property_card", "viewing_request", "poll", "expense_split", "ai_bot", "system_notice"]).default("text"),
+  type: z
+    .enum([
+      "text",
+      "property_card",
+      "viewing_request",
+      "poll",
+      "expense_split",
+      "ai_bot",
+      "system_notice",
+    ])
+    .default("text"),
   propertyId: z.string().optional(),
-  viewingData: z.object({
-    id: z.string(),
-    propertyId: z.string().uuid(),
-    date: z.string(),
-    timeSlot: z.string(),
-    status: z.enum(["pending", "confirmed", "rescheduled", "declined"]),
-    requestedBy: z.string(),
-  }).optional(),
-  pollData: z.object({
-    id: z.string(),
-    question: z.string(),
-    options: z.array(z.object({
+  viewingData: z
+    .object({
       id: z.string(),
-      text: z.string(),
-      voterIds: z.array(z.string()).default([]),
-    })),
-    totalVotes: z.number().int().default(0),
-  }).optional(),
-  expenseData: z.object({
-    id: z.string(),
-    title: z.string(),
-    totalAmount: z.number().int().positive(),
-    shares: z.array(z.object({
-      memberId: z.string(),
-      memberName: z.string(),
-      amount: z.number(),
-      isPaid: z.boolean(),
-    })),
-  }).optional(),
+      propertyId: z.string().uuid(),
+      date: z.string(),
+      timeSlot: z.string(),
+      status: z.enum(["pending", "confirmed", "rescheduled", "declined"]),
+      requestedBy: z.string(),
+    })
+    .optional(),
+  pollData: z
+    .object({
+      id: z.string(),
+      question: z.string(),
+      options: z.array(
+        z.object({
+          id: z.string(),
+          text: z.string(),
+          voterIds: z.array(z.string()).default([]),
+        }),
+      ),
+      totalVotes: z.number().int().default(0),
+    })
+    .optional(),
+  expenseData: z
+    .object({
+      id: z.string(),
+      title: z.string(),
+      totalAmount: z.number().int().positive(),
+      shares: z.array(
+        z.object({
+          memberId: z.string(),
+          memberName: z.string(),
+          amount: z.number(),
+          isPaid: z.boolean(),
+        }),
+      ),
+    })
+    .optional(),
   voiceDuration: z.string().optional(),
-  attachments: z.array(z.object({
-    id: z.string(),
-    storage_path: z.string(),
-    mime_type: z.string(),
-    byte_size: z.number().int().positive(),
-  })).optional(),
+  attachments: z
+    .array(
+      z.object({
+        id: z.string(),
+        storage_path: z.string(),
+        mime_type: z.string(),
+        byte_size: z.number().int().positive(),
+      }),
+    )
+    .optional(),
 });
 
 export const PollVoteSchema = z.object({
@@ -245,10 +289,14 @@ export const ExpenseCreateSchema = z.object({
   description: z.string().min(2).max(200),
   amount: z.number().int().positive(),
   occurredOn: z.string().date().optional(),
-  shares: z.array(z.object({
-    profileId: z.string().uuid(),
-    share: z.number().int().min(0),
-  })).min(1),
+  shares: z
+    .array(
+      z.object({
+        profileId: z.string().uuid(),
+        share: z.number().int().min(0),
+      }),
+    )
+    .min(1),
 });
 
 export const ExpensePaidSchema = z.object({
@@ -292,12 +340,19 @@ export const FavoriteToggleSchema = z.object({
 
 export const AIChatMessageSchema = z.object({
   role: z.enum(["system", "user", "assistant"]),
-  content: z.string().trim().min(1, "Сообщение не может быть пустым").max(4000, "Сообщение слишком длинное (макс. 4000 символов)"),
+  content: z
+    .string()
+    .trim()
+    .min(1, "Сообщение не может быть пустым")
+    .max(4000, "Сообщение слишком длинное (макс. 4000 символов)"),
 });
 
 export const AIChatSchema = z.object({
-  messages: z.array(AIChatMessageSchema).min(1, "Требуется хотя бы одно сообщение").max(20, "Превышено максимальное число сообщений в истории (макс. 20)"),
-  provider: z.enum(["mock", "groq", "openrouter"]).optional(),
+  messages: z
+    .array(AIChatMessageSchema)
+    .min(1, "Требуется хотя бы одно сообщение")
+    .max(20, "Превышено максимальное число сообщений в истории (макс. 20)"),
+  provider: z.literal("local").optional(),
 });
 
 // ============================================
@@ -308,7 +363,9 @@ export const VerificationRequestSchema = z.object({
   subjectType: z.enum(["profile", "property"]),
   subjectId: z.string().uuid(),
   provider: z.string().optional(),
-  documentType: z.enum(["passport", "income", "rental_history", "property_deed"]).optional(),
+  documentType: z
+    .enum(["passport", "income", "rental_history", "property_deed"])
+    .optional(),
 });
 
 // ============================================
@@ -322,7 +379,9 @@ export type UpdatePasswordInput = z.infer<typeof UpdatePasswordSchema>;
 export type ProfileUpdateInput = z.infer<typeof ProfileUpdateSchema>;
 export type ProfilePreferencesInput = z.infer<typeof ProfilePreferencesSchema>;
 export type LifestyleAnswerInput = z.infer<typeof LifestyleAnswerSchema>;
-export type CompatibilityWeightsInput = z.infer<typeof CompatibilityWeightsSchema>;
+export type CompatibilityWeightsInput = z.infer<
+  typeof CompatibilityWeightsSchema
+>;
 
 export type PropertyCreateInput = z.infer<typeof PropertyCreateSchema>;
 export type PropertyUpdateInput = z.infer<typeof PropertyUpdateSchema>;
@@ -334,7 +393,9 @@ export type GroupMemberUpdateInput = z.infer<typeof GroupMemberUpdateSchema>;
 
 export type ApplicationCreateInput = z.infer<typeof ApplicationCreateSchema>;
 export type ApplicationStatusInput = z.infer<typeof ApplicationStatusSchema>;
-export type ApplicationMemberConfirmInput = z.infer<typeof ApplicationMemberConfirmSchema>;
+export type ApplicationMemberConfirmInput = z.infer<
+  typeof ApplicationMemberConfirmSchema
+>;
 
 export type MessageSendInput = z.infer<typeof MessageSendSchema>;
 export type PollVoteInput = z.infer<typeof PollVoteSchema>;
@@ -353,7 +414,9 @@ export type FavoriteToggleInput = z.infer<typeof FavoriteToggleSchema>;
 
 export type AIChatInput = z.infer<typeof AIChatSchema>;
 
-export type VerificationRequestInput = z.infer<typeof VerificationRequestSchema>;
+export type VerificationRequestInput = z.infer<
+  typeof VerificationRequestSchema
+>;
 
 // ============================================
 // Validation Helper
@@ -365,15 +428,17 @@ export type VerificationRequestInput = z.infer<typeof VerificationRequestSchema>
 export function validateInput<T>(
   schema: z.ZodSchema<T>,
   input: unknown,
-  actionName: string
+  actionName: string,
 ): T {
   const result = schema.safeParse(input);
-  
+
   if (!result.success) {
-    const errors = result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
+    const errors = result.error.issues
+      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+      .join("; ");
     throw new Error(`[${actionName}] Validation failed: ${errors}`);
   }
-  
+
   return result.data;
 }
 
@@ -382,14 +447,16 @@ export function validateInput<T>(
  */
 export function safeValidateInput<T>(
   schema: z.ZodSchema<T>,
-  input: unknown
+  input: unknown,
 ): { data: T | null; error: string | null } {
   const result = schema.safeParse(input);
-  
+
   if (!result.success) {
-    const errors = result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
+    const errors = result.error.issues
+      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+      .join("; ");
     return { data: null, error: errors };
   }
-  
+
   return { data: result.data, error: null };
 }

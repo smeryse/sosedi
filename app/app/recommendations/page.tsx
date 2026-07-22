@@ -15,7 +15,6 @@ export default async function RecommendationsPage() {
 
   return (
     <PageFrame
-      eyebrow="Для вас"
       title="Рекомендации"
       description="Подборка обновляется после каждого ответа в анкете и действия в каталоге."
     >

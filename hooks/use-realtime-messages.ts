@@ -46,7 +46,7 @@ export function useRealtimeMessages(threadId: string, initialMessages: ChatMessa
           table: "messages",
           filter: `conversation_id=eq.${threadId}`,
         },
-        async (payload) => {
+        async (payload: any) => {
           try {
             const freshMessages = await repo.getMessages(threadId);
             setMessages(freshMessages);
@@ -73,7 +73,7 @@ export function useRealtimeMessages(threadId: string, initialMessages: ChatMessa
         }
       )
       .on("presence", { event: "sync" }, () => {
-        const newState = channel.presenceState();
+        const newState = (channel as any).presenceState();
         const typingIds = Object.values(newState)
           .flat()
           .filter((state: any) => state.isTyping)
@@ -81,10 +81,10 @@ export function useRealtimeMessages(threadId: string, initialMessages: ChatMessa
         // Only keep unique IDs
         setTypingUsers([...new Set(typingIds)]);
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status: any) => {
         if (status === "SUBSCRIBED") {
           // Wait to track initial presence
-          await channel.track({ isTyping: false, userId: "user" }); // TODO: Replace "user" with actual ID
+          await (channel as any).track({ isTyping: false, userId: "user" }); // TODO: Replace "user" with actual ID
         }
       });
 
@@ -100,7 +100,7 @@ export function useRealtimeMessages(threadId: string, initialMessages: ChatMessa
 
   const setTyping = async (isTyping: boolean) => {
     if (channelRef.current && threadId !== "ai-assistant") {
-      await channelRef.current.track({ isTyping, userId: "user" });
+      await (channelRef.current as any).track({ isTyping, userId: "user" });
     }
   };
 

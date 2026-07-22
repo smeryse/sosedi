@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronDown, MessageCircle, Plus, Search } from "lucide-react";
+import { ArrowLeftRight, Bell, ChevronDown, MessageCircle, Plus, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { createClientRepository } from "@/lib/repositories";
@@ -47,6 +47,18 @@ export function AppHeader({ owner = false }: { owner?: boolean }) {
     router.push(`${target}?search=${encodeURIComponent(query.trim())}`);
   };
 
+  const nextMode = owner
+    ? { href: "/app", label: "Перейти к поиску жилья", role: "tenant" }
+    : { href: "/owner", label: "Перейти в режим владельца", role: "landlord" };
+
+  const rememberNextMode = () => {
+    try {
+      window.localStorage.setItem("sosedi-role", nextMode.role);
+    } catch {
+      // Navigation remains available when local storage is blocked.
+    }
+  };
+
   return (
     <header className="sticky top-0 z-30 border-b bg-background/88 px-4 py-3 backdrop-blur-2xl sm:px-6 xl:px-8">
       <div className="mx-auto flex h-12 max-w-[1640px] items-center gap-3">
@@ -64,6 +76,18 @@ export function AppHeader({ owner = false }: { owner?: boolean }) {
         </form>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
+          <Link
+            href={nextMode.href}
+            aria-label={nextMode.label}
+            title={nextMode.label}
+            onClick={rememberNextMode}
+            className="inline-flex h-11 items-center gap-2 rounded-full border bg-surface/85 px-3 text-[11px] font-bold transition duration-200 hover:-translate-y-0.5 hover:bg-surface hover:shadow-md xl:px-4"
+          >
+            <ArrowLeftRight className="size-[17px] stroke-[1.8]" aria-hidden="true" />
+            <span className="xl:hidden">{owner ? "Ищу" : "Сдаю"}</span>
+            <span className="hidden xl:inline">{owner ? "Ищу жильё" : "Сдаю жильё"}</span>
+          </Link>
+
           <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
             <Link href={owner ? "/owner/properties/new" : "/app/group/create"} className="hidden h-11 items-center gap-2 rounded-full bg-accent px-5 text-[12px] font-bold text-accent-foreground shadow-[0_8px_25px_rgba(166,204,0,0.18)] transition hover:brightness-110 md:inline-flex">
               <Plus className="size-4" /> {owner ? "Разместить объявление" : "Создать"}
@@ -74,7 +98,7 @@ export function AppHeader({ owner = false }: { owner?: boolean }) {
             <MessageCircle className="size-[19px] stroke-[1.8]" />
             {unreadMessages > 0 ? <span className="absolute -right-0.5 -top-0.5 grid size-[18px] place-items-center rounded-full bg-accent text-[9px] font-black text-accent-foreground">{unreadMessages}</span> : null}
           </Link>
-          <Link href="/app/notifications" aria-label="Уведомления: 3 новых" className="relative grid size-11 place-items-center rounded-full border bg-surface/85 transition duration-200 hover:-translate-y-0.5 hover:bg-surface hover:shadow-md">
+          <Link href={owner ? "/owner/applications" : "/app/notifications"} aria-label={owner ? "Новые заявки: 3" : "Уведомления: 3 новых"} className="relative hidden size-11 place-items-center rounded-full border bg-surface/85 transition duration-200 hover:-translate-y-0.5 hover:bg-surface hover:shadow-md sm:grid">
             <Bell className="size-[19px] stroke-[1.8]" />
             <span className="absolute -right-0.5 -top-0.5 grid size-[18px] place-items-center rounded-full bg-accent text-[9px] font-black text-accent-foreground">3</span>
           </Link>

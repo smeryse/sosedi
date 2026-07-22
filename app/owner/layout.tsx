@@ -1,17 +1,16 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell/app-shell";
 import { ownerNavigation } from "@/components/app-shell/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export default async function OwnerLayout({ children }: { children: ReactNode }) {
-  const isDummy =
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project-url");
-
-  if (!isDummy) {
-    const { data } = await (await createClient()).auth.getClaims();
-    if (!data?.claims) redirect("/auth/login");
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+  if (!user.roles.some((role) => role === "landlord" || role === "admin")) {
+    redirect(user.roles.includes("tenant") ? "/app" : "/auth/login");
   }
+  if (!user.onboardingCompleted) redirect("/onboarding?role=landlord");
+
   return <AppShell items={ownerNavigation} owner>{children}</AppShell>;
 }

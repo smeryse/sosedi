@@ -23,7 +23,6 @@ export default async function GroupPage() {
 
   return (
     <PageFrame
-      eyebrow="Команда"
       title="Моя группа"
       description="Соберите людей, которым подойдёт один дом, и подайте общую заявку."
       actions={

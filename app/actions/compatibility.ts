@@ -1,7 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/auth/session";
+import { query } from "@/lib/db";
 
 interface ProfileRecord {
   id: string;
@@ -44,29 +44,29 @@ export async function calculateCompatibility(targetId: string): Promise<{
   factors: CompatibilityFactor[];
   summary: string;
 }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Не авторизован");
+  const user = await requireUser();
 
   if (user.id === targetId) {
     return { overall: 100, factors: [], summary: "Это ваш профиль" };
   }
 
-  // Get both profiles with preferences and answers
-  const [{ data: me }, { data: target }] = await Promise.all([
-    supabase.from("profiles").select(`
-      id, display_name, age, job_title, budget_min, budget_max, city,
-      profile_preferences (districts, smoking, pets, sleep_schedule, noise_tolerance, guests_frequency, remote_work, cleanliness, sociability, private_space),
-      lifestyle_answers (question_key, answer, importance),
-      compatibility_weights (criterion, weight)
-    `).eq("id", user.id).single(),
-    supabase.from("profiles").select(`
-      id, display_name, age, job_title, budget_min, budget_max, city,
-      profile_preferences (districts, smoking, pets, sleep_schedule, noise_tolerance, guests_frequency, remote_work, cleanliness, sociability, private_space),
-      lifestyle_answers (question_key, answer, importance),
-      compatibility_weights (criterion, weight)
-    `).eq("id", targetId).single(),
-  ]);
+  const profiles = await query<ProfileRecord & Record<string, unknown>>(
+    `select p.id, p.display_name, p.age, p.job_title, p.budget_min, p.budget_max, p.city,
+            coalesce(to_jsonb(pp) - 'profile_id', '{}'::jsonb) as profile_preferences,
+            coalesce(answers.items, '[]'::jsonb) as lifestyle_answers
+       from profiles p
+       join users u on u.id = p.id and u.disabled_at is null
+       left join profile_preferences pp on pp.profile_id = p.id
+       left join lateral (
+         select jsonb_agg(jsonb_build_object('question_key', la.question_key,
+           'answer', la.answer, 'importance', la.importance)) as items
+         from lifestyle_answers la where la.profile_id = p.id
+       ) answers on true
+      where p.id = any($1::uuid[]) and (p.id = $2 or p.is_public = true)`,
+    [[user.id, targetId], user.id],
+  );
+  const me = profiles.rows.find((profile) => profile.id === user.id);
+  const target = profiles.rows.find((profile) => profile.id === targetId);
 
   if (!me || !target) throw new Error("Профиль не найден");
 
@@ -289,25 +289,24 @@ function generateSummary(overall: number, factors: CompatibilityFactor[]): strin
 }
 
 export async function getTopMatches(limit = 10) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  // Get potential matches (public profiles)
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, display_name, avatar_path")
-    .eq("is_public", true)
-    .is("archived_at", null)
-    .neq("id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(limit * 3); // Get more to filter
-
-  if (!profiles) return [];
+  const user = await requireUser();
+  const safeLimit = Math.min(50, Math.max(1, limit));
+  const profiles = await query<{ id: string; display_name: string; avatar_path: string | null } & Record<string, unknown>>(
+    `select p.id, p.display_name, p.avatar_path from profiles p
+     join users u on u.id = p.id and u.disabled_at is null
+     where p.is_public = true and p.id <> $1
+       and not exists (
+         select 1 from blocked_users b
+          where (b.blocker_id = $1 and b.blocked_id = p.id)
+             or (b.blocker_id = p.id and b.blocked_id = $1)
+       )
+     order by p.updated_at desc limit $2`,
+    [user.id, safeLimit * 3],
+  );
 
   // Calculate compatibility for each
   const matches = await Promise.all(
-    profiles.slice(0, limit).map(async (p) => {
+    profiles.rows.slice(0, safeLimit).map(async (p) => {
       const { overall, factors } = await calculateCompatibility(p.id);
       return { ...p, compatibility: overall, factors };
     })
