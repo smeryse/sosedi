@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { requireUser } from "@/lib/auth/session";
+import { query } from "@/lib/db";
 
 export async function getCurrentUser() {
   const supabase = await createClient();
@@ -63,15 +65,40 @@ export async function updateProfile(userId: string, updates: Partial<{
   is_public: boolean;
   avatar_path: string | null;
 }>) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", userId)
-    .select()
-    .single();
+  const user = await requireUser();
+  if (user.id !== userId) throw new Error("Недостаточно прав");
 
-  if (error) throw new Error("Не удалось обновить профиль");
+  const allowedFields = [
+    "display_name",
+    "age",
+    "job_title",
+    "bio",
+    "city",
+    "budget_min",
+    "budget_max",
+    "move_in_date",
+    "lease_months",
+    "is_public",
+    "avatar_path",
+  ] as const;
+  const entries = allowedFields
+    .filter((field) => updates[field] !== undefined)
+    .map((field) => [field, updates[field]] as const);
+
+  if (entries.length === 0) return null;
+
+  const assignments = entries
+    .map(([field], index) => `${field} = $${index + 2}`)
+    .join(", ");
+  const result = await query(
+    `UPDATE profiles
+     SET ${assignments}, updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [user.id, ...entries.map(([, value]) => value)],
+  );
+  const data = result.rows[0];
+  if (!data) throw new Error("Не удалось обновить профиль");
   revalidatePath("/app/profile");
   revalidatePath("/owner/profile");
   revalidatePath("/app/settings");
@@ -91,14 +118,43 @@ export async function updateProfilePreferences(userId: string, preferences: Part
   sociability: number | null;
   private_space: number | null;
 }>) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profile_preferences")
-    .upsert({ profile_id: userId, ...preferences, updated_at: new Date().toISOString() })
-    .select()
-    .single();
+  const user = await requireUser();
+  if (user.id !== userId) throw new Error("Недостаточно прав");
 
-  if (error) throw new Error("Не удалось обновить настройки");
+  const allowedFields = [
+    "districts",
+    "smoking",
+    "pets",
+    "sleep_schedule",
+    "noise_tolerance",
+    "guests_frequency",
+    "remote_work",
+    "cleanliness",
+    "sociability",
+    "private_space",
+  ] as const;
+  const entries = allowedFields
+    .filter((field) => preferences[field] !== undefined)
+    .map((field) => [field, preferences[field]] as const);
+
+  if (entries.length === 0) return null;
+
+  await query(
+    "INSERT INTO profile_preferences (profile_id) VALUES ($1) ON CONFLICT (profile_id) DO NOTHING",
+    [user.id],
+  );
+  const assignments = entries
+    .map(([field], index) => `${field} = $${index + 2}`)
+    .join(", ");
+  const result = await query(
+    `UPDATE profile_preferences
+     SET ${assignments}, updated_at = NOW()
+     WHERE profile_id = $1
+     RETURNING *`,
+    [user.id, ...entries.map(([, value]) => value)],
+  );
+  const data = result.rows[0];
+  if (!data) throw new Error("Не удалось обновить настройки");
   revalidatePath("/app/profile");
   revalidatePath("/owner/profile");
   revalidatePath("/app/settings");
