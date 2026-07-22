@@ -16,7 +16,7 @@ export type ModerationResult = {
 };
 
 export interface AIProvider {
-  readonly name: "local" | "disabled";
+  readonly name: "local" | "openrouter" | "disabled";
   complete(messages: AIMessage[]): Promise<string>;
 }
 
@@ -50,6 +50,9 @@ const DEFAULT_CHAT_MODEL = "qwen3.5:9b";
 const DEFAULT_GUARD_MODEL = "llama-guard3:8b";
 const DEFAULT_EMBED_MODEL = "nomic-embed-text";
 const DEFAULT_RERANK_MODEL = "bge-reranker-v2-m3";
+const OPENROUTER_CHAT_COMPLETIONS_URL =
+  "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_OPENROUTER_CHAT_MODEL = "poolside/laguna-s-2.1:free";
 const circuits = new Map<string, CircuitState>();
 
 class LocalAIRequestError extends Error {
@@ -210,6 +213,50 @@ function getLocalAIConfiguration(): LocalAIConfiguration {
   };
 }
 
+function getOpenRouterConfiguration(): LocalAIConfiguration | null {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) return null;
+
+  const chatModel = readModel(
+    "OPENROUTER_CHAT_MODEL",
+    DEFAULT_OPENROUTER_CHAT_MODEL,
+  );
+  if (!chatModel.endsWith(":free")) {
+    throw new Error("OPENROUTER_CHAT_MODEL must be a free model");
+  }
+
+  return {
+    endpoint: OPENROUTER_CHAT_COMPLETIONS_URL,
+    apiKey,
+    models: {
+      chat: chatModel,
+      guard: "",
+      embed: "",
+      rerank: "",
+    },
+    timeoutMs: readInteger(
+      "OPENROUTER_REQUEST_TIMEOUT_MS",
+      15_000,
+      1_000,
+      60_000,
+    ),
+    maxRetries: readInteger("OPENROUTER_MAX_RETRIES", 2, 0, 4),
+    retryDelayMs: readInteger("OPENROUTER_RETRY_DELAY_MS", 150, 0, 5_000),
+    circuitFailureThreshold: readInteger(
+      "OPENROUTER_CIRCUIT_FAILURE_THRESHOLD",
+      3,
+      1,
+      20,
+    ),
+    circuitResetMs: readInteger(
+      "OPENROUTER_CIRCUIT_RESET_MS",
+      30_000,
+      1_000,
+      5 * 60_000,
+    ),
+  };
+}
+
 function delay(milliseconds: number): Promise<void> {
   if (milliseconds <= 0) return Promise.resolve();
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -263,13 +310,16 @@ function recordFailure(
 }
 
 export class LocalOpenAIProvider implements AIProvider {
-  readonly name = "local" as const;
+  readonly name: "local" | "openrouter";
 
   constructor(
     private readonly configuration: LocalAIConfiguration,
     private readonly model: string = configuration.models.chat,
     private readonly temperature = 0.2,
-  ) {}
+    name: "local" | "openrouter" = "local",
+  ) {
+    this.name = name;
+  }
 
   private async makeRequest(messages: AIMessage[]): Promise<string> {
     const controller = new AbortController();
@@ -474,7 +524,9 @@ export async function moderateText(text: string): Promise<ModerationResult> {
   if (text.length > 16_000) {
     return { allowed: false, categories: ["input_too_large"] };
   }
-  if (!readEnabledFlag()) return deterministicModeration(text);
+  if (getOpenRouterConfiguration() || !readEnabledFlag()) {
+    return deterministicModeration(text);
+  }
 
   const configuration = getLocalAIConfiguration();
   const guard = new LocalOpenAIProvider(
@@ -498,6 +550,15 @@ export async function moderateText(text: string): Promise<ModerationResult> {
 }
 
 export function getAIProvider(): AIProvider {
+  const openRouter = getOpenRouterConfiguration();
+  if (openRouter) {
+    return new LocalOpenAIProvider(
+      openRouter,
+      openRouter.models.chat,
+      0.2,
+      "openrouter",
+    );
+  }
   if (!readEnabledFlag()) return new DeterministicFallbackProvider();
   const configuration = getLocalAIConfiguration();
   return new LocalOpenAIProvider(configuration);
