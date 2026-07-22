@@ -42,6 +42,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# python
+.venv/
+__pycache__/
+*.pyc
+
 # temp artifacts
 harmony_workflow.db
 /output
