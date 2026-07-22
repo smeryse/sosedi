@@ -1,0 +1,17 @@
+[Unit]
+Description=Sosedi Next.js frontend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/sosedi-standalone/frontend
+Environment=NODE_ENV=production
+Environment=PORT=3002
+Environment=HOSTNAME=0.0.0.0
+Environment=NEXT_PUBLIC_DEMO_MODE=true
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
