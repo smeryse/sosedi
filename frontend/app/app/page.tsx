@@ -15,6 +15,7 @@ import { getRepository } from "@/lib/repositories/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { formatRubles, type DemoProperty } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
+import { DashboardGreeting } from "@/components/tenant/dashboard-greeting";
 
 const quickActions = [
   { label: "Найти сожителей", href: "/app/roommates", icon: Search, featured: true },
@@ -105,9 +106,7 @@ export default async function TenantDashboardPage() {
         {/* Hero Greeting (Exact 1.png) */}
         <section className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-[30px] font-black tracking-tight text-foreground sm:text-[36px]">
-              Доброе утро, {user?.displayName ?? "друг"}! 👋
-            </h1>
+            <DashboardGreeting name={user?.displayName ?? "друг"} />
             <p className="mt-1 text-[13.5px] text-muted-foreground font-medium">
               Продолжайте поиск идеального жилья и людей, с которыми вам по пути.
             </p>
