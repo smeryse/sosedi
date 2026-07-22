@@ -4,6 +4,8 @@ import { PageFrame } from "@/components/tenant/page-frame";
 import { formatRubles } from "@/data/demo";
 import { getRepository } from "@/lib/repositories/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function OwnerPropertiesPage() { 
   const properties = await getRepository().listProperties();
 
