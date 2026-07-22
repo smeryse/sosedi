@@ -1,9 +1,25 @@
-export default function Home() {
+import { AboutSection } from "@/components/about-section";
+import { FeaturesSection } from "@/components/features-section";
+import { Footer } from "@/components/footer";
+import { FaqSection } from "@/components/landing/faq-section";
+import { LandingHero } from "@/components/landing/landing-hero";
+import { ReviewsSection } from "@/components/landing/reviews-section";
+import { Navbar } from "@/components/navbar";
+
+export default function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold mb-4">Соседи</h1>
-      <p className="text-lg">Frontend — Next.js</p>
-      <p className="text-sm text-gray-500 mt-2">Backend API: FastAPI</p>
-    </main>
+    <div className="min-h-screen overflow-x-clip bg-[#0D0D0C] text-white">
+      <Navbar />
+
+      <main id="main-content">
+        <LandingHero />
+        <AboutSection />
+        <FeaturesSection />
+        <ReviewsSection />
+        <FaqSection />
+      </main>
+
+      <Footer />
+    </div>
   );
 }

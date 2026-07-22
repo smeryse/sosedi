@@ -1,0 +1,170 @@
+{
+  "version": "1.0.0",
+  "modelUrl": "/models/apartments/demo-apartment/apartment.glb",
+  "previewUrl": "/models/apartments/demo-apartment/preview.webp",
+  "units": "meters",
+  "scale": 1.0,
+  "byteSize": 31023,
+  "checksum": "6cdb474f0382",
+  "bounds": {
+    "min": [-7.1, 0, -6.1],
+    "max": [7.1, 2.0, 6.1]
+  },
+  "defaultCamera": {
+    "position": [0, 12, 14],
+    "target": [0, 0, 0],
+    "fov": 45,
+    "minDistance": 4,
+    "maxDistance": 25
+  },
+  "rooms": [
+    {
+      "roomId": "room-master",
+      "name": "Главная спальня (Мастер)",
+      "roomKind": "bedroom",
+      "accessType": "private",
+      "areaM2": 22,
+      "selectable": true,
+      "meshNames": ["Floor_Master", "Furniture_Master_Bed", "Window_Master"],
+      "hitboxNames": ["RoomHitbox_Master"],
+      "anchor": [-3.2, 0.5, -2.8],
+      "labelAnchor": [-3.2, 2.2, -2.8],
+      "cameraPreset": {
+        "position": [-3.2, 6.0, 2.5],
+        "target": [-3.2, 0.75, -2.8],
+        "fov": 45,
+        "minDistance": 2,
+        "maxDistance": 15
+      },
+      "hasBalcony": true,
+      "noiseLevel": "quiet",
+      "windowSize": "large",
+      "features": ["Приватный балкон", "Тихий двор", "Панорамный вид"]
+    },
+    {
+      "roomId": "room-second",
+      "name": "Вторая спальня (Рабочая)",
+      "roomKind": "bedroom",
+      "accessType": "private",
+      "areaM2": 18,
+      "selectable": true,
+      "meshNames": ["Floor_Second", "Furniture_Second_Bed", "Furniture_Second_Desk"],
+      "hitboxNames": ["RoomHitbox_Second"],
+      "anchor": [2.8, 0.5, -2.8],
+      "labelAnchor": [2.8, 2.2, -2.8],
+      "cameraPreset": {
+        "position": [2.8, 6.0, 2.5],
+        "target": [2.8, 0.75, -2.8],
+        "fov": 45,
+        "minDistance": 2,
+        "maxDistance": 15
+      },
+      "hasWorkplace": true,
+      "noiseLevel": "moderate",
+      "windowSize": "medium",
+      "features": ["Рабочий стол", "Высокоскоростной Wi-Fi", "Эргономичное кресло"]
+    },
+    {
+      "roomId": "room-third",
+      "name": "Уютная спальня (Малая)",
+      "roomKind": "bedroom",
+      "accessType": "private",
+      "areaM2": 14,
+      "selectable": true,
+      "meshNames": ["Floor_Third", "Furniture_Third_Bed"],
+      "hitboxNames": ["RoomHitbox_Third"],
+      "anchor": [-3.6, 0.5, 2.6],
+      "labelAnchor": [-3.6, 2.2, 2.6],
+      "cameraPreset": {
+        "position": [-3.6, 6.0, 7.0],
+        "target": [-3.6, 0.75, 2.6],
+        "fov": 45,
+        "minDistance": 2,
+        "maxDistance": 15
+      },
+      "noiseLevel": "quiet",
+      "windowSize": "standard",
+      "features": ["Уютная атмосфера", "Вместительный шкаф", "Оптимальная цена"]
+    },
+    {
+      "roomId": "room-living",
+      "name": "Просторная гостиная",
+      "roomKind": "living",
+      "accessType": "common",
+      "areaM2": 24,
+      "selectable": true,
+      "meshNames": ["Floor_Living", "Furniture_Living_Sofa"],
+      "hitboxNames": ["RoomHitbox_Living"],
+      "anchor": [2.2, 0.5, 2.4],
+      "labelAnchor": [2.2, 2.2, 2.4],
+      "cameraPreset": {
+        "position": [2.2, 6.0, 7.5],
+        "target": [2.2, 0.75, 2.4],
+        "fov": 45,
+        "minDistance": 3,
+        "maxDistance": 18
+      },
+      "features": ["Общий диван", "ТВ зона", "Просторное освещение"]
+    },
+    {
+      "roomId": "room-kitchen",
+      "name": "Кухня",
+      "roomKind": "kitchen",
+      "accessType": "common",
+      "areaM2": 14,
+      "selectable": true,
+      "meshNames": ["Floor_Kitchen", "Furniture_Kitchen_Table"],
+      "hitboxNames": ["RoomHitbox_Kitchen"],
+      "anchor": [-0.4, 0.5, -3.8],
+      "labelAnchor": [-0.4, 2.2, -3.8],
+      "cameraPreset": {
+        "position": [-0.4, 6.0, 1.5],
+        "target": [-0.4, 0.75, -3.8],
+        "fov": 45,
+        "minDistance": 2,
+        "maxDistance": 15
+      },
+      "features": ["Обеденный стол", "Холодильник", "Духовой шкаф"]
+    },
+    {
+      "roomId": "room-bathroom",
+      "name": "Ванная комната",
+      "roomKind": "bathroom",
+      "accessType": "common",
+      "areaM2": 8,
+      "selectable": true,
+      "meshNames": ["Floor_Bathroom"],
+      "hitboxNames": ["RoomHitbox_Bathroom"],
+      "anchor": [-0.4, 0.5, -0.2],
+      "labelAnchor": [-0.4, 2.2, -0.2],
+      "cameraPreset": {
+        "position": [-0.4, 5.0, 4.0],
+        "target": [-0.4, 0.75, -0.2],
+        "fov": 45,
+        "minDistance": 2,
+        "maxDistance": 12
+      },
+      "features": ["Стиральная машина", "Душевая кабина"]
+    },
+    {
+      "roomId": "room-hall",
+      "name": "Прихожая и коридор",
+      "roomKind": "hall",
+      "accessType": "common",
+      "areaM2": 8,
+      "selectable": false,
+      "meshNames": ["Floor_Hall"],
+      "hitboxNames": ["RoomHitbox_Hall"],
+      "anchor": [0, 0.5, 3.0],
+      "labelAnchor": [0, 2.2, 3.0],
+      "cameraPreset": {
+        "position": [0, 8, 10],
+        "target": [0, 0.75, 3.0],
+        "fov": 45,
+        "minDistance": 2,
+        "maxDistance": 15
+      },
+      "features": ["Зеркало", "Вешалка"]
+    }
+  ]
+}

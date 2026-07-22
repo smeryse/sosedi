@@ -1,0 +1,43 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowRight, FileCheck2 } from "lucide-react";
+import { createClientRepository } from "@/lib/repositories";
+import { demoProperties } from "@/data/demo";
+import { applicationInputSchema } from "@/lib/validation";
+
+export function ApplicationForm() {
+  const router = useRouter(); const params = useSearchParams(); const propertyId = params.get("property") ?? "center-loft"; const property = demoProperties.find((item) => item.id === propertyId) ?? demoProperties[0];
+  const [message, setMessage] = useState("Мы — группа из трёх человек, готовы приехать на просмотр и предоставить документы."); const [saving, setSaving] = useState(false); const [sent, setSent] = useState(false); const [error, setError] = useState("");
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setSaving(true);
+
+    try {
+      const repository = createClientRepository();
+      const state = await repository.getState();
+      const groupId = state.group?.id;
+      if (!groupId) {
+        setError("Сначала создайте группу, затем вернитесь к заявке.");
+        return;
+      }
+
+      const parsed = applicationInputSchema.safeParse({ propertyId, groupId, message });
+      if (!parsed.success) {
+        setError("Напишите сообщение от 10 до 2 000 символов.");
+        return;
+      }
+
+      await repository.submitApplication({ propertyId, groupId, message: parsed.data.message?.trim() });
+      setSent(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Не удалось отправить заявку.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  if (sent) return <div className="surface-card max-w-xl p-6"><div className="grid size-12 place-items-center rounded-full bg-[hsl(var(--accent))]"><FileCheck2 className="size-6" /></div><h2 className="mt-5 text-xl font-extrabold">Заявка отправлена</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Собственник увидит заявку на «{property.title}». Следить за ответом можно в разделе заявок.</p><button type="button" onClick={() => router.push("/app/applications")} className="lime-button mt-5 inline-flex items-center gap-2 rounded-full px-4 py-3 text-xs font-extrabold">К моим заявкам <ArrowRight className="size-4" /></button></div>;
+  return <form onSubmit={submit} className="max-w-2xl space-y-5"><div className="surface-card p-5"><p className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">Объект</p><h2 className="mt-2 text-lg font-extrabold">{property.title}</h2><p className="mt-1 text-xs text-muted-foreground">{property.district} · 45 000 ₽ / месяц · группа «Квартира в центре»</p></div><label className="surface-card block p-5 text-xs font-extrabold">Сообщение собственнику<textarea name="message" value={message} onChange={(event) => setMessage(event.target.value)} rows={6} required minLength={10} maxLength={2000} aria-invalid={Boolean(error)} aria-describedby={error ? "application-error" : undefined} className="mt-2 w-full resize-none rounded-[14px] border bg-background p-3 text-sm font-normal outline-none focus:ring-2 focus:ring-[hsl(var(--accent))]" /></label><div className="surface-card space-y-3 p-5 text-xs text-muted-foreground"><p className="font-extrabold text-foreground">Что отправится</p><p>Имена участников группы, бюджет, дата въезда и ваше сообщение. Контакты откроются только после ответа собственника.</p></div>{error ? <p id="application-error" role="alert" className="text-sm font-bold text-red-600">{error}</p> : null}<button type="submit" disabled={saving} className="lime-button inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs font-extrabold">{saving ? "Отправляем…" : "Отправить заявку"}<ArrowRight className="size-4" /></button></form>;
+}
