@@ -9,12 +9,26 @@ _pool: Pool | None = None
 async def get_pool() -> Pool:
     global _pool
     if _pool is None:
+        if settings.database_host.startswith("/"):
+            conn_kwargs = dict(
+                host=settings.database_host,
+                user=settings.database_user,
+                database=settings.database_name,
+            )
+        else:
+            conn_kwargs = dict(
+                host=settings.database_host,
+                port=settings.database_port,
+                user=settings.database_user,
+                password=settings.database_password,
+                database=settings.database_name,
+            )
         _pool = await asyncpg.create_pool(
-        dsn=settings.database_url_asyncpg,
-        min_size=2,
-        max_size=settings.database_pool_max,
-        command_timeout=settings.database_statement_timeout_ms / 1000,
-    )
+            min_size=2,
+            max_size=settings.database_pool_max,
+            command_timeout=settings.database_statement_timeout_ms / 1000,
+            **conn_kwargs,
+        )
     return _pool
 
 

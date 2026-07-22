@@ -1,3 +1,5 @@
+import hashlib
+
 from fastapi import APIRouter, Request, Response, Depends
 from asyncpg import Connection
 from pydantic import BaseModel, EmailStr
@@ -9,7 +11,6 @@ from app.core.security import (
     compute_session_expires_at,
     compute_session_idle_expires_at,
     compute_token_hash,
-    compute_rate_limit_key,
 )
 from app.core.config import settings
 
@@ -32,26 +33,31 @@ async def login(
     response: Response,
     db: Connection = Depends(get_db),
 ):
-    rate_key = compute_rate_limit_key("login", f"{request.client.host}:{body.email}")
     row = await db.fetchrow(
         "SELECT id, password_hash FROM users WHERE email = $1", body.email
     )
     if not row or not verify_password(body.password, row["password_hash"]):
-        response.status_code = 401
-        return {"error": "Invalid email or password"}
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Invalid email or password"},
+        )
 
     token, token_hash = generate_session_token()
     expires_at = compute_session_expires_at()
     idle_expires_at = compute_session_idle_expires_at()
+    ip_hash = hashlib.sha256(
+        (request.client.host or "").encode()
+    ).hexdigest()
 
     await db.execute(
-        """INSERT INTO sessions (user_id, token_hash, expires_at, idle_expires_at, ip_address, user_agent)
+        """INSERT INTO sessions (user_id, token_hash, expires_at, idle_expires_at, ip_hash, user_agent)
            VALUES ($1, $2, $3, $4, $5, $6)""",
         row["id"],
         token_hash,
         expires_at,
         idle_expires_at,
-        request.client.host,
+        ip_hash,
         request.headers.get("user-agent", ""),
     )
 
@@ -67,9 +73,10 @@ async def login(
     )
 
     user_row = await db.fetchrow(
-        """SELECT u.id, u.email, p.display_name, p.role
+        """SELECT u.id, u.email, p.display_name, ur.role
            FROM users u
-           LEFT JOIN profiles p ON p.user_id = u.id
+           LEFT JOIN profiles p ON p.id = u.id
+           LEFT JOIN user_roles ur ON ur.user_id = u.id
            WHERE u.id = $1""",
         row["id"],
     )

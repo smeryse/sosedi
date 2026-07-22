@@ -14,7 +14,7 @@ async def logout(
     response: Response,
     db: Connection = Depends(get_db),
 ):
-    token = request.cookies.get("sosedi_session")
+    token = request.cookies.get(settings.session_cookie_name)
     if token:
         token_hash = compute_token_hash(token)
         await db.execute(

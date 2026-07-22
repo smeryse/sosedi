@@ -10,7 +10,12 @@ class Settings(BaseSettings):
 
     app_url: str = "http://127.0.0.1:3002"
 
-    database_url: str = "postgresql://sosedi:sosedi@127.0.0.1:5432/sosedi"
+    database_url: str = ""
+    database_host: str = "/var/run/postgresql"
+    database_port: int = 5432
+    database_user: str = "smeryse"
+    database_password: str = ""
+    database_name: str = "sosedi"
     database_ssl: bool = False
     database_ssl_reject_unauthorized: bool = True
     database_pool_max: int = 10
@@ -68,7 +73,10 @@ class Settings(BaseSettings):
 
     @property
     def database_url_asyncpg(self) -> str:
-        return self.database_url.replace("postgresql://", "postgresql://")
+        if self.database_host.startswith("/"):
+            return f"postgresql+asyncpg://{self.database_user}@/{self.database_name}?host={self.database_host}"
+        pw = f":{self.database_password}" if self.database_password else ""
+        return f"postgresql+asyncpg://{self.database_user}{pw}@{self.database_host}:{self.database_port}/{self.database_name}"
 
 
 settings = Settings()

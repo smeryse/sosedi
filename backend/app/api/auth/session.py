@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from asyncpg import Connection
 
+from app.core.config import settings
 from app.core.dependencies import get_db
 from app.core.security import (
     compute_token_hash,
@@ -12,7 +13,7 @@ router = APIRouter()
 
 @router.get("/session")
 async def get_session(request: Request, db: Connection = Depends(get_db)):
-    token = request.cookies.get("sosedi_session")
+    token = request.cookies.get(settings.session_cookie_name)
     if not token:
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=401, content={"error": "Not authenticated"})
@@ -20,10 +21,11 @@ async def get_session(request: Request, db: Connection = Depends(get_db)):
     token_hash = compute_token_hash(token)
     row = await db.fetchrow(
         """SELECT s.user_id, s.expires_at, s.idle_expires_at,
-                  u.email, p.display_name, p.role
+                  u.email, p.display_name, ur.role
            FROM sessions s
            JOIN users u ON u.id = s.user_id
-           LEFT JOIN profiles p ON p.user_id = u.id
+           LEFT JOIN profiles p ON p.id = u.id
+           LEFT JOIN user_roles ur ON ur.user_id = u.id
            WHERE s.token_hash = $1 AND s.revoked_at IS NULL""",
         token_hash,
     )

@@ -1,11 +1,9 @@
-import hashlib
-
 from fastapi import APIRouter, Depends
 from asyncpg import Connection
 from pydantic import BaseModel
 
 from app.core.dependencies import get_db
-from app.core.security import hash_password
+from app.core.security import hash_password, compute_token_hash
 
 router = APIRouter()
 
@@ -20,10 +18,10 @@ async def reset_password(
     body: ResetPasswordRequest,
     db: Connection = Depends(get_db),
 ):
-    token_hash = hashlib.sha256(body.token.encode()).hexdigest()
+    token_hash = compute_token_hash(body.token)
 
     row = await db.fetchrow(
-        """SELECT email FROM password_reset_tokens
+        """SELECT user_id FROM password_reset_tokens
            WHERE token_hash = $1 AND expires_at > NOW() AND used_at IS NULL""",
         token_hash,
     )
@@ -34,18 +32,19 @@ async def reset_password(
     password_hash = hash_password(body.password)
 
     async with db.transaction():
+        user_id = row["user_id"]
         await db.execute(
-            "UPDATE users SET password_hash = $1 WHERE email = $2",
+            "UPDATE users SET password_hash = $1 WHERE id = $2",
             password_hash,
-            row["email"],
+            user_id,
         )
         await db.execute(
             "UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1",
             token_hash,
         )
         await db.execute(
-            "UPDATE sessions SET revoked_at = NOW() WHERE user_id = (SELECT id FROM users WHERE email = $1)",
-            row["email"],
+            "UPDATE sessions SET revoked_at = NOW() WHERE user_id = $1",
+            user_id,
         )
 
     return {"message": "Password has been reset"}

@@ -3,11 +3,7 @@ from asyncpg import Connection
 from pydantic import BaseModel, EmailStr
 
 from app.core.dependencies import get_db
-from app.core.security import (
-    hash_password,
-    generate_session_token,
-    compute_rate_limit_key,
-)
+from app.core.security import hash_password
 
 router = APIRouter()
 
@@ -30,8 +26,6 @@ async def signup(
     request: Request,
     db: Connection = Depends(get_db),
 ):
-    rate_key = compute_rate_limit_key("signup", body.email)
-
     existing = await db.fetchval("SELECT id FROM users WHERE email = $1", body.email)
     if existing:
         from fastapi.responses import JSONResponse
@@ -49,9 +43,13 @@ async def signup(
             password_hash,
         )
         await db.execute(
-            """INSERT INTO profiles (user_id, display_name, role) VALUES ($1, $2, $3)""",
+            """INSERT INTO profiles (id, display_name) VALUES ($1, $2)""",
             user_id,
             body.display_name,
+        )
+        await db.execute(
+            """INSERT INTO user_roles (user_id, role) VALUES ($1, $2)""",
+            user_id,
             body.role,
         )
 
