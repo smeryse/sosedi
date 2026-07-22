@@ -2,15 +2,17 @@ import Link from "next/link";
 import { ArrowRight, Building2, Check, Eye, MessageCircle, Plus, TrendingUp, UsersRound } from "lucide-react";
 import { PageFrame } from "@/components/tenant/page-frame";
 import { getRepository } from "@/lib/repositories/server";
+import { getCurrentUser } from "@/lib/auth/session";
 import { formatRubles } from "@/data/demo";
 
 export default async function OwnerDashboardPage() {
+  const user = await getCurrentUser();
   const repo = getRepository();
   const properties = await repo.listProperties();
 
   return (
     <PageFrame
-      title="Добрый день, Алексей"
+      title={`Добрый день, ${user?.displayName ?? "друг"}`}
       description="Здесь вы видите объекты, отклики и следующие шаги по каждой заявке."
       actions={
         <Link href="/owner/properties/new" className="lime-button inline-flex items-center gap-2 rounded-full px-4 py-3 text-xs font-extrabold">

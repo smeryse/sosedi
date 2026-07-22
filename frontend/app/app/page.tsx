@@ -12,6 +12,7 @@ import { AvatarImage } from "@/components/ui/avatar-image";
 import { MediaImage } from "@/components/ui/media-image";
 import { CityMap } from "@/components/map/city-map";
 import { getRepository } from "@/lib/repositories/server";
+import { getCurrentUser } from "@/lib/auth/session";
 import { formatRubles, type DemoProperty } from "@/data/demo";
 import { HeartButton } from "@/components/favorites-context";
 
@@ -87,6 +88,7 @@ function DashboardPropertyCard({ property }: { property: DemoProperty }) {
 }
 
 export default async function TenantDashboardPage() {
+  const user = await getCurrentUser();
   const repo = getRepository();
   const properties = await repo.listProperties();
   const roommates = await repo.listRoommates();
@@ -104,7 +106,7 @@ export default async function TenantDashboardPage() {
         <section className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
             <h1 className="text-[30px] font-black tracking-tight text-foreground sm:text-[36px]">
-              Доброе утро, Анна! 👋
+              Доброе утро, {user?.displayName ?? "друг"}! 👋
             </h1>
             <p className="mt-1 text-[13.5px] text-muted-foreground font-medium">
               Продолжайте поиск идеального жилья и людей, с которыми вам по пути.
