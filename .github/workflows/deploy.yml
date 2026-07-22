@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -13,7 +17,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare server upload directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT || 22 }}
+          script_stop: true
+          script: |
+            rm -rf /tmp/sosedi-deploy
+            mkdir -p /tmp/sosedi-deploy
+
+      - name: Upload frontend artifact
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT || 22 }}
+          source: frontend/.next/standalone/**,frontend/.next/static/**,frontend/public/**
+          target: /tmp/sosedi-deploy
+          strip_components: 1
+          command_timeout: 20m
+
+      - name: Activate deployment
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -28,18 +69,17 @@ jobs:
             cd /opt/sosedi
             git pull --ff-only origin main
 
-            cd frontend
-            npm cache clean --force
-            npm ci
-            npm run build
-
+            upload_dir=/tmp/sosedi-deploy
+            staging_dir=/opt/sosedi-standalone/frontend.new
             release_dir=/opt/sosedi-standalone/frontend
-            staging_dir="${release_dir}.new"
+            test -f "$upload_dir/.next/standalone/server.js"
+
             rm -rf "$staging_dir"
-            cp -a .next/standalone "$staging_dir"
             mkdir -p "$staging_dir/.next"
-            cp -a .next/static "$staging_dir/.next/static"
-            cp -a public "$staging_dir/public"
+            cp -a "$upload_dir/.next/standalone/." "$staging_dir"
+            cp -a "$upload_dir/.next/static" "$staging_dir/.next/static"
+            cp -a "$upload_dir/public" "$staging_dir/public"
+            rm -rf "$upload_dir"
 
             rm -rf "$release_dir"
             mv "$staging_dir" "$release_dir"
