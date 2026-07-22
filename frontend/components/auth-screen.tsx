@@ -55,7 +55,7 @@ export function AuthScreen({ initialMode = "login" }: AuthScreenProps) {
       router.push(`/onboarding?role=${userRole}`);
       return;
     }
-    router.push(userRole === "landlord" ? "/owner" : "/app");
+    window.location.assign(userRole === "landlord" ? "/owner" : "/app");
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
